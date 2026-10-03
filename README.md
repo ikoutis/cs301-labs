@@ -17,8 +17,12 @@ the datasets from this repository's public site,
   as a grey PNG file, with the longer side 640 pixels.
   - `images.csv` lists them: number, files, title, creator, size, source.
   - `SOURCES.md` gives the source and the licence of each image.
-- `tools/build_unit2_datasets.py` and `tools/build_unit2_images.py`: the scripts
-  that built the datasets and the images from their sources.
+- `unit-2/embeddings/`: word vectors for 50,000 English words, with 50 and with 300
+  numbers for each word (`words.txt`, `glove-50.npy`, `glove-300.npy`).
+  - `SOURCES.md` gives their source and licence.
+- `tools/build_unit2_datasets.py`, `tools/build_unit2_images.py` and
+  `tools/build_unit2_embeddings.py`: the scripts that built the datasets, the
+  images and the word vectors from their sources.
 
 ## The datasets
 
@@ -36,7 +40,7 @@ datasets = pd.read_csv(BASE + "datasets.csv", index_col="number")
 df = pd.read_csv(BASE + datasets.loc[7, "file"])
 ```
 
-## Licence of the data and the images
+## Licence of the data, the images and the word vectors
 
 The datasets come from the
 [UCI Machine Learning Repository](https://archive.ics.uci.edu) and are licensed
@@ -48,3 +52,7 @@ Fifteen images are works that the Art Institute of Chicago has released under
 CC0 1.0. Fifteen are from the NASA Image and Video Library and follow NASA's
 images and media usage guidelines. `unit-2/images/SOURCES.md` gives the source
 and the credit of each one.
+
+The word vectors are a part of the GloVe vectors of the Stanford NLP Group, which
+are made available under the Public Domain Dedication and License v1.0.
+`unit-2/embeddings/SOURCES.md` gives the source and states what was changed.
