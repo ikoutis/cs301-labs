@@ -12,8 +12,12 @@ the datasets from this repository's public site,
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
     what was changed.
-- `tools/build_unit2_datasets.py`: the script that built the datasets from their
-  sources.
+- `unit-2/images/`: thirty images, numbered 1 to 30, each as a colour PNG file and
+  as a grey PNG file, with the longer side 640 pixels.
+  - `images.csv` lists them: number, files, title, creator, size, source.
+  - `SOURCES.md` gives the source and the licence of each image.
+- `tools/build_unit2_datasets.py` and `tools/build_unit2_images.py`: the scripts
+  that built the datasets and the images from their sources.
 
 ## The datasets
 
@@ -31,10 +35,15 @@ datasets = pd.read_csv(BASE + "datasets.csv", index_col="number")
 df = pd.read_csv(BASE + datasets.loc[7, "file"])
 ```
 
-## Licence of the data
+## Licence of the data and the images
 
 The datasets come from the
 [UCI Machine Learning Repository](https://archive.ics.uci.edu) and are licensed
 under the Creative Commons Attribution 4.0 International licence (CC BY 4.0).
 `unit-2/data/SOURCES.md` credits each one. If you reuse a file, credit its
 source in the same way.
+
+Fifteen images are works that the Art Institute of Chicago has released under
+CC0 1.0. Fifteen are from the NASA Image and Video Library and follow NASA's
+images and media usage guidelines. `unit-2/images/SOURCES.md` gives the source
+and the credit of each one.
