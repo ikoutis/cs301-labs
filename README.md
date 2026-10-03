@@ -7,7 +7,8 @@ the datasets from this repository's public site,
 
 ## Contents
 
-- `unit-2/notebooks/`: one notebook for each meeting of Unit II.
+- `unit-2/notebooks/`: the notebooks of Unit II, one for each act of a meeting
+  (`meeting-10-act-1.ipynb`, `meeting-10-act-2.ipynb`, ...). Each runs on its own.
 - `unit-2/data/`: thirty tabular datasets, numbered 1 to 30.
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
