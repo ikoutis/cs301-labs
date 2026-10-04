@@ -26,8 +26,8 @@ the datasets from this repository's public site,
 - `unit-2/embeddings/`: word vectors for 50,000 English words, with 50 and with 300
   numbers for each word (`words.txt`, `glove-50.npy`, `glove-300.npy`).
   - `SOURCES.md` gives their source and licence.
-- `unit-2/weather/`: the daily weather at Newark airport from 2006 to 2024, the
-  dataset of Unit I (`newark-weather.csv`), with `SOURCES.md`.
+- `unit-2/weather/`: the daily weather at Newark airport from 2006 to 2024
+  (`newark-weather.csv`), with `SOURCES.md`.
 - `tools/build_unit2_datasets.py`, `tools/build_unit2_images.py` and
   `tools/build_unit2_embeddings.py`: the scripts that built the datasets, the
   images and the word vectors from their sources.

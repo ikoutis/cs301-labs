@@ -269,7 +269,7 @@
 <section class="part" id="part-3" aria-labelledby="h-3">
   <h2 id="h-3">3. One product, divided</h2>
 
-  <p>The scores of a layer, <code>S = X @ W.T + b</code>, are a matrix with n rows and K columns. Each entry is the score of one unit on one point: a sum of m products. <strong>No entry needs another entry.</strong> The work can therefore be divided in any way among any number of cores.</p>
+  <p>The scores of a layer, <code>S = X @ W.T + b</code>, are a matrix with n rows and K columns. Each entry is the score of one neuron on one point: a sum of m products. <strong>No entry needs another entry.</strong> The work can therefore be divided in any way among any number of cores.</p>
 
   <figure>
     <svg viewBox="0 0 780 300" role="img" aria-labelledby="f3-title f3-desc">
@@ -295,7 +295,7 @@
         <text x="92" y="161">core 3</text>
         <text x="92" y="205">core 4</text>
       </g>
-      <text x="232" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (units)</text>
+      <text x="232" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (neurons)</text>
       <text x="232" y="270" font-size="14" text-anchor="middle" fill="#555">each core computes a part of the rows</text>
       <!-- GPU grid -->
       <rect x="500" y="46" width="264" height="176" fill="#fbdccf" stroke="#b8430f" stroke-width="1.8"/>
@@ -303,7 +303,7 @@
         <path d="M522,46V222 M544,46V222 M566,46V222 M588,46V222 M610,46V222 M632,46V222 M654,46V222 M676,46V222 M698,46V222 M720,46V222 M742,46V222"/>
         <path d="M500,68H764 M500,90H764 M500,112H764 M500,134H764 M500,156H764 M500,178H764 M500,200H764"/>
       </g>
-      <text x="632" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (units)</text>
+      <text x="632" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (neurons)</text>
       <text x="632" y="270" font-size="14" text-anchor="middle" fill="#555">thousands of entries at the same moment</text>
     </svg>
     <figcaption>The same matrix of scores on the two processors. A CPU gives each of its cores a part of the rows. A GPU has enough cores to compute thousands of entries at the same moment.</figcaption>
@@ -311,7 +311,7 @@
 
   <div class="story">
     <p class="label">What cannot be divided</p>
-    <p>A computation in which each step needs the result of the step before it. The descent of Unit I is one: every update starts from the weights that the update before it produced, so the updates must be done one after another. Inside one update, the products can be divided among the cores; the updates themselves cannot.</p>
+    <p>A computation in which each step needs the result of the step before it. The training of a network is one: its weights are improved in many small steps, and every step starts from the weights that the step before it produced, so the steps must be done one after another. Inside one step, the products can be divided among the cores; the steps themselves cannot.</p>
   </div>
 
   <div class="steps"><button type="button" data-go="2">Back: inside a CPU core</button><span class="spacer"></span><button type="button" data-go="4">Next: two memories</button></div>

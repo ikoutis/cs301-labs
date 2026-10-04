@@ -1,10 +1,10 @@
 # Source of the weather data
 
-`newark-weather.csv` is the dataset of Unit I of the course: one row for each day
-from 2006-01-01 to 2024-12-31 at Newark Liberty International Airport, New Jersey,
-6,940 days in all. It is a copy of the file that the Unit I notebooks read from
+`newark-weather.csv` holds the daily weather at Newark Liberty International
+Airport, New Jersey: one row for each day from 2006-01-01 to 2024-12-31, 6,940
+days in all. It is a copy of
 <https://ikoutis.github.io/course-notes/artificial-neuron-notes/data/newark-weather.csv>,
-kept here so that the Unit II notebooks read every file from one site.
+kept here so that the notebooks read every file from one site.
 
 - **Source:** NOAA, Global Historical Climatology Network Daily (GHCN-Daily),
   station USW00014734,
@@ -29,11 +29,12 @@ kept here so that the Unit II notebooks read every file from one site.
 | `warm_half` | 1 if the month is May to October, else 0 | 0 or 1 |
 
 A reading that the station did not report is an empty field: 64 days have no
-humidity, 75 no pressure, and 2 no wind. The notebooks of Unit I, and the
-notebook of meeting 11, drop the days that lack a temperature, the humidity or
-the pressure, which leaves 6,865 days.
+humidity, 75 no pressure, and 2 no wind. The notebook of meeting 11 drops the
+days that lack a temperature, the humidity or the pressure, which leaves 6,865
+days.
 
-`meeting-11-act-1.ipynb` (Step 8) applies to these days the four season units
-that were trained in meeting 8 of the course. Their weights and biases, and the
-means and standard deviations that standardize the two temperatures, are written
-in that notebook.
+`meeting-11-act-1.ipynb` (Step 8) applies to these days a layer of four neurons,
+one for each season. The layer was trained on the days of 2006 to 2017, with the
+two temperatures standardized by their means and standard deviations over those
+days. Its weights and biases, and those means and standard deviations, are
+written in the notebook.
