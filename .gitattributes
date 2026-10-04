@@ -1,6 +1,7 @@
 *.csv text eol=lf
 *.ipynb text eol=lf
 *.md text eol=lf
+*.html text eol=lf
 *.py text eol=lf
 *.png binary
 *.npy binary

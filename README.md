@@ -9,6 +9,12 @@ the datasets from this repository's public site,
 
 - `unit-2/notebooks/`: the notebooks of Unit II, one for each act of a meeting
   (`meeting-10-act-1.ipynb`, `meeting-10-act-2.ipynb`, ...). Each runs on its own.
+- `unit-2/pages/`: web pages that a meeting uses in place of slides. Each is one
+  self-contained HTML file.
+  - `cpu-and-gpu.html` (meeting 11): the two processors, and how a product of
+    matrices is divided on each.
+  - `matrix-costs.html` (meeting 11): the number of operations behind each matrix
+    operation of the lab, and a calculator that turns a count into a time.
 - `unit-2/data/`: thirty tabular datasets, numbered 1 to 30.
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
@@ -20,6 +26,8 @@ the datasets from this repository's public site,
 - `unit-2/embeddings/`: word vectors for 50,000 English words, with 50 and with 300
   numbers for each word (`words.txt`, `glove-50.npy`, `glove-300.npy`).
   - `SOURCES.md` gives their source and licence.
+- `unit-2/weather/`: the daily weather at Newark airport from 2006 to 2024, the
+  dataset of Unit I (`newark-weather.csv`), with `SOURCES.md`.
 - `tools/build_unit2_datasets.py`, `tools/build_unit2_images.py` and
   `tools/build_unit2_embeddings.py`: the scripts that built the datasets, the
   images and the word vectors from their sources.
@@ -56,3 +64,7 @@ and the credit of each one.
 The word vectors are a part of the GloVe vectors of the Stanford NLP Group, which
 are made available under the Public Domain Dedication and License v1.0.
 `unit-2/embeddings/SOURCES.md` gives the source and states what was changed.
+
+The weather data is from NOAA's Global Historical Climatology Network Daily, a
+work of the United States government in the public domain.
+`unit-2/weather/SOURCES.md` gives the source and states what was changed.

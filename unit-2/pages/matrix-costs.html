@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — What matrix operations cost</title>
+<!--
+  CS 301, Unit II, meeting 11, Act 3. The number of additions and
+  multiplications behind each operation of the lab, what the notation O( )
+  keeps and what it drops, and a calculator that turns a count and a measured
+  rate into a predicted time. Linked from the notebook of Act 3
+  (cs301-labs/unit-2/notebooks/meeting-11-act-3.ipynb) and from the meeting's
+  module on Canvas.
+
+  Self-contained on purpose: no CDN, no fonts, no network.
+  The three rates that the calculator starts with are examples, of the order
+  of what the lab measures; a group replaces them with its own.
+
+  For testing, the address can carry the sizes: matrix-costs.html#n=1000&m=50&K=10
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 20px 48px;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  header { border-top: 4px solid var(--red); padding-top: 16px; margin-bottom: 18px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--red); margin: 0 0 4px;
+  }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
+  header p.lead { margin: 0; color: var(--muted); font-size: 17px; max-width: 46em; }
+  h2 { font-size: 22px; font-weight: 600; margin: 30px 0 10px; line-height: 1.3; }
+  p { margin: 0 0 12px; max-width: 46em; }
+  ul { margin: 0 0 12px; padding-left: 1.3em; max-width: 46em; }
+  li { margin-bottom: 6px; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 4px; border-radius: 3px; white-space: nowrap; }
+  a { color: #0b57a4; }
+  a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; margin: 6px 0 14px; font-size: 15.5px; }
+  caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+  th, td { border-bottom: 1px solid var(--faint); padding: 7px 16px 7px 0; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--ink); }
+  tbody th { font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .story { background: var(--paper); padding: 12px 16px; border-radius: 3px; margin: 14px 0; max-width: 48em; }
+  .story p:last-child { margin-bottom: 0; }
+
+  form.calc { background: var(--paper); border-radius: 3px; padding: 14px 16px 6px; max-width: 760px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 12px; }
+  legend { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 6px; }
+  .fields { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+  .field { display: flex; flex-direction: column; font-size: 15px; }
+  .field label { font-weight: 600; margin-bottom: 2px; }
+  .field .pair { display: flex; gap: 6px; }
+  input[type="number"], select {
+    font: inherit; font-size: 16px; padding: 5px 8px; border: 1px solid #767676; border-radius: 3px; background: #fff; color: var(--ink);
+  }
+  input[type="number"] { width: 9.5em; }
+  input.rate { width: 6em; }
+  #result { margin-top: 4px; }
+  #result table { background: #fff; }
+  #result td, #result th { padding-left: 10px; }
+
+  footer { border-top: 1px solid var(--faint); margin-top: 28px; padding-top: 12px; font-size: 14.5px; color: var(--muted); }
+  footer p { max-width: 60em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CS 301 · Unit II · Meeting 11</p>
+  <h1>What matrix operations cost</h1>
+  <p class="lead">The number of additions and multiplications behind each operation of the lab, what the notation O( ) keeps and what it drops, and how a count becomes a predicted time.</p>
+</header>
+
+<main>
+<section aria-labelledby="h-count">
+  <h2 id="h-count">The count for each operation</h2>
+  <p>As in the lab, <strong>n</strong> is the number of points, <strong>m</strong> the number of coordinates of a point, and <strong>K</strong> the number of units of a layer. A point is a row of <code>X</code>, and a unit is a row of <code>W</code>.</p>
+
+  <div class="scroll">
+  <table>
+    <caption>Operations of meeting 11, and the arithmetic each one takes</caption>
+    <thead>
+      <tr>
+        <th scope="col">Operation</th>
+        <th scope="col">In NumPy</th>
+        <th scope="col">Shapes</th>
+        <th scope="col">What is computed</th>
+        <th scope="col" style="white-space: nowrap">Grows as</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">One unit, one point</th><td><code>w @ x + b</code></td><td>(m,) and (m,)</td><td>m multiplications, m additions</td><td>O(m)</td></tr>
+      <tr><th scope="row">One unit, n points</th><td><code>X @ w + b</code></td><td>(n, m) and (m,)</td><td>n × m multiplications, as many additions</td><td>O(nm)</td></tr>
+      <tr><th scope="row">K units, one point</th><td><code>W @ x + b</code></td><td>(K, m) and (m,)</td><td>K × m multiplications, as many additions</td><td>O(Km)</td></tr>
+      <tr><th scope="row">K units, n points</th><td><code>X @ W.T + b</code></td><td>(n, m) and (K, m)</td><td>n × K × m multiplications, as many additions</td><td>O(nKm)</td></tr>
+      <tr><th scope="row">Sum of two arrays</th><td><code>A + B</code></td><td>(n, K) and (n, K)</td><td>n × K additions</td><td>O(nK)</td></tr>
+      <tr><th scope="row">A function of every entry</th><td><code>1 / (1 + np.exp(-S))</code></td><td>(n, K)</td><td>the sigmoid, n × K times</td><td>O(nK)</td></tr>
+      <tr><th scope="row">Softmax of every row</th><td><code>softmax_rows(S)</code></td><td>(n, K)</td><td>n × K exponentials, and a sum and K divisions for each row</td><td>O(nK)</td></tr>
+      <tr><th scope="row">Largest entry of every row</th><td><code>S.argmax(axis=1)</code></td><td>(n, K)</td><td>n × K comparisons</td><td>O(nK)</td></tr>
+      <tr><th scope="row">Transpose</th><td><code>W.T</code></td><td>(K, m) to (m, K)</td><td>nothing: no number is moved</td><td>O(1)</td></tr>
+      <tr><th scope="row">Reshape</th><td><code>image.reshape(-1, 3)</code></td><td>(height, width, 3) to (n, 3)</td><td>nothing: no number is moved</td><td>O(1)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>The last two rows cost nothing, whatever the size of the array. For a transpose or a reshape, NumPy keeps the block of numbers where it is and only changes how it reads the block: which number counts as row i and column j. PyTorch does the same.</p>
+</section>
+
+<section aria-labelledby="h-o">
+  <h2 id="h-o">What O( ) keeps, and what it drops</h2>
+  <p>In the lab, the time of the three loops is close to</p>
+  <p><strong>time ≈ (the time of one pass) × n × K × m.</strong></p>
+  <p>The notation <strong>O(nKm)</strong>, read "of the order of n K m", keeps the product of the sizes and drops the factor in front of it. What it keeps answers the question of how the time <strong>grows</strong>:</p>
+
+  <div class="scroll">
+  <table>
+    <caption>When every size is doubled</caption>
+    <thead><tr><th scope="col">The count grows as</th><th scope="col">Example</th><th scope="col" class="num">The time is multiplied by</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">O(m)</th><td>one unit, one point</td><td class="num">2</td></tr>
+      <tr><th scope="row">O(nm)</th><td>one unit, n points</td><td class="num">4</td></tr>
+      <tr><th scope="row">O(nKm)</th><td>K units, n points</td><td class="num">8</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>When n, m and K are all equal to one size, the product of a layer takes size × size × size multiplications: it is O(size³). This is why, in Act 2, the step from size 2,048 to size 4,096 multiplies the time of the CPU by about 8.</p>
+
+  <div class="story">
+    <p><strong>What O( ) drops is the time of one operation.</strong> Step 17 of the lab measures it in several ways of computing, as operations per second, and the results differ by factors of thousands. The count is the same in all of them. What differs is how the program is run (by the interpreter of Python, or by code made for the processor), where the numbers are (in the cache of the processor, or in the main memory), and which processor does the work (a few cores of a CPU, or the thousands of cores of a GPU). The page <a href="cpu-and-gpu.html">CPU and GPU</a> describes the two processors.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-calc">
+  <h2 id="h-calc">From a count to a time</h2>
+  <p>A count and a rate together predict a time before the computation is run:</p>
+  <p><strong>time ≈ (number of operations) ÷ (operations per second).</strong></p>
+  <p>The calculator applies this to a layer of K units on n points with m coordinates, which takes 2 × n × K × m operations: one multiplication and one addition for each pass of the three loops. The three rates in it are examples. Replace them with the rates that your group measured in Step 17.</p>
+
+  <form class="calc" id="calc" onsubmit="return false">
+    <fieldset>
+      <legend>The layer</legend>
+      <div class="fields">
+        <div class="field"><label for="n">n, points</label><input type="number" id="n" min="1" step="1" value="60000"></div>
+        <div class="field"><label for="m">m, coordinates</label><input type="number" id="m" min="1" step="1" value="784"></div>
+        <div class="field"><label for="K">K, units</label><input type="number" id="K" min="1" step="1" value="1000"></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Operations per second (examples: type your own)</legend>
+      <div class="fields">
+        <div class="field"><label for="r1">Python, three loops</label>
+          <div class="pair"><input type="number" class="rate" id="r1" min="0" step="any" value="10">
+          <select id="u1" aria-label="Unit of the rate of Python, three loops"><option value="1e6" selected>million</option><option value="1e9">billion</option><option value="1e12">trillion</option></select></div></div>
+        <div class="field"><label for="r2">NumPy, the product</label>
+          <div class="pair"><input type="number" class="rate" id="r2" min="0" step="any" value="50">
+          <select id="u2" aria-label="Unit of the rate of NumPy, the product"><option value="1e6">million</option><option value="1e9" selected>billion</option><option value="1e12">trillion</option></select></div></div>
+        <div class="field"><label for="r3">GPU, the product</label>
+          <div class="pair"><input type="number" class="rate" id="r3" min="0" step="any" value="4">
+          <select id="u3" aria-label="Unit of the rate of the GPU, the product"><option value="1e6">million</option><option value="1e9">billion</option><option value="1e12" selected>trillion</option></select></div></div>
+      </div>
+    </fieldset>
+    <div id="result" aria-live="polite"></div>
+  </form>
+  <noscript><p>The calculator needs JavaScript. Without it: multiply 2 × n × K × m, and divide by the rate.</p></noscript>
+</section>
+</main>
+
+<footer>
+  <p>See also: <a href="cpu-and-gpu.html">CPU and GPU</a>. This page belongs to the lab of meeting 11, Act 3.</p>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  function el(id) { return document.getElementById(id); }
+
+  function inWords(x) {
+    var sizes = [[1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
+    for (var i = 0; i < sizes.length; i++) {
+      if (x >= sizes[i][0]) { return (x / sizes[i][0]).toPrecision(3).replace(/\.?0+$/, "") + " " + sizes[i][1]; }
+    }
+    return String(Math.round(x));
+  }
+
+  function duration(s) {
+    function f(v, unit) { return Number(v.toPrecision(3)).toLocaleString("en-US") + " " + unit; }
+    if (s < 1e-3) { return f(s * 1e6, "microseconds"); }
+    if (s < 1) { return f(s * 1e3, "milliseconds"); }
+    if (s < 120) { return f(s, "seconds"); }
+    if (s < 7200) { return f(s / 60, "minutes"); }
+    if (s < 172800) { return f(s / 3600, "hours"); }
+    if (s < 63072000) { return f(s / 86400, "days"); }
+    return f(s / 31536000, "years");
+  }
+
+  var rows = [["Python, three loops", "r1", "u1"], ["NumPy, the product", "r2", "u2"], ["GPU, the product", "r3", "u3"]];
+
+  function update() {
+    var n = Number(el("n").value), m = Number(el("m").value), K = Number(el("K").value);
+    var out = el("result");
+    if (!(n >= 1 && m >= 1 && K >= 1)) {
+      out.textContent = "Type three sizes of at least 1.";
+      document.documentElement.setAttribute("data-state", "invalid");
+      return;
+    }
+    var operations = 2 * n * K * m;
+    var html = "<p><strong>" + operations.toLocaleString("en-US") + " operations</strong> (" + inWords(operations) + "): 2 × " +
+      n.toLocaleString("en-US") + " × " + K.toLocaleString("en-US") + " × " + m.toLocaleString("en-US") + ".</p>" +
+      "<table><caption>Predicted time of the layer</caption><thead><tr><th scope=\"col\">Way of computing</th>" +
+      "<th scope=\"col\" class=\"num\">Operations per second</th><th scope=\"col\" class=\"num\">Predicted time</th></tr></thead><tbody>";
+    var state = [String(operations)];
+    rows.forEach(function (row) {
+      var rate = Number(el(row[1]).value) * Number(el(row[2]).value);
+      var time = rate > 0 ? duration(operations / rate) : "type a rate above 0";
+      html += "<tr><th scope=\"row\">" + row[0] + "</th><td class=\"num\">" + (rate > 0 ? inWords(rate) : "") + "</td><td class=\"num\">" + time + "</td></tr>";
+      state.push(time);
+    });
+    out.innerHTML = html + "</tbody></table>";
+    document.documentElement.setAttribute("data-state", state.join(" | "));
+  }
+
+  // the address may carry the sizes, for testing: #n=1000&m=50&K=10
+  location.hash.replace("#", "").split("&").forEach(function (pair) {
+    var kv = pair.split("=");
+    if (["n", "m", "K"].indexOf(kv[0]) >= 0 && Number(kv[1]) >= 1) { el(kv[0]).value = String(Number(kv[1])); }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#calc input, #calc select"), function (control) {
+    control.addEventListener("input", update);
+    control.addEventListener("change", update);
+  });
+  update();
+  document.documentElement.setAttribute("data-ready", "yes");
+})();
+</script>
+</body>
+</html>

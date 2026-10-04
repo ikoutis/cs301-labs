@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — CPU and GPU</title>
+<!--
+  CS 301, Unit II, meeting 11, Acts 2 and 3. A page in place of slides: what a
+  CPU and a GPU are, how a product of matrices is divided on each, and why the
+  data has to be copied. Linked from the notebooks of Acts 2 and 3
+  (cs301-labs/unit-2/notebooks/meeting-11-act-*.ipynb) and from the meeting's
+  module on Canvas.
+
+  Four parts, shown as tabs, one part at a time, so that the page can be
+  projected like slides. Without JavaScript, and in print, all the parts are
+  shown one under the other. The address can name a part: cpu-and-gpu.html#3.
+
+  Meeting 12 is to add two parts: the memory hierarchy, and what computing costs.
+
+  Self-contained on purpose: no CDN, no fonts, no network.
+  Numbers: NVIDIA T4 (2,560 CUDA cores, 16 GB, 70 W, 8.1 TFLOPS single
+  precision) from NVIDIA's data sheet; Colab's free machines (2 virtual CPU
+  cores, about 12 GB of memory, a T4 when one is available) as of October 2026.
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+    --cpu: #1c5cab;        /* blue: the CPU, as in the chart of Act 2 */
+    --cpu-tint: #cde2fb;
+    --gpu: #b8430f;        /* orange: the GPU */
+    --gpu-tint: #fbdccf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 20px 48px;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  header { border-top: 4px solid var(--red); padding-top: 16px; margin-bottom: 18px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--red); margin: 0 0 4px;
+  }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
+  header p.lead { margin: 0; color: var(--muted); font-size: 17px; max-width: 46em; }
+  h2 { font-size: 22px; font-weight: 600; margin: 4px 0 10px; line-height: 1.3; }
+  p { margin: 0 0 12px; max-width: 46em; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.3em; max-width: 46em; }
+  li { margin-bottom: 6px; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 4px; border-radius: 3px; }
+  a { color: #0b57a4; }
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+
+  [role="tablist"] { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--faint); margin: 0 0 20px; }
+  [role="tab"] {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 9px 16px;
+    border: 1px solid transparent; border-bottom: none; background: none; color: var(--muted);
+    cursor: pointer; border-radius: 3px 3px 0 0; margin-bottom: -1px;
+  }
+  [role="tab"][aria-selected="true"] { color: var(--red); border-color: var(--faint); border-bottom: 1px solid #fff; background: #fff; }
+  [role="tab"]:hover { color: var(--ink); }
+  .part { margin-bottom: 34px; }
+  .part[hidden] { display: none; }
+
+  figure { margin: 18px 0 16px; }
+  figure svg { display: block; width: 100%; max-width: 780px; height: auto; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  figcaption { font-size: 14.5px; color: var(--muted); margin-top: 6px; max-width: 52em; }
+  svg text { font-family: inherit; fill: var(--ink); }
+
+  .story { background: var(--paper); padding: 12px 16px; border-radius: 3px; margin: 14px 0; max-width: 48em; }
+  .story p:last-child, .story ul:last-child { margin-bottom: 0; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; margin: 6px 0 14px; font-size: 15.5px; }
+  caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+  th, td { border-bottom: 1px solid var(--faint); padding: 7px 14px 7px 0; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--ink); }
+  tbody th { font-weight: 600; white-space: nowrap; }
+
+  .steps { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--faint); }
+  .steps button {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 7px 14px; border: 1px solid var(--faint);
+    background: #fff; color: var(--ink); border-radius: 3px; cursor: pointer;
+  }
+  .steps button:hover { border-color: var(--ink); }
+  .steps .spacer { flex: 1; }
+  .no-js .steps { display: none; }
+
+  footer { border-top: 1px solid var(--faint); margin-top: 28px; padding-top: 12px; font-size: 14.5px; color: var(--muted); }
+  footer p { max-width: 60em; }
+
+  @media print {
+    [role="tablist"], .steps { display: none; }
+    .part[hidden] { display: block; }
+    .part { break-inside: avoid; }
+  }
+</style>
+</head>
+<body class="no-js">
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CS 301 · Unit II · Meeting 11</p>
+  <h1>CPU and GPU</h1>
+  <p class="lead">The two processors that carried out your products in the lab: what is inside each of them, how one product of matrices is divided on each, and why the data has to be copied.</p>
+</header>
+
+<main>
+<div role="tablist" aria-label="The parts of this page" id="tabs" hidden>
+  <button type="button" role="tab" id="tab-1" aria-controls="part-1" aria-selected="true">1. Two processors</button>
+  <button type="button" role="tab" id="tab-2" aria-controls="part-2" aria-selected="false" tabindex="-1">2. Inside a CPU core</button>
+  <button type="button" role="tab" id="tab-3" aria-controls="part-3" aria-selected="false" tabindex="-1">3. One product, divided</button>
+  <button type="button" role="tab" id="tab-4" aria-controls="part-4" aria-selected="false" tabindex="-1">4. Two memories</button>
+</div>
+
+<!-- ================================================================ part 1 -->
+<section class="part" id="part-1" aria-labelledby="h-1">
+  <h2 id="h-1">1. Two processors</h2>
+
+  <p>The <strong>CPU</strong>, the central processing unit, is the processor that runs the programs of a computer: the operating system, the browser, Python. It has a few <strong>cores</strong>. A core carries out the instructions of a program one after another, billions of them every second, and it can run any program.</p>
+
+  <p>The <strong>GPU</strong>, the graphics processing unit, is a second processor in the same computer. It was built to compute the colours of the pixels of a screen: one short computation, repeated for millions of pixels that do not depend on each other. A GPU therefore has thousands of small cores, which carry out the same instructions at the same moment, each on its own numbers. It also has a memory of its own.</p>
+
+  <figure>
+    <svg viewBox="0 0 780 330" role="img" aria-labelledby="f1-title f1-desc">
+      <title id="f1-title">A CPU with four large cores beside a GPU with 2,560 small cores</title>
+      <desc id="f1-desc">On the left, a box labelled CPU holds four large squares, each labelled core. Below it is a box labelled main memory. On the right, a box labelled GPU holds a dense field of 2,560 very small squares. Below it is a box labelled memory of the GPU. A double arrow labelled copy joins the two memories.</desc>
+      <defs>
+        <pattern id="small-cores" width="3.6" height="3.6" patternUnits="userSpaceOnUse" x="441" y="62">
+          <rect width="2.6" height="2.6" fill="#b8430f"/>
+        </pattern>
+        <marker id="arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1A1A1A"/>
+        </marker>
+      </defs>
+      <!-- CPU -->
+      <rect x="20" y="16" width="330" height="204" rx="6" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="34" y="42" font-size="18" font-weight="700">CPU</text>
+      <text x="336" y="42" font-size="14" text-anchor="end" fill="#555">a few large cores</text>
+      <g fill="#cde2fb" stroke="#1c5cab" stroke-width="1.5">
+        <rect x="36" y="56" width="142" height="70" rx="4"/>
+        <rect x="192" y="56" width="142" height="70" rx="4"/>
+        <rect x="36" y="138" width="142" height="70" rx="4"/>
+        <rect x="192" y="138" width="142" height="70" rx="4"/>
+      </g>
+      <g font-size="15" text-anchor="middle">
+        <text x="107" y="96">core</text>
+        <text x="263" y="96">core</text>
+        <text x="107" y="178">core</text>
+        <text x="263" y="178">core</text>
+      </g>
+      <!-- GPU -->
+      <rect x="430" y="16" width="330" height="204" rx="6" fill="#fff" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="444" y="42" font-size="18" font-weight="700">GPU</text>
+      <text x="746" y="42" font-size="14" text-anchor="end" fill="#555">thousands of small cores</text>
+      <rect x="441" y="62" width="288" height="115.2" fill="url(#small-cores)"/>
+      <text x="595" y="203" font-size="15" text-anchor="middle">2,560 cores (NVIDIA T4)</text>
+      <!-- memories -->
+      <rect x="20" y="250" width="330" height="56" rx="6" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="185" y="283" font-size="15" text-anchor="middle">main memory of the computer</text>
+      <rect x="430" y="250" width="330" height="56" rx="6" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="595" y="283" font-size="15" text-anchor="middle">memory of the GPU</text>
+      <line x1="185" y1="220" x2="185" y2="250" stroke="#1A1A1A" stroke-width="1.5"/>
+      <line x1="595" y1="220" x2="595" y2="250" stroke="#1A1A1A" stroke-width="1.5"/>
+      <line x1="356" y1="278" x2="424" y2="278" stroke="#1A1A1A" stroke-width="1.5" marker-start="url(#arrow-a)" marker-end="url(#arrow-a)"/>
+      <text x="390" y="268" font-size="14" text-anchor="middle">copy</text>
+    </svg>
+    <figcaption>A CPU with four cores, and the GPU that Colab lends: each small square on the right is one of its 2,560 cores. Each processor computes with the numbers of its own memory.</figcaption>
+  </figure>
+
+  <p>A product of matrices has the form of the pixels of a picture: every entry of the result is computed in the same way, and no entry depends on another. For that reason the layers of neural networks are computed on GPUs.</p>
+
+  <div class="scroll">
+  <table>
+    <caption>The two processors, side by side</caption>
+    <thead>
+      <tr><th scope="col"></th><th scope="col">CPU</th><th scope="col">GPU</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row">Cores</th><td>A few: 2 on the machines that Colab lends for free, 4 to 16 in a laptop, more than 100 in a large server.</td><td>Thousands: 2,560 in the NVIDIA T4 that Colab lends.</td></tr>
+      <tr><th scope="row">One core</th><td>Fast, and able to run any program by itself.</td><td>Simple. The cores work in groups, and a group carries out one instruction at a time, each core on its own numbers.</td></tr>
+      <tr><th scope="row">Memory</th><td>The main memory of the computer: about 12 GB on Colab's machines.</td><td>A memory of its own: 16 GB on the T4.</td></tr>
+      <tr><th scope="row">Good at</th><td>Every kind of program, also one whose steps depend on each other.</td><td>The same operation on very many numbers.</td></tr>
+      <tr><th scope="row">Name in PyTorch</th><td><code>"cpu"</code></td><td><code>"cuda"</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="steps"><span class="spacer"></span><button type="button" data-go="2">Next: inside a CPU core</button></div>
+</section>
+
+<!-- ================================================================ part 2 -->
+<section class="part" id="part-2" aria-labelledby="h-2">
+  <h2 id="h-2">2. Inside a CPU core</h2>
+
+  <p>A core does one small step at a time: it takes the next instruction of the program, reads the numbers that the instruction needs, computes, and stores the result. Three things make a CPU fast at the arithmetic of this course.</p>
+
+  <ol>
+    <li><strong>Instructions on several numbers.</strong> One instruction of a modern core can add or multiply 8 pairs of numbers at once, and on some processors 16. The loops inside NumPy and PyTorch are made of such instructions. A loop written in Python cannot use them: the interpreter handles one number at a time.</li>
+    <li><strong>The cache.</strong> A core has a small memory of its own, the cache. Reading a number from the cache is much faster than reading it from the main memory. A computation whose numbers stay in the cache is fast, and a computation that must fetch every number from the main memory waits for them. Step 17 of the lab measures this difference: the same additions, on short arrays and on long ones. Meeting 12 comes back to it.</li>
+    <li><strong>Several cores.</strong> NumPy and PyTorch divide a large product among the cores of the CPU.</li>
+  </ol>
+
+  <figure>
+    <svg viewBox="0 0 780 250" role="img" aria-labelledby="f2-title f2-desc">
+      <title id="f2-title">One addition for each instruction, and eight additions for one instruction</title>
+      <desc id="f2-desc">On the left, one instruction adds one number a to one number b and gives one sum. On the right, one instruction adds a row of eight numbers a to a row of eight numbers b and gives a row of eight sums.</desc>
+      <text x="20" y="30" font-size="16" font-weight="700">One pair of numbers</text>
+      <g stroke="#1c5cab" stroke-width="1.5" fill="#cde2fb">
+        <rect x="60" y="56" width="44" height="40" rx="3"/>
+        <rect x="60" y="116" width="44" height="40" rx="3"/>
+      </g>
+      <rect x="60" y="190" width="44" height="40" rx="3" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="1.5"/>
+      <g font-size="15" text-anchor="middle">
+        <text x="82" y="81">a</text>
+        <text x="82" y="141">b</text>
+        <text x="82" y="215">a + b</text>
+        <text x="36" y="141" font-size="20">+</text>
+      </g>
+      <line x1="30" y1="172" x2="130" y2="172" stroke="#1A1A1A" stroke-width="1.5"/>
+
+      <text x="300" y="30" font-size="16" font-weight="700">Eight pairs of numbers, in one instruction</text>
+      <g stroke="#1c5cab" stroke-width="1.5" fill="#cde2fb">
+        <rect x="340" y="56" width="44" height="40" rx="3"/><rect x="392" y="56" width="44" height="40" rx="3"/>
+        <rect x="444" y="56" width="44" height="40" rx="3"/><rect x="496" y="56" width="44" height="40" rx="3"/>
+        <rect x="548" y="56" width="44" height="40" rx="3"/><rect x="600" y="56" width="44" height="40" rx="3"/>
+        <rect x="652" y="56" width="44" height="40" rx="3"/><rect x="704" y="56" width="44" height="40" rx="3"/>
+        <rect x="340" y="116" width="44" height="40" rx="3"/><rect x="392" y="116" width="44" height="40" rx="3"/>
+        <rect x="444" y="116" width="44" height="40" rx="3"/><rect x="496" y="116" width="44" height="40" rx="3"/>
+        <rect x="548" y="116" width="44" height="40" rx="3"/><rect x="600" y="116" width="44" height="40" rx="3"/>
+        <rect x="652" y="116" width="44" height="40" rx="3"/><rect x="704" y="116" width="44" height="40" rx="3"/>
+      </g>
+      <g stroke="#1A1A1A" stroke-width="1.5" fill="#F7F7F5">
+        <rect x="340" y="190" width="44" height="40" rx="3"/><rect x="392" y="190" width="44" height="40" rx="3"/>
+        <rect x="444" y="190" width="44" height="40" rx="3"/><rect x="496" y="190" width="44" height="40" rx="3"/>
+        <rect x="548" y="190" width="44" height="40" rx="3"/><rect x="600" y="190" width="44" height="40" rx="3"/>
+        <rect x="652" y="190" width="44" height="40" rx="3"/><rect x="704" y="190" width="44" height="40" rx="3"/>
+      </g>
+      <g font-size="14" text-anchor="middle">
+        <text x="362" y="81">a1</text><text x="414" y="81">a2</text><text x="466" y="81">a3</text><text x="518" y="81">a4</text>
+        <text x="570" y="81">a5</text><text x="622" y="81">a6</text><text x="674" y="81">a7</text><text x="726" y="81">a8</text>
+        <text x="362" y="141">b1</text><text x="414" y="141">b2</text><text x="466" y="141">b3</text><text x="518" y="141">b4</text>
+        <text x="570" y="141">b5</text><text x="622" y="141">b6</text><text x="674" y="141">b7</text><text x="726" y="141">b8</text>
+        <g font-size="11.5">
+          <text x="362" y="214">a1+b1</text><text x="414" y="214">a2+b2</text><text x="466" y="214">a3+b3</text><text x="518" y="214">a4+b4</text>
+          <text x="570" y="214">a5+b5</text><text x="622" y="214">a6+b6</text><text x="674" y="214">a7+b7</text><text x="726" y="214">a8+b8</text>
+        </g>
+        <text x="316" y="141" font-size="20">+</text>
+      </g>
+      <line x1="306" y1="172" x2="756" y2="172" stroke="#1A1A1A" stroke-width="1.5"/>
+    </svg>
+    <figcaption>Left: an addition of two numbers. Right: one instruction that adds eight pairs of numbers at once. NumPy's loops use the instruction on the right.</figcaption>
+  </figure>
+
+  <div class="steps"><button type="button" data-go="1">Back: two processors</button><span class="spacer"></span><button type="button" data-go="3">Next: one product, divided</button></div>
+</section>
+
+<!-- ================================================================ part 3 -->
+<section class="part" id="part-3" aria-labelledby="h-3">
+  <h2 id="h-3">3. One product, divided</h2>
+
+  <p>The scores of a layer, <code>S = X @ W.T + b</code>, are a matrix with n rows and K columns. Each entry is the score of one unit on one point: a sum of m products. <strong>No entry needs another entry.</strong> The work can therefore be divided in any way among any number of cores.</p>
+
+  <figure>
+    <svg viewBox="0 0 780 300" role="img" aria-labelledby="f3-title f3-desc">
+      <title id="f3-title">The matrix of scores divided among four cores of a CPU, and computed all at once by a GPU</title>
+      <desc id="f3-desc">Two copies of the matrix S, drawn as a grid of 8 rows and 12 columns. On the left, the rows are divided into four bands of two rows, labelled core 1 to core 4: each core of the CPU computes one band. On the right, the whole grid is one field: the cores of the GPU compute all the entries at the same moment.</desc>
+      <text x="100" y="28" font-size="16" font-weight="700">On a CPU with four cores</text>
+      <text x="500" y="28" font-size="16" font-weight="700">On a GPU</text>
+      <!-- CPU grid: bands -->
+      <g stroke="#1c5cab" stroke-width="1">
+        <rect x="100" y="46" width="264" height="44" fill="#cde2fb"/>
+        <rect x="100" y="90" width="264" height="44" fill="#ffffff"/>
+        <rect x="100" y="134" width="264" height="44" fill="#cde2fb"/>
+        <rect x="100" y="178" width="264" height="44" fill="#ffffff"/>
+      </g>
+      <g stroke="#1c5cab" stroke-width="0.6">
+        <path d="M122,46V222 M144,46V222 M166,46V222 M188,46V222 M210,46V222 M232,46V222 M254,46V222 M276,46V222 M298,46V222 M320,46V222 M342,46V222"/>
+        <path d="M100,68H364 M100,112H364 M100,156H364 M100,200H364"/>
+      </g>
+      <rect x="100" y="46" width="264" height="176" fill="none" stroke="#1c5cab" stroke-width="1.8"/>
+      <g font-size="14" text-anchor="end">
+        <text x="92" y="73">core 1</text>
+        <text x="92" y="117">core 2</text>
+        <text x="92" y="161">core 3</text>
+        <text x="92" y="205">core 4</text>
+      </g>
+      <text x="232" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (units)</text>
+      <text x="232" y="270" font-size="14" text-anchor="middle" fill="#555">each core computes a part of the rows</text>
+      <!-- GPU grid -->
+      <rect x="500" y="46" width="264" height="176" fill="#fbdccf" stroke="#b8430f" stroke-width="1.8"/>
+      <g stroke="#b8430f" stroke-width="0.6">
+        <path d="M522,46V222 M544,46V222 M566,46V222 M588,46V222 M610,46V222 M632,46V222 M654,46V222 M676,46V222 M698,46V222 M720,46V222 M742,46V222"/>
+        <path d="M500,68H764 M500,90H764 M500,112H764 M500,134H764 M500,156H764 M500,178H764 M500,200H764"/>
+      </g>
+      <text x="632" y="246" font-size="14" text-anchor="middle">S: n rows (points), K columns (units)</text>
+      <text x="632" y="270" font-size="14" text-anchor="middle" fill="#555">thousands of entries at the same moment</text>
+    </svg>
+    <figcaption>The same matrix of scores on the two processors. A CPU gives each of its cores a part of the rows. A GPU has enough cores to compute thousands of entries at the same moment.</figcaption>
+  </figure>
+
+  <div class="story">
+    <p class="label">What cannot be divided</p>
+    <p>A computation in which each step needs the result of the step before it. The descent of Unit I is one: every update starts from the weights that the update before it produced, so the updates must be done one after another. Inside one update, the products can be divided among the cores; the updates themselves cannot.</p>
+  </div>
+
+  <div class="steps"><button type="button" data-go="2">Back: inside a CPU core</button><span class="spacer"></span><button type="button" data-go="4">Next: two memories</button></div>
+</section>
+
+<!-- ================================================================ part 4 -->
+<section class="part" id="part-4" aria-labelledby="h-4">
+  <h2 id="h-4">4. Two memories</h2>
+
+  <p>A GPU computes only with numbers that are in its own memory. A computation on the GPU therefore has three steps.</p>
+
+  <figure>
+    <svg viewBox="0 0 780 270" role="img" aria-labelledby="f4-title f4-desc">
+      <title id="f4-title">Copying tensors to the memory of the GPU, computing there, and copying the result back</title>
+      <desc id="f4-desc">On the left, the main memory of the computer holds the tensors X, W and b. On the right, the memory of the GPU holds copies of X, W and b, and the result S. An arrow from left to right is labelled step 1, to cuda: copy. Inside the memory of the GPU, step 2: the GPU computes S. An arrow from right to left is labelled step 3, cpu: copy the result back.</desc>
+      <defs>
+        <marker id="arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1A1A1A"/>
+        </marker>
+      </defs>
+      <rect x="20" y="20" width="250" height="210" rx="6" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="145" y="46" font-size="16" font-weight="700" text-anchor="middle">main memory</text>
+      <g fill="#cde2fb" stroke="#1c5cab" stroke-width="1.5">
+        <rect x="46" y="64" width="90" height="64" rx="3"/>
+        <rect x="150" y="64" width="60" height="44" rx="3"/>
+        <rect x="224" y="64" width="24" height="44" rx="3"/>
+      </g>
+      <rect x="46" y="150" width="60" height="64" rx="3" fill="#fff" stroke="#1A1A1A" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <g font-size="15" text-anchor="middle">
+        <text x="91" y="101">X</text><text x="180" y="91">W</text><text x="236" y="91">b</text>
+        <text x="76" y="187">S</text>
+      </g>
+
+      <rect x="510" y="20" width="250" height="210" rx="6" fill="#F7F7F5" stroke="#1A1A1A" stroke-width="1.5"/>
+      <text x="635" y="46" font-size="16" font-weight="700" text-anchor="middle">memory of the GPU</text>
+      <g fill="#fbdccf" stroke="#b8430f" stroke-width="1.5">
+        <rect x="536" y="64" width="90" height="64" rx="3"/>
+        <rect x="640" y="64" width="60" height="44" rx="3"/>
+        <rect x="714" y="64" width="24" height="44" rx="3"/>
+        <rect x="536" y="150" width="60" height="64" rx="3"/>
+      </g>
+      <g font-size="15" text-anchor="middle">
+        <text x="581" y="101">X</text><text x="670" y="91">W</text><text x="726" y="91">b</text>
+        <text x="566" y="187">S</text>
+      </g>
+      <text x="612" y="178" font-size="14">2. the GPU computes</text>
+      <text x="612" y="198" font-size="14">S = X @ W.T + b</text>
+
+      <line x1="280" y1="92" x2="500" y2="92" stroke="#1A1A1A" stroke-width="1.5" marker-end="url(#arrow-b)"/>
+      <text x="390" y="82" font-size="14" text-anchor="middle">1. .to("cuda"): copy</text>
+      <line x1="500" y1="182" x2="116" y2="182" stroke="#1A1A1A" stroke-width="1.5" marker-end="url(#arrow-b)"/>
+      <text x="392" y="172" font-size="14" text-anchor="middle">3. .cpu(): copy the result back</text>
+      <text x="390" y="258" font-size="14" text-anchor="middle" fill="#555">The two copies pass through the connection between the two memories.</text>
+    </svg>
+    <figcaption>Step 1 copies the tensors to the memory of the GPU. Step 2 is the computation. Step 3 copies the result back, when the program needs it in the main memory.</figcaption>
+  </figure>
+
+  <p>The copies take time, and so does handing a computation to the GPU. Step 15 of the lab measures both: the product at seven sizes on each processor, and the copy of one matrix.</p>
+
+  <div class="story">
+    <p class="label">When a GPU does not pay</p>
+    <ul>
+      <li><strong>A small computation.</strong> Handing the work over costs more than the work itself. Look at the smallest sizes in your table of Step 15.</li>
+      <li><strong>Data that is used once.</strong> If the numbers are copied to the GPU for one short operation and copied back, the copies cost more than the operation.</li>
+      <li><strong>Data that does not fit.</strong> The tensors of a computation must fit into the memory of the GPU: 16 GB on the T4.</li>
+      <li><strong>Steps that depend on each other.</strong> Thousands of cores do not help when the work has to be done one step after another.</li>
+    </ul>
+  </div>
+
+  <div class="steps"><button type="button" data-go="3">Back: one product, divided</button><span class="spacer"></span></div>
+</section>
+</main>
+
+<footer>
+  <p>The numbers of the NVIDIA T4 (2,560 cores, 16 GB of memory) are from NVIDIA's data sheet. The machines that Colab lends for free had 2 processor cores and about 12 GB of memory in October 2026; your notebook prints what your own session has.</p>
+  <p>See also: <a href="matrix-costs.html">What matrix operations cost</a>. This page belongs to the lab of meeting 11, Acts 2 and 3.</p>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var parts = tabs.map(function (tab) { return document.getElementById(tab.getAttribute("aria-controls")); });
+  document.body.classList.remove("no-js");
+  document.getElementById("tabs").hidden = false;
+  parts.forEach(function (part, i) {
+    part.setAttribute("role", "tabpanel");
+    part.setAttribute("aria-labelledby", tabs[i].id);
+    part.setAttribute("tabindex", "0");
+  });
+
+  function select(k, focus) {
+    k = Math.max(0, Math.min(tabs.length - 1, k));
+    tabs.forEach(function (tab, i) {
+      tab.setAttribute("aria-selected", i === k ? "true" : "false");
+      tab.tabIndex = i === k ? 0 : -1;
+      parts[i].hidden = i !== k;
+    });
+    if (focus) { tabs[k].focus(); }
+    if (history.replaceState) { history.replaceState(null, "", "#" + (k + 1)); }
+    document.documentElement.setAttribute("data-part", String(k + 1));
+  }
+
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener("click", function () { select(i, false); });
+    tab.addEventListener("keydown", function (event) {
+      var k = null;
+      if (event.key === "ArrowRight") { k = (i + 1) % tabs.length; }
+      else if (event.key === "ArrowLeft") { k = (i - 1 + tabs.length) % tabs.length; }
+      else if (event.key === "Home") { k = 0; }
+      else if (event.key === "End") { k = tabs.length - 1; }
+      if (k !== null) { event.preventDefault(); select(k, true); }
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (button) {
+    button.addEventListener("click", function () {
+      select(Number(button.getAttribute("data-go")) - 1, true);
+      window.scrollTo(0, 0);
+    });
+  });
+
+  function fromAddress() {
+    var k = parseInt(location.hash.replace("#", ""), 10);
+    select(isNaN(k) ? 0 : k - 1, false);
+  }
+  window.addEventListener("hashchange", fromAddress);
+  fromAddress();
+  document.documentElement.setAttribute("data-ready", "yes");
+})();
+</script>
+</body>
+</html>
