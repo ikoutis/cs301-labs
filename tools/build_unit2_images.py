@@ -7,11 +7,18 @@ resizes it so that its longer side is 640 pixels, and writes
 
     unit-2/images/NN-<name>.png        the colour image: height x width x 3
     unit-2/images/NN-<name>-grey.png   the same image in grey: height x width
+    unit-2/images/batch-96.npy         all thirty images at 96 x 96: one array, 30 x 96 x 96 x 3
     unit-2/images/images.csv           the list the notebooks read
     unit-2/images/SOURCES.md           where each image comes from, and its licence
 
 The grey image is Pillow's conversion "L": 0.299 red + 0.587 green + 0.114 blue,
 rounded to a whole number from 0 to 255.
+
+For the batch, each image is cut to the largest square around its centre and
+reduced to 96 by 96 pixels, so that all thirty have one size and can be stored in
+one array of whole numbers from 0 to 255. Image k of the list is batch[k - 1].
+Each image also has a label in images.csv: 0 for an artwork (Art Institute of
+Chicago), 1 for a space image (NASA).
 
 Run from the repository root:  python tools/build_unit2_images.py
 """
@@ -20,12 +27,15 @@ import json
 import pathlib
 import urllib.request
 
+import numpy as np
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RAW = ROOT / "raw" / "images"
 OUT = ROOT / "unit-2" / "images"
 LONG_SIDE = 640
+BATCH_SIDE = 96
+LABELS = {"aic": (0, "artwork"), "nasa": (1, "space image")}
 UA = {"User-Agent": "Mozilla/5.0 (course material preparation)",
       "AIC-User-Agent": "CS 301 course materials, NJIT (ikoutis@njit.edu)"}
 
@@ -126,6 +136,10 @@ def main():
         "image was resized so that its longer side is 640 pixels and saved as a PNG file,",
         "once in colour and once in grey. Nothing else was changed.",
         "",
+        "`batch-96.npy` holds all thirty images in one array: each was cut to the largest",
+        "square around its centre and reduced to 96 by 96 pixels. `images.csv` gives each",
+        "image a label: 0 for an artwork, 1 for a space image.",
+        "",
         "- Images from the **Art Institute of Chicago** are works that the museum has",
         "  released into the public domain under CC0 1.0.",
         "- Images from the **NASA Image and Video Library** follow NASA's",
@@ -135,9 +149,15 @@ def main():
         "  Their use here does not imply any endorsement by NASA.",
         "",
     ]
+    batch = []
     for number, name, kind, source_id, short in SPECS:
         data, info = (from_aic if kind == "aic" else from_nasa)(source_id)
         img = Image.open(io.BytesIO(data)).convert("RGB")
+        side = min(img.size)
+        left, top = (img.width - side) // 2, (img.height - side) // 2
+        square = img.crop((left, top, left + side, top + side)).resize((BATCH_SIDE, BATCH_SIDE), Image.LANCZOS)
+        batch.append(np.array(square))
+        label, kind_name = LABELS[kind]
         scale = LONG_SIDE / max(img.size)
         img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
         file, grey_file = f"{number:02d}-{name}.png", f"{number:02d}-{name}-grey.png"
@@ -147,7 +167,8 @@ def main():
         kb = ((OUT / file).stat().st_size + (OUT / grey_file).stat().st_size) / 1e3
         print(f"{number:2d} {file:36s} {img.height:4d} x {img.width:4d}  {kb:6.0f} kB  {title} | {info['creator']} | {info['date']}")
         rows.append(dict(number=number, file=file, grey_file=grey_file, title=title, creator=info["creator"],
-                         date=info["date"], height=img.height, width=img.width, source=info["source"]))
+                         date=info["date"], height=img.height, width=img.width, label=label, kind=kind_name,
+                         source=info["source"]))
         lines += [
             f"## {number}. {title}",
             "",
@@ -164,8 +185,11 @@ def main():
         w.writeheader()
         w.writerows(rows)
     (OUT / "SOURCES.md").write_text("\n".join(lines), encoding="utf-8", newline="\n")
+    batch = np.stack(batch)
+    assert batch.shape == (len(rows), BATCH_SIDE, BATCH_SIDE, 3) and batch.dtype == np.uint8
+    np.save(OUT / f"batch-{BATCH_SIDE}.npy", batch)
     total = sum(p.stat().st_size for p in OUT.glob("*.png")) / 1e6
-    print(f"{len(rows)} images, {total:.1f} MB in all")
+    print(f"{len(rows)} images, {total:.1f} MB in all; batch {batch.shape}, {batch.nbytes / 1e6:.2f} MB")
 
 
 if __name__ == "__main__":

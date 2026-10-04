@@ -1,31 +1,31 @@
-number,file,grey_file,title,creator,date,height,width,source
-1,01-seurat-grande-jatte.png,01-seurat-grande-jatte-grey.png,A Sunday on La Grande Jatte — 1884,Georges Seurat,"1884–86, border added 1888–89",429,640,https://www.artic.edu/artworks/27992
-2,02-blue-marble.png,02-blue-marble-grey.png,"Earth, Eastern Hemisphere (Blue Marble 2012)",NASA/GSFC,,640,640,https://images.nasa.gov/details/GSFC_20171208_Archive_e001788
-3,03-monet-water-lilies.png,03-monet-water-lilies-grey.png,Water Lilies,Claude Monet,1906,614,640,https://www.artic.edu/artworks/16568
-4,04-earthset-from-orion.png,04-earthset-from-orion-grey.png,Earthset from the Orion Spacecraft,NASA,2026,426,640,https://images.nasa.gov/details/art002e021278
-5,05-monet-water-lily-pond.png,05-monet-water-lily-pond-grey.png,Water Lily Pond,Claude Monet,1900,569,640,https://www.artic.edu/artworks/87088
-6,06-pillars-of-creation.png,06-pillars-of-creation-grey.png,Pillars of Creation in Near-Infrared Light (Hubble),NASA/GSFC,,600,640,https://images.nasa.gov/details/GSFC_20171208_Archive_e000842
-7,07-van-gogh-bedroom.png,07-van-gogh-bedroom-grey.png,The Bedroom,Vincent van Gogh,1889,501,640,https://www.artic.edu/artworks/28560
-8,08-cosmic-cliffs.png,08-cosmic-cliffs-grey.png,Cosmic Cliffs in the Carina Nebula (Webb),NASA ESA CSA STScI,2022,370,640,https://images.nasa.gov/details/carina_nebula
-9,09-van-gogh-self-portrait.png,09-van-gogh-self-portrait-grey.png,Self-Portrait,Vincent van Gogh,1887,640,502,https://www.artic.edu/artworks/80607
-10,10-curiosity-selfie.png,10-curiosity-selfie-grey.png,Curiosity's Selfie on Mars,NASA/JPL-Caltech/MSSS,2020,640,538,https://images.nasa.gov/details/PIA24173
-11,11-caillebotte-paris-street.png,11-caillebotte-paris-street-grey.png,Paris Street; Rainy Day,Gustave Caillebotte,1877,497,640,https://www.artic.edu/artworks/20684
-12,12-aurora-from-orbit.png,12-aurora-from-orbit-grey.png,"Aurora over Earth, from the Space Station",NASA/JSC,2019,426,640,https://images.nasa.gov/details/iss058e005282
-13,13-hokusai-great-wave.png,13-hokusai-great-wave-grey.png,Under the Wave off Kanagawa (The Great Wave),Katsushika Hokusai,1830/33,439,640,https://www.artic.edu/artworks/24645
-14,14-hurricane-helene.png,14-hurricane-helene-grey.png,"Hurricane Helene, from the Space Station",NASA/JSC,2024,359,640,https://images.nasa.gov/details/iss072e001649
-15,15-cezanne-basket-of-apples.png,15-cezanne-basket-of-apples-grey.png,The Basket of Apples,Paul Cezanne,c. 1893,511,640,https://www.artic.edu/artworks/111436
-16,16-bahama-islands-1983.png,16-bahama-islands-1983-grey.png,"Bahama Islands, from the Space Shuttle",NASA/JSC,1983,640,640,https://images.nasa.gov/details/s06-45-097
-17,17-van-gogh-fruit.png,17-van-gogh-fruit-grey.png,"Grapes, Lemons, Pears, and Apples",Vincent van Gogh,1887,530,640,https://www.artic.edu/artworks/64957
-18,18-bahamas-2024.png,18-bahamas-2024-grey.png,"The Bahamas, from the Space Station",NASA/JSC,2024,426,640,https://images.nasa.gov/details/iss071e449837
-19,19-renoir-two-sisters.png,19-renoir-two-sisters-grey.png,Two Sisters (On the Terrace),Pierre-Auguste Renoir,1881,640,516,https://www.artic.edu/artworks/14655
-20,20-crab-nebula.png,20-crab-nebula-grey.png,The Crab Nebula (Hubble),NASA/ESA/JPL/Arizona State Univ.,2005,640,640,https://images.nasa.gov/details/PIA03606
-21,21-monet-stacks-of-wheat.png,21-monet-stacks-of-wheat-grey.png,Stacks of Wheat (End of Summer),Claude Monet,1890–91,378,640,https://www.artic.edu/artworks/64818
-22,22-sun.png,22-sun-grey.png,The Sun (Solar Dynamics Observatory),NASA/GSFC/Solar Dynamics Observatory,2025,640,640,https://images.nasa.gov/details/PIA26681
-23,23-homer-herring-net.png,23-homer-herring-net-grey.png,The Herring Net,Winslow Homer,1885,393,640,https://www.artic.edu/artworks/25865
-24,24-helix-nebula-ultraviolet.png,24-helix-nebula-ultraviolet-grey.png,The Helix Nebula in Ultraviolet Light (GALEX),NASA/JPL-Caltech,2012,640,640,https://images.nasa.gov/details/PIA15658
-25,25-hiroshige-hamamatsu.png,25-hiroshige-hamamatsu-grey.png,"Hamamatsu, from Fifty-three Stations of the Tokaido",Utagawa Hiroshige,c. 1837/42,477,640,https://www.artic.edu/artworks/4371
-26,26-helix-nebula-infrared.png,26-helix-nebula-infrared-grey.png,The Helix Nebula in Infrared Light (Spitzer),NASA/JPL-Caltech/Univ.of Ariz.,2007,532,640,https://images.nasa.gov/details/PIA09178
-27,27-hiroshige-mitsuke.png,27-hiroshige-mitsuke-grey.png,Mitsuke: Ferries Crossing the Tenryu River,Utagawa Hiroshige,c. 1837/42,478,640,https://www.artic.edu/artworks/4368
-28,28-astronaut-spacewalk.png,28-astronaut-spacewalk-grey.png,An Astronaut's Self-Portrait on a Spacewalk,NASA/JSC,2019,426,640,https://images.nasa.gov/details/iss059e002710
-29,29-monet-houses-of-parliament.png,29-monet-houses-of-parliament-grey.png,"Houses of Parliament, London",Claude Monet,1900–1,558,640,https://www.artic.edu/artworks/16584
-30,30-shuttle-endeavour.png,30-shuttle-endeavour-grey.png,Space Shuttle Endeavour on the Launch Pad,NASA/Bill Ingalls,2010,640,464,https://images.nasa.gov/details/201002060005HQ
+number,file,grey_file,title,creator,date,height,width,label,kind,source
+1,01-seurat-grande-jatte.png,01-seurat-grande-jatte-grey.png,A Sunday on La Grande Jatte — 1884,Georges Seurat,"1884–86, border added 1888–89",429,640,0,artwork,https://www.artic.edu/artworks/27992
+2,02-blue-marble.png,02-blue-marble-grey.png,"Earth, Eastern Hemisphere (Blue Marble 2012)",NASA/GSFC,,640,640,1,space image,https://images.nasa.gov/details/GSFC_20171208_Archive_e001788
+3,03-monet-water-lilies.png,03-monet-water-lilies-grey.png,Water Lilies,Claude Monet,1906,614,640,0,artwork,https://www.artic.edu/artworks/16568
+4,04-earthset-from-orion.png,04-earthset-from-orion-grey.png,Earthset from the Orion Spacecraft,NASA,2026,426,640,1,space image,https://images.nasa.gov/details/art002e021278
+5,05-monet-water-lily-pond.png,05-monet-water-lily-pond-grey.png,Water Lily Pond,Claude Monet,1900,569,640,0,artwork,https://www.artic.edu/artworks/87088
+6,06-pillars-of-creation.png,06-pillars-of-creation-grey.png,Pillars of Creation in Near-Infrared Light (Hubble),NASA/GSFC,,600,640,1,space image,https://images.nasa.gov/details/GSFC_20171208_Archive_e000842
+7,07-van-gogh-bedroom.png,07-van-gogh-bedroom-grey.png,The Bedroom,Vincent van Gogh,1889,501,640,0,artwork,https://www.artic.edu/artworks/28560
+8,08-cosmic-cliffs.png,08-cosmic-cliffs-grey.png,Cosmic Cliffs in the Carina Nebula (Webb),NASA ESA CSA STScI,2022,370,640,1,space image,https://images.nasa.gov/details/carina_nebula
+9,09-van-gogh-self-portrait.png,09-van-gogh-self-portrait-grey.png,Self-Portrait,Vincent van Gogh,1887,640,502,0,artwork,https://www.artic.edu/artworks/80607
+10,10-curiosity-selfie.png,10-curiosity-selfie-grey.png,Curiosity's Selfie on Mars,NASA/JPL-Caltech/MSSS,2020,640,538,1,space image,https://images.nasa.gov/details/PIA24173
+11,11-caillebotte-paris-street.png,11-caillebotte-paris-street-grey.png,Paris Street; Rainy Day,Gustave Caillebotte,1877,497,640,0,artwork,https://www.artic.edu/artworks/20684
+12,12-aurora-from-orbit.png,12-aurora-from-orbit-grey.png,"Aurora over Earth, from the Space Station",NASA/JSC,2019,426,640,1,space image,https://images.nasa.gov/details/iss058e005282
+13,13-hokusai-great-wave.png,13-hokusai-great-wave-grey.png,Under the Wave off Kanagawa (The Great Wave),Katsushika Hokusai,1830/33,439,640,0,artwork,https://www.artic.edu/artworks/24645
+14,14-hurricane-helene.png,14-hurricane-helene-grey.png,"Hurricane Helene, from the Space Station",NASA/JSC,2024,359,640,1,space image,https://images.nasa.gov/details/iss072e001649
+15,15-cezanne-basket-of-apples.png,15-cezanne-basket-of-apples-grey.png,The Basket of Apples,Paul Cezanne,c. 1893,511,640,0,artwork,https://www.artic.edu/artworks/111436
+16,16-bahama-islands-1983.png,16-bahama-islands-1983-grey.png,"Bahama Islands, from the Space Shuttle",NASA/JSC,1983,640,640,1,space image,https://images.nasa.gov/details/s06-45-097
+17,17-van-gogh-fruit.png,17-van-gogh-fruit-grey.png,"Grapes, Lemons, Pears, and Apples",Vincent van Gogh,1887,530,640,0,artwork,https://www.artic.edu/artworks/64957
+18,18-bahamas-2024.png,18-bahamas-2024-grey.png,"The Bahamas, from the Space Station",NASA/JSC,2024,426,640,1,space image,https://images.nasa.gov/details/iss071e449837
+19,19-renoir-two-sisters.png,19-renoir-two-sisters-grey.png,Two Sisters (On the Terrace),Pierre-Auguste Renoir,1881,640,516,0,artwork,https://www.artic.edu/artworks/14655
+20,20-crab-nebula.png,20-crab-nebula-grey.png,The Crab Nebula (Hubble),NASA/ESA/JPL/Arizona State Univ.,2005,640,640,1,space image,https://images.nasa.gov/details/PIA03606
+21,21-monet-stacks-of-wheat.png,21-monet-stacks-of-wheat-grey.png,Stacks of Wheat (End of Summer),Claude Monet,1890–91,378,640,0,artwork,https://www.artic.edu/artworks/64818
+22,22-sun.png,22-sun-grey.png,The Sun (Solar Dynamics Observatory),NASA/GSFC/Solar Dynamics Observatory,2025,640,640,1,space image,https://images.nasa.gov/details/PIA26681
+23,23-homer-herring-net.png,23-homer-herring-net-grey.png,The Herring Net,Winslow Homer,1885,393,640,0,artwork,https://www.artic.edu/artworks/25865
+24,24-helix-nebula-ultraviolet.png,24-helix-nebula-ultraviolet-grey.png,The Helix Nebula in Ultraviolet Light (GALEX),NASA/JPL-Caltech,2012,640,640,1,space image,https://images.nasa.gov/details/PIA15658
+25,25-hiroshige-hamamatsu.png,25-hiroshige-hamamatsu-grey.png,"Hamamatsu, from Fifty-three Stations of the Tokaido",Utagawa Hiroshige,c. 1837/42,477,640,0,artwork,https://www.artic.edu/artworks/4371
+26,26-helix-nebula-infrared.png,26-helix-nebula-infrared-grey.png,The Helix Nebula in Infrared Light (Spitzer),NASA/JPL-Caltech/Univ.of Ariz.,2007,532,640,1,space image,https://images.nasa.gov/details/PIA09178
+27,27-hiroshige-mitsuke.png,27-hiroshige-mitsuke-grey.png,Mitsuke: Ferries Crossing the Tenryu River,Utagawa Hiroshige,c. 1837/42,478,640,0,artwork,https://www.artic.edu/artworks/4368
+28,28-astronaut-spacewalk.png,28-astronaut-spacewalk-grey.png,An Astronaut's Self-Portrait on a Spacewalk,NASA/JSC,2019,426,640,1,space image,https://images.nasa.gov/details/iss059e002710
+29,29-monet-houses-of-parliament.png,29-monet-houses-of-parliament-grey.png,"Houses of Parliament, London",Claude Monet,1900–1,558,640,0,artwork,https://www.artic.edu/artworks/16584
+30,30-shuttle-endeavour.png,30-shuttle-endeavour-grey.png,Space Shuttle Endeavour on the Launch Pad,NASA/Bill Ingalls,2010,640,464,1,space image,https://images.nasa.gov/details/201002060005HQ

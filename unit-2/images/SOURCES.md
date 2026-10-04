@@ -4,6 +4,10 @@ Every image in this folder was made by `tools/build_unit2_images.py`: the source
 image was resized so that its longer side is 640 pixels and saved as a PNG file,
 once in colour and once in grey. Nothing else was changed.
 
+`batch-96.npy` holds all thirty images in one array: each was cut to the largest
+square around its centre and reduced to 96 by 96 pixels. `images.csv` gives each
+image a label: 0 for an artwork, 1 for a space image.
+
 - Images from the **Art Institute of Chicago** are works that the museum has
   released into the public domain under CC0 1.0.
 - Images from the **NASA Image and Video Library** follow NASA's
