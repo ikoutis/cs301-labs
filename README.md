@@ -16,7 +16,8 @@ the datasets from this repository's public site,
   (`m10-act-1.html`, ...), self-contained, built from the full notebooks: the
   code is shown with the output it produced for one group. The arrow keys turn
   the slides; the address can name a slide (`m10-act-1.html#9`); the button at
-  the bottom right stacks all the slides on one page, for reading or printing.
+  the bottom right stacks all the slides on one page, for reading. Beside each
+  page is the same deck as a PDF (`m10-act-1.pdf`), one page for each slide.
 - `unit-2/pages/`: web pages that a meeting uses in place of slides. Each is one
   self-contained HTML file.
   - `cpu-and-gpu.html` (meeting 11): the two processors, and how a product of
