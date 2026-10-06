@@ -7,8 +7,16 @@ the datasets from this repository's public site,
 
 ## Contents
 
-- `unit-2/notebooks/`: the notebooks of Unit II, one for each act of a meeting
-  (`meeting-10-act-1.ipynb`, `meeting-10-act-2.ipynb`, ...). Each runs on its own.
+- `unit-2/notebooks/`: the notebooks of Unit II. A meeting has one **class
+  notebook** (`meeting-10-class.ipynb`), with the short Colab blocks that the
+  groups run in class after the slides of each act, and one **full notebook**
+  for each act (`meeting-10-act-1.ipynb`, ...), which explains every step and
+  holds the work for after the meeting. Each runs on its own.
+- `unit-2/slides/`: the slide decks of the meetings, one web page for each act
+  (`m10-act-1.html`, ...), self-contained, built from the full notebooks: the
+  code is shown with the output it produced for one group. The arrow keys turn
+  the slides; the address can name a slide (`m10-act-1.html#9`); the button at
+  the bottom right stacks all the slides on one page, for reading or printing.
 - `unit-2/pages/`: web pages that a meeting uses in place of slides. Each is one
   self-contained HTML file.
   - `cpu-and-gpu.html` (meeting 11): the two processors, and how a product of
