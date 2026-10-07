@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meeting 10, Act 2: An Image Is an Array</title>
-<!-- Built by slides/build-html.py from unit-2/notebooks/meeting-10-act-2.ipynb, run for group number 7. Edit slides/meeting-10/m10-act-2.py in the course repository, not this file. -->
+<!-- Built by slides/build-html.py from unit-2/notebooks/meeting-10-act-2.ipynb, run for group number 7. Edit slides/unit-2/meeting-10/m10-act-2.py in the course repository, not this file. -->
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -178,8 +178,8 @@ the pixel in row 0 and column 0: [0.55 0.47 0.37] (red, green, blue)</pre><div c
 
 Image 7: 501 by 640 pixels
 version         seconds per call   nanoseconds per pixel
-loops                     0.1279                   398.8
-vectorized                0.0026                     8.0
+loops                     0.1364                   425.4
+vectorized                0.0027                     8.4
 The loops take 50 times as long as the vectorized version.</pre><ul><li>Both functions reproduce the stored grey image. The time is the difference: about 400 nanoseconds per pixel with loops, about 8 with arithmetic on whole channels.</li><li>The same factor as in Act 1, for the same reason: the loop runs in the interpreter, or it runs inside NumPy.</li></ul></div><div class="pfoot" aria-hidden="true"><span>CS 301 · Meeting 10 · Act 2 · An Image Is an Array</span><span>5 / 13</span></div></section><section hidden class="slide" id="s6" aria-roledescription="slide" aria-label="Slide 6 of 13: One function for every entry"><h2>One function for every entry</h2><div class="body"><pre class="code"><code><span class="n">darker</span> <span class="o">=</span> <span class="n">grey</span> <span class="o">**</span> <span class="mi">2</span>
 <span class="n">lighter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">grey</span><span class="p">)</span>
 <span class="n">negative</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">grey</span>
