@@ -369,12 +369,11 @@
     <figcaption>Step 1 copies the tensors to the memory of the GPU. Step 2 is the computation. Step 3 copies the result back, when the program needs it in the main memory.</figcaption>
   </figure>
 
-  <p>The copies take time, and so does handing a computation to the GPU. Step 15 of the lab measures both: the product at seven sizes on each processor, and the copy of one matrix.</p>
+  <p>The copies take time, and so does handing a computation to the GPU. Step 15 of the lab measures both: the product at four sizes, 512 to 4,096, on each processor, and the copy of one matrix.</p>
 
   <div class="story">
     <p class="label">When a GPU does not pay</p>
     <ul>
-      <li><strong>A small computation.</strong> Handing the work over costs more than the work itself. Look at the smallest sizes in your table of Step 15.</li>
       <li><strong>Data that is used once.</strong> If the numbers are copied to the GPU for one short operation and copied back, the copies cost more than the operation.</li>
       <li><strong>Data that does not fit.</strong> The tensors of a computation must fit into the memory of the GPU: 16 GB on the T4.</li>
       <li><strong>Steps that depend on each other.</strong> Thousands of cores do not help when the work has to be done one step after another.</li>
