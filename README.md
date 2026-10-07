@@ -18,6 +18,12 @@ the datasets from this repository's public site,
   the slides; the address can name a slide (`m10-act-1.html#9`); the button at
   the bottom right stacks all the slides on one page, for reading. Beside each
   page is the same deck as a PDF (`m10-act-1.pdf`), one page for each slide.
+- `unit-2/notes/`: the notes of the meetings, one web page for each meeting
+  (`meeting-10.html`), with the same page as a PDF beside it. The notes state
+  the main points of the meeting first and then walk through its notebooks step
+  by step; the code of every step, with the output it produced for one group,
+  opens under the prose. Built from the notebooks in the course repository;
+  `fonts/` holds the fonts the pages use.
 - `unit-2/pages/`: web pages that a meeting uses in place of slides. Each is one
   self-contained HTML file.
   - `cpu-and-gpu.html` (meeting 11): the two processors, and how a product of
