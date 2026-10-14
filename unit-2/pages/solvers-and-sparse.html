@@ -128,6 +128,7 @@
   <button type="button" role="tab" id="tab-2" aria-controls="part-2" aria-selected="false" tabindex="-1">2. Residual and error</button>
   <button type="button" role="tab" id="tab-3" aria-controls="part-3" aria-selected="false" tabindex="-1">3. Sparse formats</button>
   <button type="button" role="tab" id="tab-4" aria-controls="part-4" aria-selected="false" tabindex="-1">4. Fill-in</button>
+  <button type="button" role="tab" id="tab-5" aria-controls="part-5" aria-selected="false" tabindex="-1">5. Solving by iterating</button>
 </div>
 
 <!-- ================================================================ part 1 -->
@@ -263,6 +264,40 @@
   </div>
   <div class="story">
     <p>Sparse elimination costs what the fill costs: every new nonzero is stored and worked on. The 60 × 60 grid of the deeper look has 24 times the nonzeros of A after elimination in the natural order, 10 times with COLAMD, SuperLU's default, and 6 times with a minimum-degree order. Nested dissection cuts the grid by a separator, eliminates the two halves first and the separator last, so that nothing in one half can ever fill the other, and cuts the halves again: O(N log N) nonzeros and O(N<sup>1.5</sup>) work on a grid, against O(N²) nonzeros in the natural order and O(N³) work for dense elimination.</p>
+  </div>
+</section>
+<!-- ================================================================ part 5 -->
+<section class="part" id="part-5" aria-labelledby="h-5" hidden>
+  <h2 id="h-5">5. Solving by iterating: Kaczmarz, one equation at a time</h2>
+  <p>Elimination builds the answer in a fixed number of operations. An <strong>iterative method</strong> starts from a guess and improves it, one cheap step at a time, until the residual is as small as we want. Kaczmarz's step is the simplest there is: take one equation, and move the guess to the nearest point of its line, straight down the perpendicular. Then the next equation, and so on. Click anywhere to choose the starting guess.</p>
+  <div class="stage">
+    <div class="board two">
+      <div><canvas id="c5" width="520" height="520" aria-label="Two or three lines in the plane, a starting guess, and the path of the Kaczmarz iterations: each step moves the point perpendicularly onto one of the lines, zigzagging toward the crossing."></canvas><p class="caption" id="cap5">Each step projects the guess onto one equation's line. The hollow circle is the true solution, known here because we built the system.</p></div>
+      <div><canvas id="c5b" width="520" height="520" aria-label="A chart of the residual and the error against the iteration number, on a logarithmic axis, both falling along a straight line whose slope depends on the angle between the lines."></canvas><p class="caption">The residual, which we can measure, and the error, which we cannot, against the iteration. Both fall by the same factor each cycle.</p></div>
+    </div>
+    <aside class="panel">
+      <div class="buttons"><button type="button" id="b5-step" class="primary">One projection</button><button type="button" id="b5-play">Play</button><button type="button" id="b5-reset">Reset</button></div>
+      <label class="slider" for="s5-speed">Projections a second: <span id="v5-speed">4</span>
+        <input type="range" id="s5-speed" min="1" max="30" step="1" value="4">
+      </label>
+      <label class="slider" for="s5-angle">Angle between the first two lines: <span id="v5-angle">60°</span>
+        <input type="range" id="s5-angle" min="0" max="1000" step="1" value="900">
+      </label>
+      <p class="label">The equations</p>
+      <div class="buttons"><button type="button" id="t5-none" class="on">two lines</button><button type="button" id="t5-third">a third line through the solution</button><button type="button" id="t5-off">a third line that misses it</button></div>
+      <p class="label">The order of the equations</p>
+      <div class="buttons"><button type="button" id="o5-cyclic" class="on">in turn</button><button type="button" id="o5-random">at random</button></div>
+      <div class="readout" aria-live="polite">
+        <p>iteration <strong id="r5-iter">0</strong></p>
+        <p>residual, measured: <strong id="r5-res">—</strong></p>
+        <p>error, known here only: <strong id="r5-err">—</strong></p>
+        <p id="r5-rate">with two lines, each cycle multiplies the error by cos²θ = <strong id="r5-cos">0.25</strong></p>
+        <p id="r5-note"></p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>Each projection costs one row of <code>A</code>: for a sparse system, a handful of multiplications, however many unknowns there are. What the iteration costs is the <em>number</em> of projections, and that depends on the angles, which is to say on the conditioning: at a right angle two steps finish the job, at a small angle the zigzag creeps, and when the lines are nearly parallel it creeps for thousands of steps, the same system that elimination would also handle badly. The stopping rule is the residual, the one thing we can measure. Elimination, direct, pays a fixed price up front, fill-in included, and answers to round-off; iteration pays by the sweep, needs only the matrix and a few vectors, and stops when the residual is small enough. Picking the equations at random, instead of in turn, is the <em>randomized Kaczmarz</em> method of 2009, whose expected rate is set by a condition number of A.</p>
   </div>
 </section>
 <p id="errors" aria-hidden="true"></p>
@@ -781,6 +816,98 @@
   }
   load4("star", false);
 
+  // ================================================================ part 5: Kaczmarz
+  const K = {angle: 60, start: [4.2, 3.6], third: "none", order: "cyclic", x: null, path: [], iter: 0, res: [], err: [], anim: null, playing: false, speed: 4, acc: 0};
+  const ctx5 = $("c5").getContext("2d"), ctx5b = $("c5b").getContext("2d");
+  const K_MIN = 0.5, K_MAX = 90;
+  const k2a = s => K_MIN * Math.pow(K_MAX / K_MIN, s / 1000), a2k = a => 1000 * Math.log(a / K_MIN) / Math.log(K_MAX / K_MIN);
+  $("s5-angle").value = Math.round(a2k(K.angle));
+  function rows5() {
+    const th = Math.PI / 4 + K.angle * Math.PI / 180, n = Math.SQRT2;
+    const r2 = [n * Math.cos(th), n * Math.sin(th)];
+    const rows = [[1, 1, 2], [r2[0], r2[1], r2[0] + r2[1]]];
+    if (K.third === "consistent") rows.push([2, -1, 1]);
+    if (K.third === "inconsistent") rows.push([2, -1, 1.8]);
+    return rows;
+  }
+  const project = (x, r) => { const t = (r[0] * x[0] + r[1] * x[1] - r[2]) / (r[0] * r[0] + r[1] * r[1]); return [x[0] - t * r[0], x[1] - t * r[1]]; };
+  const residual5 = x => Math.max(...rows5().map(r => Math.abs(r[0] * x[0] + r[1] * x[1] - r[2])));
+  function reset5() { K.x = K.start.slice(); K.path = [K.x.slice()]; K.iter = 0; K.res = [residual5(K.x)]; K.err = [Math.hypot(K.x[0] - 1, K.x[1] - 1)]; K.anim = null; K.playing = false; $("b5-play").textContent = "Play"; }
+  function step5() {
+    if (K.anim) return;
+    const rows = rows5(), i = K.order === "cyclic" ? K.iter % rows.length : Math.floor(Math.random() * rows.length);
+    K.anim = {from: K.x.slice(), to: project(K.x, rows[i]), row: i, t: 0};
+  }
+  function finishStep5() {
+    K.x = K.anim.to; K.path.push(K.x.slice()); K.iter++; K.res.push(residual5(K.x)); K.err.push(Math.hypot(K.x[0] - 1, K.x[1] - 1)); K.anim = null;
+    if (K.path.length > 400) K.path.shift();
+  }
+  $("b5-step").addEventListener("click", step5);
+  $("b5-play").addEventListener("click", () => { K.playing = !K.playing; $("b5-play").textContent = K.playing ? "Pause" : "Play"; });
+  $("b5-reset").addEventListener("click", reset5);
+  $("s5-speed").addEventListener("input", e => { K.speed = parseInt(e.target.value, 10); $("v5-speed").textContent = K.speed; });
+  $("s5-angle").addEventListener("input", e => { K.angle = k2a(parseFloat(e.target.value)); reset5(); });
+  for (const t of ["none", "third", "off"]) $("t5-" + t).addEventListener("click", () => { K.third = t === "none" ? "none" : t === "third" ? "consistent" : "inconsistent"; ["none", "third", "off"].forEach(u => $("t5-" + u).classList.toggle("on", u === t)); reset5(); });
+  for (const o of ["cyclic", "random"]) $("o5-" + o).addEventListener("click", () => { K.order = o; ["cyclic", "random"].forEach(u => $("o5-" + u).classList.toggle("on", u === o)); reset5(); });
+  $("c5").addEventListener("click", e => { const r = $("c5").getBoundingClientRect(); const x = -1 + (e.clientX - r.left) / r.width * 6, y = 5 - (e.clientY - r.top) / r.height * 6; K.start = [x, y]; reset5(); });
+  function tick5(dt) {
+    if (K.anim) { K.anim.t += dt * Math.max(2, K.speed); if (K.anim.t >= 1) finishStep5(); return; }
+    if (K.playing) { K.acc += dt * K.speed; if (K.acc >= 1) { K.acc = 0; step5(); } }
+  }
+  function draw5() {
+    const rows = rows5(), cols = ["#2a78d6", "#eb6834", "#2a8a3a"], Wd = 520;
+    const [X, Y] = plot2d(ctx5, Wd, -1, 5);
+    ctx5.save(); ctx5.beginPath(); ctx5.rect(0, 0, Wd, Wd); ctx5.clip();
+    rows.forEach((r, i) => { ctx5.strokeStyle = cols[i]; ctx5.lineWidth = 3; ctx5.beginPath(); if (Math.abs(r[1]) > 1e-9) { ctx5.moveTo(X(-30), Y((r[2] + 30 * r[0]) / r[1])); ctx5.lineTo(X(30), Y((r[2] - 30 * r[0]) / r[1])); } else { ctx5.moveTo(X(r[2] / r[0]), Y(-30)); ctx5.lineTo(X(r[2] / r[0]), Y(30)); } ctx5.stroke(); });
+    // the path
+    ctx5.strokeStyle = "rgba(26,26,26,0.55)"; ctx5.lineWidth = 2; ctx5.beginPath();
+    K.path.forEach((p, k) => { if (k === 0) ctx5.moveTo(X(p[0]), Y(p[1])); else ctx5.lineTo(X(p[0]), Y(p[1])); });
+    ctx5.stroke();
+    ctx5.fillStyle = "rgba(26,26,26,0.55)";
+    for (const p of K.path) { ctx5.beginPath(); ctx5.arc(X(p[0]), Y(p[1]), 3, 0, 2 * Math.PI); ctx5.fill(); }
+    let cur = K.x;
+    if (K.anim) {
+      const e = ease(Math.min(1, K.anim.t)); cur = [K.anim.from[0] + e * (K.anim.to[0] - K.anim.from[0]), K.anim.from[1] + e * (K.anim.to[1] - K.anim.from[1])];
+      ctx5.save(); ctx5.setLineDash([5, 5]); ctx5.strokeStyle = cols[K.anim.row]; ctx5.lineWidth = 2; ctx5.beginPath(); ctx5.moveTo(X(K.anim.from[0]), Y(K.anim.from[1])); ctx5.lineTo(X(K.anim.to[0]), Y(K.anim.to[1])); ctx5.stroke(); ctx5.restore();
+    }
+    ctx5.restore();
+    if (K.third !== "inconsistent") { ctx5.beginPath(); ctx5.arc(X(1), Y(1), 9, 0, 2 * Math.PI); ctx5.lineWidth = 2.5; ctx5.strokeStyle = "#1A1A1A"; ctx5.stroke(); }
+    ctx5.beginPath(); ctx5.arc(X(K.start[0]), Y(K.start[1]), 6, 0, 2 * Math.PI); ctx5.fillStyle = "#999"; ctx5.fill();
+    ctx5.font = "600 13px " + FONT; ctx5.fillStyle = "#555"; ctx5.textAlign = "left"; ctx5.textBaseline = "bottom"; ctx5.fillText("start", X(K.start[0]) + 9, Y(K.start[1]) - 6);
+    ctx5.beginPath(); ctx5.arc(X(cur[0]), Y(cur[1]), 8, 0, 2 * Math.PI); ctx5.fillStyle = "#CC0033"; ctx5.fill(); ctx5.lineWidth = 2.5; ctx5.strokeStyle = "#fff"; ctx5.stroke();
+    // the chart
+    const c = ctx5b, L = 64, T = 24, B = 54, R = 16, n = Math.max(12, K.res.length);
+    c.clearRect(0, 0, Wd, Wd);
+    const lo = -8, hi = 1;
+    const CX = k => L + k / (n - 1) * (Wd - L - R), CY = v => T + (hi - Math.max(lo, Math.log10(Math.max(v, 1e-300)))) / (hi - lo) * (Wd - T - B);
+    c.font = "12px " + FONT; c.fillStyle = "#555"; c.textAlign = "right"; c.textBaseline = "middle";
+    for (let e = lo; e <= hi; e++) { c.strokeStyle = "#e1e0d9"; c.beginPath(); c.moveTo(L, CY(Math.pow(10, e))); c.lineTo(Wd - R, CY(Math.pow(10, e))); c.stroke(); c.fillText("10^" + e, L - 6, CY(Math.pow(10, e))); }
+    c.textAlign = "center"; c.textBaseline = "top";
+    const tickStep = n <= 24 ? 2 : n <= 60 ? 5 : n <= 150 ? 20 : 50;
+    for (let k = 0; k < n; k += tickStep) c.fillText(String(k), CX(k), Wd - B + 8);
+    c.fillText("iteration", (L + Wd - R) / 2, Wd - B + 28);
+    for (const [series, colour] of [[K.err, "#1A1A1A"], [K.res, "#CC0033"]]) {
+      c.strokeStyle = colour; c.lineWidth = 2.5; c.beginPath();
+      series.forEach((v, k) => { if (k === 0) c.moveTo(CX(k), CY(v)); else c.lineTo(CX(k), CY(v)); }); c.stroke();
+      c.fillStyle = colour; for (let k = 0; k < series.length; k++) { c.beginPath(); c.arc(CX(k), CY(series[k]), 3, 0, 2 * Math.PI); c.fill(); }
+    }
+    c.textAlign = "left"; c.textBaseline = "middle"; c.font = "13px " + FONT;
+    c.fillStyle = "#CC0033"; c.fillRect(L + 8, 8, 14, 3); c.fillStyle = "#1A1A1A"; c.fillText("residual", L + 28, 10);
+    c.fillStyle = "#1A1A1A"; c.fillRect(L + 110, 8, 14, 3); c.fillText("error", L + 130, 10);
+    // readouts
+    const res = K.res[K.res.length - 1], err = K.err[K.err.length - 1], cos2 = Math.pow(Math.cos(K.angle * Math.PI / 180), 2);
+    $("r5-iter").textContent = K.iter;
+    $("r5-res").textContent = res < 1e-3 ? sci(res) : res.toPrecision(3);
+    $("r5-err").textContent = K.third === "inconsistent" ? "no solution to measure against" : err < 1e-3 ? sci(err) : err.toPrecision(3);
+    $("v5-angle").textContent = trim(K.angle.toPrecision(3)) + "°";
+    $("r5-cos").textContent = cos2.toPrecision(3);
+    $("r5-rate").hidden = K.third !== "none";
+    $("r5-note").textContent = K.third === "inconsistent" ? "No point is on all three lines: the iterates settle into a small cycle near the point that fits best, and the residual stops falling." : cos2 > 0.9 ? "Nearly parallel lines: each cycle gains little, and the zigzag creeps. Ill-conditioned for the iteration as for elimination." : "";
+    $("r5-note").className = "warn";
+    $("cap5").textContent = (rows.length === 2 ? "Two lines through (1, 1) at " : "Three lines; the first two at ") + trim(K.angle.toPrecision(2)) + "°. Each step projects the guess onto one line. The hollow circle is the true solution, known here because we built the system.";
+  }
+  reset5();
+
   // ================================================================ the loop
   let last = null;
   function frame(ts) {
@@ -790,17 +917,19 @@
     if (active === 1) { tick2(dt); draw2(); draw2b(); }
     if (active === 2) { tick3(dt); draw3(); }
     if (active === 3) { tick4(dt); draw4(); }
+    if (active === 4) { tick5(dt); draw5(); }
     requestAnimationFrame(frame);
   }
   renderArrays(); resetCounters();
   const h = parseInt((location.hash || "#1").slice(1), 10);
-  show(h >= 1 && h <= 4 ? h - 1 : 0);
+  show(h >= 1 && h <= 5 ? h - 1 : 0);
   setN(4000);
   const q = new URLSearchParams(location.search);
   if (q.get("test") === "race") { $("b-start").click(); R.elapsed = 2.2; $("b-runs").click(); }
   if (q.get("test") === "band") { P2.angle = 0.5; $("s2-angle").value = Math.round(a2s(P2.angle)); barsT = 1; }
   if (q.get("test") === "band2") { P2.angle = 0.5; $("s2-angle").value = Math.round(a2s(P2.angle)); barsT = 1; $("b2-reveal").click(); }
   if (q.get("test") === "fill") { load4("walk", false); for (let i = 0; i < 4; i++) { step4(); F4.anim = null; } step4(); F4.anim.t = 0.4; }
+  if (q.get("test") === "kacz") { for (let i = 0; i < 14; i++) { step5(); finishStep5(); } step5(); K.anim.t = 0.5; }
   if (q.get("test") === "fillgrid") { load4("grid", false); setOrder4("natural"); for (let i = 0; i < 14; i++) { step4(); F4.anim = null; } step4(); F4.anim.t = 0.4; }
   if (q.get("test") === "build") { $("b3-build").click(); S3.anim.pos = 30; S3.built = 11; S3.anim.rowsDone = 3; }
   if (q.get("test") === "dense") { $("b3-dense").click(); S3.anim.pos = 40; }
