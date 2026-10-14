@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — A walk on a graph</title>
+<!--
+  CS 301, Unit II, meeting 13. A page shown at the start of the meeting: the random walk of
+  Part 4 of the first notebook (meeting-13-linear-systems.ipynb), animated. The graph is the
+  notebook's own, nx.random_geometric_graph(16, 0.4, seed=7), with the same positions, the
+  same red node (8) and blue node (10), so that the students see the picture they drew at home.
+
+  One walker can be followed step by step; a hundred or a thousand can be released at once, from
+  one node or from every node, and the fraction that reaches red first appears under each node
+  as the walkers arrive. The answer of the meeting, that every node's probability is the average
+  of its neighbours' and that the sixteen numbers solve one linear system, stays hidden behind
+  the button "Reveal the exact answer": the instructor chooses the moment. The exact values were
+  computed with np.linalg.solve in the course repository (slides/unit-2/meeting-13/m13-recap-1.py).
+
+  Self-contained on purpose: no CDN, no fonts, no network. Keyboard: space starts and pauses,
+  R resets. The address may carry ?start=N to begin at node N.
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+    --node-red: #d62728;
+    --node-blue: #1f77b4;
+    --walker: #eb6834;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 20px 48px;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  header { border-top: 4px solid var(--red); padding-top: 16px; margin-bottom: 18px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--red); margin: 0 0 4px;
+  }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
+  header p.lead { margin: 0; color: var(--muted); font-size: 17px; max-width: 50em; }
+  h2 { font-size: 22px; font-weight: 600; margin: 4px 0 10px; line-height: 1.3; }
+  p { margin: 0 0 12px; max-width: 50em; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 4px; border-radius: 3px; }
+  a { color: #0b57a4; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+
+  .stage { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+  .board { flex: 1 1 560px; min-width: 0; }
+  canvas { display: block; width: 100%; height: auto; border: 1px solid var(--faint); border-radius: 3px; background: #fff; cursor: pointer; }
+  .caption { font-size: 14.5px; color: var(--muted); margin-top: 6px; }
+  .panel { flex: 0 0 300px; max-width: 100%; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .panel .label:first-child { margin-top: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  button {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 7px 14px; border: 1px solid var(--faint);
+    background: #fff; color: var(--ink); border-radius: 3px; cursor: pointer;
+  }
+  button:hover { border-color: var(--ink); }
+  button.primary { border-color: var(--ink); background: var(--ink); color: #fff; }
+  button.primary:hover { background: #000; }
+  button.reveal { border-color: var(--red); color: var(--red); width: 100%; margin-top: 16px; padding: 10px 14px; }
+  button.reveal:hover { background: var(--red); color: #fff; }
+  button[disabled] { opacity: .45; cursor: default; }
+  button[disabled]:hover { border-color: var(--faint); }
+  label.slider { display: block; font-size: 15px; margin-top: 6px; }
+  input[type="range"] { width: 100%; margin: 4px 0 0; }
+
+  .stats { background: var(--paper); border-radius: 3px; padding: 12px 14px 10px; margin-top: 14px; }
+  .stats p { margin: 0 0 6px; font-size: 15px; }
+  .stats .big { font-size: 40px; font-weight: 600; line-height: 1.1; margin: 4px 0 4px; }
+  .stats .big small { font-size: 15px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .bar { height: 14px; border-radius: 7px; background: var(--node-blue); overflow: hidden; margin: 6px 0 8px; }
+  .bar div { height: 100%; width: 0%; background: var(--node-red); transition: width .25s; }
+  .stats .exact { color: var(--red); font-weight: 600; }
+
+  #reveal { margin-top: 26px; border-top: 1px solid var(--faint); padding-top: 16px; }
+  #reveal[hidden] { display: none; }
+  .story { background: var(--paper); padding: 12px 16px; border-radius: 3px; margin: 14px 0; max-width: 52em; }
+  .story p:last-child { margin-bottom: 0; }
+  .eq { font-size: 20px; margin: 10px 0 14px; }
+  .eq sub { font-size: 70%; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; margin: 6px 0 14px; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--faint); padding: 6px 16px 6px 0; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.red { color: var(--node-red); font-weight: 600; }
+  td.blue { color: var(--node-blue); font-weight: 600; }
+  .check { font-size: 15px; margin: 8px 0 12px; }
+
+  footer { border-top: 1px solid var(--faint); margin-top: 28px; padding-top: 12px; font-size: 14.5px; color: var(--muted); }
+  .no-js .js-only { display: none; }
+  #errors { color: var(--red); font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body class="no-js">
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CS 301 · Unit II · Meeting 13</p>
+  <h1>A walk on a graph</h1>
+  <p class="lead">A particle starts at a node and, at every step, moves along an edge to a neighbour chosen at random, until it reaches the <strong style="color:#d62728">red</strong> node or the <strong style="color:#1f77b4">blue</strong> node. From a given node, how often does it reach red first?</p>
+</header>
+
+<main>
+<noscript><p>This page needs JavaScript to run the walk. The graph is the one of Part 4 of the first notebook of meeting 13: sixteen nodes, red node 8, blue node 10.</p></noscript>
+
+<div class="stage">
+  <div class="board">
+    <canvas id="board" width="1000" height="660" aria-label="The graph of sixteen nodes of the notebook, with the red node 8 at the top and the blue node 10 at the bottom right. Walkers move along its edges; the fraction of the walks from each node that reached red first is printed under the node."></canvas>
+    <p class="caption">The graph of your notebook: sixteen nodes, red node 8, blue node 10. <strong>Click a grey node</strong> to start the walks there. Space starts and pauses; R resets.</p>
+  </div>
+
+  <aside class="panel">
+    <p class="label">Release</p>
+    <div class="buttons">
+      <button type="button" id="b-one" class="primary">One walker, slowly</button>
+      <button type="button" id="b-hundred">100 walkers</button>
+      <button type="button" id="b-thousand">1,000 walkers</button>
+    </div>
+    <div class="buttons">
+      <button type="button" id="b-all">200 from every node</button>
+    </div>
+    <p class="label">Control</p>
+    <div class="buttons">
+      <button type="button" id="b-pause">Pause</button>
+      <button type="button" id="b-finish">Finish now</button>
+      <button type="button" id="b-reset">Reset</button>
+    </div>
+    <label class="slider" for="speed">Speed: <span id="speed-text">2 edges a second</span>
+      <input type="range" id="speed" min="0.3" max="20" step="0.1" value="2">
+    </label>
+
+    <div class="stats" aria-live="polite">
+      <p class="label" style="margin-top:0">From node <span id="s-node">7</span></p>
+      <div class="bar" aria-hidden="true"><div id="bar-red"></div></div>
+      <p><span id="s-red">0</span> reached red first · <span id="s-blue">0</span> reached blue first · <span id="s-active">0</span> still walking</p>
+      <p class="big"><span id="s-frac">—</span><small>of the walks reached red first</small></p>
+      <p class="exact" id="s-exact" hidden>exact answer: <span id="s-exact-v"></span></p>
+    </div>
+
+    <button type="button" id="b-reveal" class="reveal">Reveal the exact answer</button>
+  </aside>
+</div>
+
+<section id="reveal" hidden aria-labelledby="h-reveal">
+  <h2 id="h-reveal">The exact answer is a linear system</h2>
+  <p>Call <em>x<sub>v</sub></em> the probability that a walk from node <em>v</em> reaches red first. At red it is 1 and at blue it is 0. From any other node, the first step goes to each neighbour with the same probability, and from there the chance is that neighbour's own number. So <strong>every other node's probability is the average of its neighbours' probabilities</strong>:</p>
+  <p class="eq" id="eq-node"></p>
+  <p>One such equation for each node: sixteen linear equations in sixteen unknowns, <code>A @ x == b</code>, solved by <code>np.linalg.solve</code> with no simulation and no sampling error.</p>
+  <label class="check"><input type="checkbox" id="c-exact"> Colour the nodes by the exact answer instead of the simulated fraction</label>
+  <div class="scroll">
+    <table id="t-exact">
+      <thead><tr><th>node</th><th class="num">neighbours</th><th class="num">walks finished</th><th class="num">simulated</th><th class="num">exact</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="story">
+    <p>The simulated fractions differ from the exact values by a few hundredths with a few hundred walks; the difference shrinks slowly, like one over the square root of the number of walks. The linear system gives all sixteen numbers at once, to every digit the computer keeps.</p>
+  </div>
+</section>
+<p id="errors" aria-hidden="true"></p>
+</main>
+
+<footer>
+  <p>The graph is <code>nx.random_geometric_graph(16, 0.4, seed=7)</code> of Part 4 of the first notebook of meeting 13, with the red and blue nodes the two farthest apart. The exact probabilities were computed with <code>np.linalg.solve</code>. See also: <a href="linear-systems.html">Linear systems, in pictures</a>.</p>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  document.body.classList.remove("no-js");
+  window.onerror = function (m, s, l) { document.getElementById("errors").textContent += m + " (" + l + ")\n"; };
+
+  // ----------------------------------------------------------------- the graph of the notebook
+  const G = {
+    pos: {0: [0.3238, 0.1508], 1: [0.6509, 0.0724], 2: [0.5359, 0.3657], 3: [0.058, 0.5074], 4: [0.0375, 0.4336],
+          5: [0.0699, 0.0907], 6: [0.4245, 0.8269], 7: [0.1238, 0.2232], 8: [0.6274, 0.9477], 9: [0.5771, 0.3967],
+          10: [0.9763, 0.0466], 11: [0.8585, 0.2896], 12: [0.1443, 0.1178], 13: [0.3085, 0.8161], 14: [0.1807, 0.5816],
+          15: [0.6389, 0.3724]},
+    edges: [[0, 1], [0, 2], [0, 5], [0, 7], [0, 9], [0, 12], [0, 15], [1, 2], [1, 9], [1, 10], [1, 11], [1, 15], [2, 9],
+            [2, 11], [2, 15], [3, 4], [3, 7], [3, 12], [3, 13], [3, 14], [4, 5], [4, 7], [4, 12], [4, 14], [5, 7], [5, 12],
+            [6, 8], [6, 13], [6, 14], [7, 12], [7, 14], [8, 13], [9, 11], [9, 15], [10, 11], [11, 15], [13, 14]],
+    red: 8, blue: 10,
+    exact: [0.3634, 0.2271, 0.265, 0.6005, 0.5545, 0.4879, 0.8046, 0.5272, 1.0, 0.265, 0.0, 0.2044, 0.5067, 0.7638, 0.6501, 0.265]
+  };
+  const N = 16;
+  const adj = Array.from({length: N}, () => []);
+  for (const [u, v] of G.edges) { adj[u].push(v); adj[v].push(u); }
+  adj.forEach(a => a.sort((x, y) => x - y));
+  const terminal = v => v === G.red || v === G.blue;
+
+  // ----------------------------------------------------------------- the canvas
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height, M = 64, R = 23;
+  const px = v => M + G.pos[v][0] * (W - 2 * M);
+  const py = v => H - M - G.pos[v][1] * (H - 2 * M);        // y runs upward, as in the notebook's picture
+
+  // ----------------------------------------------------------------- the state
+  const $ = id => document.getElementById(id);
+  let start = 7;
+  const q = new URLSearchParams(location.search);
+  if (q.has("start")) { const s = parseInt(q.get("start"), 10); if (s >= 0 && s < N && !terminal(s)) start = s; }
+  let walkers = [];            // {from, node, next, t, trail, jx, jy, big}
+  let lastTrail = null;        // the path of the last single walker, kept on the screen
+  let counts = [];             // for each start node: launched, red, blue
+  let pulses = [];             // {node, age}
+  let running = false, speed = 2, revealed = false, colourExact = false;
+  function resetCounts() { counts = Array.from({length: N}, () => ({launched: 0, red: 0, blue: 0})); }
+  resetCounts();
+
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const ease = t => t * t * (3 - 2 * t);
+
+  function setSpeed(s) {
+    speed = s;
+    $("speed").value = s;
+    $("speed-text").textContent = String(s).replace(/\.0$/, "") + (s === 1 ? " edge" : " edges") + " a second";
+  }
+
+  function launch(k, from, big) {
+    if (big && speed > 4) setSpeed(2);             // one walker is followed step by step
+    if (!big && speed < 4) setSpeed(6);            // a swarm would take minutes at a walking pace
+    for (let i = 0; i < k; i++) {
+      walkers.push({from: from, node: from, next: pick(adj[from]), t: -Math.random() * 0.6, trail: big ? [from] : null,
+                    jx: big ? 0 : (Math.random() - 0.5) * 14, jy: big ? 0 : (Math.random() - 0.5) * 14, big: !!big});
+    }
+    counts[from].launched += k;
+    running = true;
+    setPause();
+  }
+
+  function absorb(w) {
+    if (w.node === G.red) counts[w.from].red++; else counts[w.from].blue++;
+    pulses.push({node: w.node, age: 0, big: w.big});
+    if (w.trail) lastTrail = w.trail;
+    w.done = true;
+  }
+
+  function step(dt) {
+    for (const w of walkers) {
+      w.t += speed * dt;
+      while (w.t >= 1 && !w.done) {
+        w.t -= 1;
+        w.node = w.next;
+        if (w.trail) w.trail.push(w.node);
+        if (terminal(w.node)) absorb(w); else w.next = pick(adj[w.node]);
+      }
+    }
+    if (walkers.some(w => w.done)) walkers = walkers.filter(w => !w.done);
+  }
+
+  function finishNow() {
+    for (const w of walkers) {
+      while (!w.done) {
+        w.node = w.next;
+        if (w.trail) w.trail.push(w.node);
+        if (terminal(w.node)) absorb(w); else w.next = pick(adj[w.node]);
+      }
+    }
+    walkers = [];
+  }
+
+  // ----------------------------------------------------------------- colours
+  const COOL = [[0, [59, 76, 192]], [0.25, [141, 176, 254]], [0.5, [221, 220, 220]], [0.75, [244, 154, 123]], [1, [180, 4, 38]]];
+  function coolwarm(x) {
+    x = Math.max(0, Math.min(1, x));
+    for (let i = 1; i < COOL.length; i++) {
+      if (x <= COOL[i][0]) {
+        const [a, ca] = COOL[i - 1], [b, cb] = COOL[i], f = (x - a) / (b - a);
+        return ca.map((c, k) => Math.round(c + f * (cb[k] - c)));
+      }
+    }
+    return COOL[COOL.length - 1][1];
+  }
+  const rgb = c => "rgb(" + c.join(",") + ")";
+  const dark = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) < 140;
+
+  function fraction(v) {
+    const c = counts[v], n = c.red + c.blue;
+    return n ? c.red / n : null;
+  }
+
+  // ----------------------------------------------------------------- drawing
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = "#c4c4c0";
+    for (const [u, v] of G.edges) { ctx.beginPath(); ctx.moveTo(px(u), py(u)); ctx.lineTo(px(v), py(v)); ctx.stroke(); }
+
+    // the trail of the single walker, past and present
+    const single = walkers.find(w => w.big);
+    const trail = single ? single.trail : lastTrail;
+    if (trail && trail.length > 1) {
+      ctx.save();
+      ctx.strokeStyle = "#eb6834"; ctx.globalAlpha = 0.55; ctx.lineWidth = 7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(px(trail[0]), py(trail[0]));
+      for (let i = 1; i < trail.length; i++) ctx.lineTo(px(trail[i]), py(trail[i]));
+      if (single && single.t > 0) {
+        const f = ease(Math.min(1, single.t));
+        ctx.lineTo(px(single.node) + f * (px(single.next) - px(single.node)), py(single.node) + f * (py(single.next) - py(single.node)));
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // pulses at the red and the blue node
+    for (const p of pulses) {
+      ctx.save();
+      ctx.globalAlpha = (1 - p.age) * (p.big ? 0.9 : 0.35);
+      ctx.strokeStyle = p.node === G.red ? "#d62728" : "#1f77b4"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px(p.node), py(p.node), R + p.age * (p.big ? 70 : 34), 0, 2 * Math.PI); ctx.stroke();
+      ctx.restore();
+    }
+
+    // nodes
+    ctx.font = "600 17px " + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let v = 0; v < N; v++) {
+      let fill, ink;
+      if (v === G.red) { fill = [214, 39, 40]; }
+      else if (v === G.blue) { fill = [31, 119, 180]; }
+      else if (colourExact) { fill = coolwarm(G.exact[v]); }
+      else { const f = fraction(v); fill = f === null ? [221, 221, 221] : coolwarm(f); }
+      ink = dark(fill) ? "#fff" : "#1A1A1A";
+      ctx.beginPath(); ctx.arc(px(v), py(v), R, 0, 2 * Math.PI);
+      ctx.fillStyle = rgb(fill); ctx.fill();
+      ctx.lineWidth = v === start ? 4 : 1.5;
+      ctx.strokeStyle = v === start ? "#1A1A1A" : "#7a7a76";
+      ctx.stroke();
+      ctx.fillStyle = ink; ctx.fillText(String(v), px(v), py(v) + 1);
+      // the fraction under the node
+      const f = fraction(v);
+      let label = null;
+      if (terminal(v)) label = v === G.red ? "red: 1" : "blue: 0";
+      else if (colourExact) label = G.exact[v].toFixed(2);
+      else if (f !== null) label = f.toFixed(2);
+      if (label) {
+        ctx.save();
+        ctx.font = "600 15px " + getComputedStyle(document.body).fontFamily;
+        ctx.fillStyle = colourExact && !terminal(v) ? "#CC0033" : "#1A1A1A";
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fillRect(px(v) - tw / 2 - 3, py(v) + R + 5, tw + 6, 19);
+        ctx.fillStyle = colourExact && !terminal(v) ? "#CC0033" : "#1A1A1A";
+        ctx.fillText(label, px(v), py(v) + R + 15);
+        ctx.restore();
+      }
+    }
+
+    // walkers
+    for (const w of walkers) {
+      const f = ease(Math.max(0, Math.min(1, w.t)));
+      const x = px(w.node) + f * (px(w.next) - px(w.node)) + w.jx;
+      const y = py(w.node) + f * (py(w.next) - py(w.node)) + w.jy;
+      ctx.beginPath(); ctx.arc(x, y, w.big ? 11 : 4.2, 0, 2 * Math.PI);
+      ctx.fillStyle = w.big ? "#eb6834" : "rgba(26,26,26,0.55)"; ctx.fill();
+      if (w.big) { ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke(); }
+    }
+  }
+
+  // ----------------------------------------------------------------- the panel
+  let tick = 0;
+  function updatePanel() {
+    const c = counts[start], n = c.red + c.blue, f = fraction(start);
+    $("s-node").textContent = start;
+    $("s-red").textContent = c.red; $("s-blue").textContent = c.blue;
+    $("s-active").textContent = c.launched - n;
+    $("s-frac").textContent = f === null ? "—" : f.toFixed(2);
+    $("bar-red").style.width = (f === null ? 0 : 100 * f) + "%";
+    $("s-exact-v").textContent = G.exact[start].toFixed(3);
+    $("s-exact").hidden = !revealed;
+    if (revealed && (tick++ % 20 === 0)) fillTable();
+  }
+  function setPause() { $("b-pause").textContent = running ? "Pause" : "Resume"; }
+
+  function fillTable() {
+    const body = $("t-exact").querySelector("tbody");
+    body.innerHTML = "";
+    for (let v = 0; v < N; v++) {
+      const c = counts[v], n = c.red + c.blue, f = fraction(v);
+      const tr = document.createElement("tr");
+      const cls = v === G.red ? "red" : v === G.blue ? "blue" : "";
+      tr.innerHTML = "<td class='" + cls + "'>" + v + (v === G.red ? " (red)" : v === G.blue ? " (blue)" : "") + "</td>" +
+                     "<td class='num'>" + adj[v].length + "</td><td class='num'>" + n + "</td>" +
+                     "<td class='num'>" + (f === null ? "—" : f.toFixed(3)) + "</td><td class='num'>" + G.exact[v].toFixed(3) + "</td>";
+      body.appendChild(tr);
+    }
+    const nb = adj[start];
+    $("eq-node").innerHTML = "For node " + start + ", with the neighbours " + nb.join(", ") + ": &nbsp; x<sub>" + start + "</sub> = (" +
+      nb.map(u => "x<sub>" + u + "</sub>").join(" + ") + ") / " + nb.length +
+      " &nbsp;=&nbsp; <strong>" + G.exact[start].toFixed(3) + "</strong>" + "; &nbsp; x<sub>" + G.red + "</sub> = 1, &nbsp; x<sub>" + G.blue + "</sub> = 0.";
+  }
+
+  // ----------------------------------------------------------------- events
+  $("b-one").addEventListener("click", () => { lastTrail = null; walkers = walkers.filter(w => !w.big); launch(1, start, true); });
+  $("b-hundred").addEventListener("click", () => launch(100, start, false));
+  $("b-thousand").addEventListener("click", () => launch(1000, start, false));
+  $("b-all").addEventListener("click", () => { for (let v = 0; v < N; v++) if (!terminal(v)) launch(200, v, false); });
+  $("b-pause").addEventListener("click", () => { running = !running; setPause(); });
+  $("b-finish").addEventListener("click", () => { finishNow(); updatePanel(); });
+  $("b-reset").addEventListener("click", () => { walkers = []; lastTrail = null; pulses = []; resetCounts(); running = false; setPause(); updatePanel(); });
+  $("speed").addEventListener("input", e => setSpeed(parseFloat(e.target.value)));
+  $("b-reveal").addEventListener("click", () => { revealed = true; $("reveal").hidden = false; $("b-reveal").disabled = true; tick = 0; updatePanel(); $("reveal").scrollIntoView({behavior: "smooth", block: "start"}); });
+  $("c-exact").addEventListener("change", e => { colourExact = e.target.checked; });
+  canvas.addEventListener("click", e => {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+    let best = -1, bd = 1e9;
+    for (let v = 0; v < N; v++) { const d = Math.hypot(px(v) - x, py(v) - y); if (d < bd) { bd = d; best = v; } }
+    if (best >= 0 && bd <= R + 8 && !terminal(best)) { start = best; updatePanel(); }
+  });
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.code === "Space") { e.preventDefault(); if (walkers.length === 0) launch(1, start, true); else { running = !running; setPause(); } }
+    if (e.key === "r" || e.key === "R") $("b-reset").click();
+  });
+
+  // ----------------------------------------------------------------- the loop
+  let last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+    if (running && walkers.length) step(dt);
+    for (const p of pulses) p.age += dt * 1.6;
+    pulses = pulses.filter(p => p.age < 1);
+    draw();
+    updatePanel();
+    requestAnimationFrame(frame);
+  }
+  updatePanel();
+  if (q.get("test") === "swarm") { launch(300, start, false); setSpeed(8); }
+  if (q.get("test") === "all") { for (let v = 0; v < N; v++) if (!terminal(v)) launch(200, v, false); setSpeed(20); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

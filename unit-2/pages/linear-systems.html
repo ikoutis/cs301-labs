@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — Linear systems, in pictures</title>
+<!--
+  CS 301, Unit II, meeting 13. A page in place of slides, with moving pictures of the notions of the
+  first notebook (meeting-13-linear-systems.ipynb) and of elimination from the second: an equation
+  as a line and the solution as the crossing (Part 1); nearly parallel lines, a nudge of a thousandth
+  in b, and the condition number (Part 2); three planes meeting at a point, along a line, or not at
+  all, in three dimensions that turn (Part 3); and elimination as planes that pivot about the line
+  they share while the solution stays where it is (Part 4). The systems are the notebook's own.
+
+  Four parts, shown as tabs, one part at a time, so that the page can be projected like slides;
+  the left and right arrow keys move between them, and the address can name a part
+  (linear-systems.html#3). Without JavaScript all the parts are shown one under the other, without
+  their pictures. The pictures are drawn on canvases by the script below.
+
+  Self-contained on purpose: no CDN, no fonts, no network.
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+    --l1: #2a78d6;      /* the first equation: blue */
+    --l2: #eb6834;      /* the second: orange */
+    --l3: #2a8a3a;      /* the third: green */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 20px 48px;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    font-size: 17px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  header { border-top: 4px solid var(--red); padding-top: 16px; margin-bottom: 18px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); margin: 0 0 4px; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
+  header p.lead { margin: 0; color: var(--muted); font-size: 17px; max-width: 50em; }
+  h2 { font-size: 22px; font-weight: 600; margin: 4px 0 10px; line-height: 1.3; }
+  p { margin: 0 0 12px; max-width: 50em; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 4px; border-radius: 3px; }
+  a { color: #0b57a4; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+
+  [role="tablist"] { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--faint); margin: 0 0 20px; }
+  [role="tab"] {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 9px 16px;
+    border: 1px solid transparent; border-bottom: none; background: none; color: var(--muted);
+    cursor: pointer; border-radius: 3px 3px 0 0; margin-bottom: -1px;
+  }
+  [role="tab"][aria-selected="true"] { color: var(--red); border-color: var(--faint); border-bottom: 1px solid #fff; background: #fff; }
+  [role="tab"]:hover { color: var(--ink); }
+  .part { margin-bottom: 34px; }
+  .part[hidden] { display: none; }
+
+  .stage { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+  .board { flex: 1 1 520px; min-width: 0; }
+  .board.two { display: flex; gap: 12px; flex-wrap: wrap; }
+  .board.two div { flex: 1 1 300px; min-width: 0; }
+  canvas { display: block; width: 100%; height: auto; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  canvas.turn { cursor: grab; }
+  .caption { font-size: 14.5px; color: var(--muted); margin-top: 6px; }
+  .panel { flex: 0 0 330px; max-width: 100%; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .panel .label:first-child { margin-top: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  button {
+    font: inherit; font-size: 15px; font-weight: 600; padding: 7px 14px; border: 1px solid var(--faint);
+    background: #fff; color: var(--ink); border-radius: 3px; cursor: pointer;
+  }
+  button:hover { border-color: var(--ink); }
+  button.primary { border-color: var(--ink); background: var(--ink); color: #fff; }
+  button.primary:hover { background: #000; }
+  button[disabled] { opacity: .45; cursor: default; }
+  button[disabled]:hover { border-color: var(--faint); }
+  label.slider { display: block; font-size: 15px; margin-top: 8px; }
+  label.check { display: block; font-size: 15px; margin-top: 8px; }
+  input[type="range"] { width: 100%; margin: 2px 0 0; }
+  .eqs { background: var(--paper); border-radius: 3px; padding: 10px 14px; margin: 8px 0 10px; font-size: 16px; }
+  .eqs .eq { font-size: 19px; font-weight: 600; margin: 0 0 2px; font-variant-numeric: tabular-nums; }
+  .eqs .eq + .sl { margin-bottom: 10px; }
+  .eqs .sl { display: flex; gap: 10px; }
+  .eqs .sl label { flex: 1; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+  .eqs .sl input[type="range"] { width: 100%; margin: 0; }
+  .eqs .c1 { color: var(--l1); } .eqs .c2 { color: var(--l2); } .eqs .c3 { color: var(--l3); }
+  .readout { background: var(--paper); border-radius: 3px; padding: 10px 14px; margin-top: 10px; font-size: 15.5px; }
+  .readout p { margin: 0 0 5px; }
+  .readout .big { font-size: 26px; font-weight: 600; line-height: 1.2; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+  .readout .warn { color: var(--red); font-weight: 600; }
+  .story { background: var(--paper); padding: 12px 16px; border-radius: 3px; margin: 14px 0; max-width: 52em; }
+  .story p:last-child { margin-bottom: 0; }
+  table.m { border-collapse: collapse; margin: 6px 0 10px; font-size: 17px; font-variant-numeric: tabular-nums; }
+  table.m td { padding: 3px 10px; text-align: right; border: none; }
+  table.m td.bar { border-left: 2px solid var(--ink); }
+  table.m tr.hot td { background: #fde0c5; }
+  table.m tr.pivot td { background: #cfe1f2; }
+  .mono { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .95em; }
+
+  footer { border-top: 1px solid var(--faint); margin-top: 28px; padding-top: 12px; font-size: 14.5px; color: var(--muted); }
+  .no-js .js-only { display: none; }
+  #errors { color: var(--red); font-family: monospace; white-space: pre-wrap; }
+  @media print { [role="tablist"] { display: none; } .part[hidden] { display: block; } .part { break-inside: avoid; } }
+</style>
+</head>
+<body class="no-js">
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CS 301 · Unit II · Meeting 13</p>
+  <h1>Linear systems, in pictures</h1>
+  <p class="lead">An equation is a line or a plane; a solution is a point on all of them. What the solution looks like, how far it moves when the data moves a little, and what elimination does to the planes.</p>
+</header>
+
+<main>
+<div role="tablist" aria-label="The parts of this page" id="tabs" hidden>
+  <button type="button" role="tab" id="tab-1" aria-controls="part-1" aria-selected="true">1. Two lines</button>
+  <button type="button" role="tab" id="tab-2" aria-controls="part-2" aria-selected="false" tabindex="-1">2. Nearly parallel</button>
+  <button type="button" role="tab" id="tab-3" aria-controls="part-3" aria-selected="false" tabindex="-1">3. Three planes</button>
+  <button type="button" role="tab" id="tab-4" aria-controls="part-4" aria-selected="false" tabindex="-1">4. Elimination</button>
+</div>
+
+<!-- ================================================================ part 1 -->
+<section class="part" id="part-1" aria-labelledby="h-1">
+  <h2 id="h-1">1. An equation is a line; the solution is where the lines cross</h2>
+  <p>Every pair (x, y) that satisfies one equation lies on a line. A solution of the system satisfies both equations, so it is on both lines: the crossing. Move the numbers and watch the crossing move.</p>
+  <div class="stage">
+    <div class="board">
+      <canvas id="c1" width="640" height="640" aria-label="Two lines in the plane of the unknowns, and a black dot where they cross."></canvas>
+      <p class="caption">The window of the notebook: x and y from −1 to 5.</p>
+    </div>
+    <aside class="panel">
+      <p class="label">The system</p>
+      <div class="eqs">
+        <p class="eq c1" id="eq1">2x + 1y = 5</p>
+        <div class="sl">
+          <label>coefficient of x<input type="range" id="p1a" min="-4" max="4" step="0.1" value="2"></label>
+          <label>coefficient of y<input type="range" id="p1b" min="-4" max="4" step="0.1" value="1"></label>
+          <label>right-hand side<input type="range" id="p1c" min="-8" max="8" step="0.1" value="5"></label>
+        </div>
+        <p class="eq c2" id="eq2">1x − 1y = 1</p>
+        <div class="sl">
+          <label>coefficient of x<input type="range" id="p1d" min="-4" max="4" step="0.1" value="1"></label>
+          <label>coefficient of y<input type="range" id="p1e" min="-4" max="4" step="0.1" value="-1"></label>
+          <label>right-hand side<input type="range" id="p1f" min="-8" max="8" step="0.1" value="1"></label>
+        </div>
+      </div>
+      <div class="buttons">
+        <button type="button" id="b1-rotate" class="primary">Turn line 2</button>
+        <button type="button" id="b1-notebook">The notebook's system</button>
+      </div>
+      <div class="buttons">
+        <button type="button" id="b1-parallel">Parallel lines</button>
+        <button type="button" id="b1-same">The same line twice</button>
+      </div>
+      <div class="readout" aria-live="polite">
+        <p class="label" style="margin-top:0">Solution</p>
+        <p class="big" id="r1-sol">x = 2, y = 1</p>
+        <p id="r1-det">determinant 2 · (−1) − 1 · 1 = −3</p>
+        <p id="r1-note"></p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>In matrix form the two rows of <code>A</code> are the two lines and <code>np.linalg.solve(A, b)</code> finds the crossing. When line 2 turns parallel to line 1 the determinant passes through zero: the crossing runs off to infinity, and for an instant there is no solution at all, or a whole line of them if the two lines coincide. NumPy answers <em>Singular matrix</em> in both cases.</p>
+  </div>
+</section>
+
+<!-- ================================================================ part 2 -->
+<section class="part" id="part-2" aria-labelledby="h-2" hidden>
+  <h2 id="h-2">2. Nearly parallel lines, and the condition number</h2>
+  <p>Both systems have the solution (1, 1). The right-hand side of the second equation is changed by a thousandth, as a measurement error would change it. Watch where the crossing goes.</p>
+  <div class="stage">
+    <div class="board two">
+      <div><canvas id="c2a" width="460" height="460" aria-label="Two lines crossing at a right angle at the point (1, 1)."></canvas><p class="caption">A right angle: x + y = 2 and x − y = 0.</p></div>
+      <div><canvas id="c2b" width="460" height="460" aria-label="Two nearly parallel lines crossing at the point (1, 1)."></canvas><p class="caption" id="cap2b">Nearly parallel: x + y = 2 and x + 1.001 y = 2.001.</p></div>
+    </div>
+    <aside class="panel">
+      <div class="buttons">
+        <button type="button" id="b2-nudge" class="primary">Change b by 0.001</button>
+        <button type="button" id="b2-back">Put it back</button>
+      </div>
+      <label class="slider" for="s2-angle">Angle between the two lines: <span id="v2-angle">0.029°</span>
+        <input type="range" id="s2-angle" min="0" max="1000" step="1" value="0">
+      </label>
+      <div class="buttons"><button type="button" id="b2-notebook">The notebook's pair, 1 and 1.001</button></div>
+      <div class="readout" aria-live="polite">
+        <p class="label" style="margin-top:0">The nearly parallel system</p>
+        <p>condition number <span class="big" style="display:inline" id="r2-cond">4,002</span></p>
+        <p>the solution moved by <strong id="r2-moved">0</strong></p>
+        <p>that is <strong id="r2-amp">0</strong> times the change of 0.001</p>
+        <p style="margin-top:8px">the right angle, for comparison: condition number 1, moved by <span id="r2-good">0</span></p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>The crossing of two nearly parallel lines slides far along them when one line moves a little. The <strong>condition number</strong>, <code>np.linalg.cond(A)</code>, is an upper bound on that amplification for relative changes: 1 for the right angle, about 4,000 for the notebook's pair, and the larger the closer the lines are to parallel. With about 16 digits in a float64 number, a condition number of 10<sup>k</sup> can cost up to k of the digits of the solution.</p>
+  </div>
+</section>
+
+<!-- ================================================================ part 3 -->
+<section class="part" id="part-3" aria-labelledby="h-3" hidden>
+  <h2 id="h-3">3. Three unknowns: three planes</h2>
+  <p>With three unknowns each equation is a plane. The first two planes meet along a line; the third plane cuts that line at one point, contains it, or misses it. Drag the picture to turn it.</p>
+  <div class="stage">
+    <div class="board">
+      <canvas id="c3" class="turn" width="720" height="560" aria-label="Three translucent planes in a box, the line where the first two meet, and the solution point when there is one."></canvas>
+      <p class="caption">Blue: x + y + z = 6. Orange: x − y + 2z = 5. Green: the third equation, which the controls change. The black line is where the blue and the orange plane meet.</p>
+    </div>
+    <aside class="panel">
+      <p class="label">The third equation</p>
+      <div class="buttons">
+        <button type="button" id="b3-point" class="primary">One point</button>
+        <button type="button" id="b3-line">A line of solutions</button>
+        <button type="button" id="b3-none">No solution</button>
+      </div>
+      <label class="slider" for="s3-mix">Turn the green plane toward the line: <span id="v3-mix">0%</span>
+        <input type="range" id="s3-mix" min="0" max="100" step="1" value="0">
+      </label>
+      <label class="slider" for="s3-off">Then lift it off the line: right-hand side + <span id="v3-off">0</span>
+        <input type="range" id="s3-off" min="0" max="20" step="1" value="0">
+      </label>
+      <label class="check"><input type="checkbox" id="c3-auto" checked> keep turning</label>
+      <div class="readout" aria-live="polite">
+        <p class="label" style="margin-top:0">The system</p>
+        <p class="mono" id="r3-rows">2x + 1y − 1z = 1</p>
+        <p>rank <strong id="r3-rank">3</strong> · determinant <span id="r3-det">−9</span></p>
+        <p class="big" id="r3-sol">x = 1, y = 2, z = 3</p>
+        <p id="r3-note"></p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>As the green plane turns toward the line it keeps passing through the point, but the system becomes ill-conditioned, as in Part 2: lift the plane by a little and the point runs far along the line. When the green plane contains the line, the third equation is the sum of the first two, the rank is 2, and every point of the line is a solution. Lift the plane then, and nothing is on all three: no solution. NumPy says <em>Singular matrix</em> in both cases.</p>
+  </div>
+</section>
+
+<!-- ================================================================ part 4 -->
+<section class="part" id="part-4" aria-labelledby="h-4" hidden>
+  <h2 id="h-4">4. Elimination: the planes pivot, the point stays</h2>
+  <p>Forward elimination subtracts a multiple of one equation from another. The new plane passes through the same line as the two old ones, so the solution never moves; only the planes do. Three steps make the system triangular.</p>
+  <div class="stage">
+    <div class="board">
+      <canvas id="c4" class="turn" width="720" height="560" aria-label="Three planes that pivot one by one about the line they share with the pivot plane, while the solution point stays in place."></canvas>
+      <p class="caption">The moving plane pivots about the black line it shares with the plane it is being combined with. The dot is the solution (1, 2, 3).</p>
+    </div>
+    <aside class="panel">
+      <p class="label">The augmented matrix</p>
+      <table class="m" id="m4" aria-label="The augmented matrix of the system">
+        <tr id="m4r0"><td>1</td><td>1</td><td>1</td><td class="bar">6</td></tr>
+        <tr id="m4r1"><td>1</td><td>−1</td><td>2</td><td class="bar">5</td></tr>
+        <tr id="m4r2"><td>2</td><td>1</td><td>−1</td><td class="bar">1</td></tr>
+      </table>
+      <div class="buttons">
+        <button type="button" id="b4-1" class="primary">Step 1: row 2 − 1 · row 1</button>
+      </div>
+      <div class="buttons">
+        <button type="button" id="b4-2" disabled>Step 2: row 3 − 2 · row 1</button>
+      </div>
+      <div class="buttons">
+        <button type="button" id="b4-3" disabled>Step 3: row 3 − 0.5 · row 2</button>
+        <button type="button" id="b4-reset">Reset</button>
+      </div>
+      <label class="check"><input type="checkbox" id="c4-auto" checked> keep turning</label>
+      <div class="readout" aria-live="polite">
+        <p id="r4-text">The pivot of step 1 is the 1 in row 1, column 1. Subtracting row 1 from row 2 removes x from the second equation.</p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>After the three steps the matrix is upper triangular: the last equation reads −3.5 z = −10.5, a horizontal plane, z = 3. Back substitution climbs: −2y + z = −1 gives y = 2, and x + y + z = 6 gives x = 1. The point was there all along; elimination only turned the planes so that they could be read off one at a time.</p>
+  </div>
+</section>
+<p id="errors" aria-hidden="true"></p>
+</main>
+
+<footer>
+  <p>The systems are those of the first notebook of meeting 13 and of Part 1 of the second. The condition numbers are computed as <code>np.linalg.cond</code> computes them, from the singular values. See also: <a href="random-walk.html">A walk on a graph</a>.</p>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  document.body.classList.remove("no-js");
+  window.onerror = function (m, s, l) { document.getElementById("errors").textContent += m + " (" + l + ")\n"; };
+  const $ = id => document.getElementById(id);
+  const FONT = getComputedStyle(document.body).fontFamily;
+  const ease = t => t * t * (3 - 2 * t);
+  const fmt = (x, d) => {
+    if (d === undefined) d = 2;
+    let s = Math.abs(x) < 1e-12 ? "0" : x.toFixed(d).replace(/\.?0+$/, "");
+    return s.replace("-", "−");
+  };
+  const fmtBig = x => x >= 1e6 ? x.toExponential(1).replace("e+", " × 10^") : Math.round(x).toLocaleString("en-US");
+
+  // ================================================================ tabs
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const parts = tabs.map(t => $(t.getAttribute("aria-controls")));
+  let active = 0;
+  function show(i) {
+    active = i;
+    tabs.forEach((t, k) => { t.setAttribute("aria-selected", k === i ? "true" : "false"); t.tabIndex = k === i ? 0 : -1; parts[k].hidden = k !== i; });
+    history.replaceState(null, "", "#" + (i + 1));
+  }
+  $("tabs").hidden = false;
+  tabs.forEach((t, k) => t.addEventListener("click", () => show(k)));
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+    if (e.key === "ArrowRight") show((active + 1) % tabs.length);
+    if (e.key === "ArrowLeft") show((active + tabs.length - 1) % tabs.length);
+  });
+  const h = parseInt((location.hash || "#1").slice(1), 10);
+  show(h >= 1 && h <= 4 ? h - 1 : 0);
+
+  // ================================================================ 2D plots: the window of the notebook
+  function plot2d(ctx, Wd, lo, hi, draw) {
+    ctx.clearRect(0, 0, Wd, Wd);
+    const X = x => (x - lo) / (hi - lo) * Wd, Y = y => Wd - (y - lo) / (hi - lo) * Wd;
+    ctx.save();
+    ctx.strokeStyle = "#e1e0d9"; ctx.lineWidth = 1;
+    for (let k = Math.ceil(lo); k <= hi; k++) {
+      ctx.beginPath(); ctx.moveTo(X(k), 0); ctx.lineTo(X(k), Wd); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, Y(k)); ctx.lineTo(Wd, Y(k)); ctx.stroke();
+    }
+    ctx.strokeStyle = "#999"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), Wd); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(Wd, Y(0)); ctx.stroke();
+    ctx.fillStyle = "#555"; ctx.font = "13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let k = Math.ceil(lo); k <= hi; k++) { if (k !== 0) { ctx.fillText(String(k), X(k), Y(0) + 4); } }
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let k = Math.ceil(lo); k <= hi; k++) { if (k !== 0) { ctx.fillText(String(k), X(0) - 5, Y(k)); } }
+    ctx.font = "600 15px " + FONT; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    ctx.fillText("x", Wd - 8, Y(0) - 4); ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("y", X(0) + 6, 6);
+    ctx.restore();
+    draw(X, Y);
+  }
+  function line2d(ctx, X, Y, a, b, c, colour, dashed, lo, hi, width) {
+    ctx.save();
+    ctx.strokeStyle = colour; ctx.lineWidth = width || 3; if (dashed) ctx.setLineDash([9, 7]);
+    ctx.beginPath();
+    if (Math.abs(b) > 1e-9) { ctx.moveTo(X(lo), Y((c - a * lo) / b)); ctx.lineTo(X(hi), Y((c - a * hi) / b)); }
+    else if (Math.abs(a) > 1e-9) { ctx.moveTo(X(c / a), Y(lo)); ctx.lineTo(X(c / a), Y(hi)); }
+    ctx.stroke();
+    ctx.restore();
+  }
+  function dot2d(ctx, X, Y, x, y, label, colour) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(X(x), Y(y), 7, 0, 2 * Math.PI); ctx.fillStyle = colour || "#1A1A1A"; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = "#fff"; ctx.stroke();
+    if (label) { ctx.font = "600 14px " + FONT; ctx.fillStyle = colour || "#1A1A1A"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(label, X(x) + 10, Y(y) - 8); }
+    ctx.restore();
+  }
+  function eqText(a, b, c, d) {
+    const sb = b < 0 ? " − " : " + ";
+    return fmt(a, d) + "x" + sb + fmt(Math.abs(b), d) + "y = " + fmt(c, d);
+  }
+  function cond2(a, b, c, d) {
+    const s = a * a + b * b + c * c + d * d, det = a * d - b * c;
+    const disc = Math.sqrt(Math.max(0, s * s - 4 * det * det));
+    const s1 = Math.sqrt((s + disc) / 2), s2 = Math.sqrt(Math.max(0, (s - disc) / 2));
+    return s2 < 1e-300 ? Infinity : s1 / s2;
+  }
+
+  // ================================================================ part 1
+  const P1 = {a: 2, b: 1, c: 5, d: 1, e: -1, f: 1, anim: null};
+  const ctx1 = $("c1").getContext("2d");
+  const keys1 = ["a", "b", "c", "d", "e", "f"], ids1 = ["p1a", "p1b", "p1c", "p1d", "p1e", "p1f"];
+  function sync1() {
+    keys1.forEach((k, i) => { $(ids1[i]).value = P1[k]; });
+    $("eq1").textContent = eqText(P1.a, P1.b, P1.c);
+    $("eq2").textContent = eqText(P1.d, P1.e, P1.f);
+  }
+  keys1.forEach((k, i) => $(ids1[i]).addEventListener("input", e => { P1[k] = parseFloat(e.target.value); P1.anim = null; sync1(); }));
+  function draw1() {
+    const {a, b, c, d, e, f} = P1, det = a * e - b * d;
+    plot2d(ctx1, 640, -1, 5, (X, Y) => {
+      ctx1.save(); ctx1.beginPath(); ctx1.rect(0, 0, 640, 640); ctx1.clip();
+      line2d(ctx1, X, Y, a, b, c, "#2a78d6", false, -30, 30);
+      line2d(ctx1, X, Y, d, e, f, "#eb6834", false, -30, 30);
+      ctx1.restore();
+      ctx1.font = "600 15px " + FONT; ctx1.textAlign = "left"; ctx1.textBaseline = "top";
+      ctx1.fillStyle = "#2a78d6"; ctx1.fillText(eqText(a, b, c), 14, 14);
+      ctx1.fillStyle = "#eb6834"; ctx1.fillText(eqText(d, e, f), 14, 36);
+      if (Math.abs(det) > 1e-9) {
+        const x = (c * e - b * f) / det, y = (a * f - c * d) / det;
+        dot2d(ctx1, X, Y, x, y, "(" + fmt(x) + ", " + fmt(y) + ")");
+      }
+    });
+    $("r1-det").textContent = "determinant " + fmt(a) + " · (" + fmt(e) + ") − " + fmt(b) + " · " + fmt(d) + " = " + fmt(det);
+    const parallelSame = Math.abs(a * f - c * d) < 1e-9 && Math.abs(b * f - c * e) < 1e-9;
+    if (Math.abs(det) > 1e-9) {
+      const x = (c * e - b * f) / det, y = (a * f - c * d) / det;
+      $("r1-sol").textContent = "x = " + fmt(x) + ", y = " + fmt(y);
+      $("r1-note").textContent = Math.abs(det) < 0.15 ? "The lines are nearly parallel: a small change would move the crossing far." : "";
+      $("r1-note").className = "warn";
+    } else {
+      $("r1-sol").textContent = parallelSame ? "a whole line of solutions" : "no solution";
+      $("r1-note").textContent = parallelSame ? "The two equations describe the same line: every point of it is a solution. NumPy: Singular matrix." : "The lines are parallel and never cross. NumPy: Singular matrix.";
+      $("r1-note").className = "warn";
+    }
+  }
+  $("b1-notebook").addEventListener("click", () => { Object.assign(P1, {a: 2, b: 1, c: 5, d: 1, e: -1, f: 1, anim: null}); sync1(); });
+  $("b1-parallel").addEventListener("click", () => { Object.assign(P1, {a: 2, b: 1, c: 5, d: 2, e: 1, f: 2, anim: null}); sync1(); });
+  $("b1-same").addEventListener("click", () => { Object.assign(P1, {a: 2, b: 1, c: 5, d: 4, e: 2, f: 10, anim: null}); sync1(); });
+  $("b1-rotate").addEventListener("click", () => { P1.anim = P1.anim ? null : {t: 0}; $("b1-rotate").textContent = P1.anim ? "Stop turning" : "Turn line 2"; });
+  function tick1(dt) {
+    if (!P1.anim) return;
+    P1.anim.t += dt * 0.35;
+    // line 2 turns about the crossing of the notebook's system, (2, 1): d x + e y = 2 d + e
+    const ang = P1.anim.t * 2 * Math.PI;
+    P1.d = Math.round(Math.cos(ang) * 20) / 10; P1.e = Math.round(Math.sin(ang) * 20) / 10;
+    P1.f = Math.round((2 * P1.d + 1 * P1.e) * 10) / 10;
+    sync1();
+  }
+
+  // ================================================================ part 2
+  const P2 = {row: [1, 1.001], rhs2: 2.001, nudge: 0, anim: null};
+  const ctxA = $("c2a").getContext("2d"), ctxB = $("c2b").getContext("2d");
+  const DELTA = 0.001;
+  function angleOf(row) { return Math.abs(Math.atan2(row[1], row[0]) - Math.PI / 4) * 180 / Math.PI; }
+  function setAngle(deg) {           // row 2 at an angle deg from row 1 = (1, 1), the solution kept at (1, 1)
+    const th = Math.PI / 4 + deg * Math.PI / 180, n = Math.SQRT2;
+    P2.row = [n * Math.cos(th), n * Math.sin(th)];
+    P2.rhs2 = P2.row[0] + P2.row[1];
+  }
+  const ANG_MIN = 0.02, ANG_MAX = 90;
+  const sliderToAngle = s => ANG_MIN * Math.pow(ANG_MAX / ANG_MIN, s / 1000);
+  const angleToSlider = a => 1000 * Math.log(a / ANG_MIN) / Math.log(ANG_MAX / ANG_MIN);
+  $("s2-angle").value = Math.round(angleToSlider(angleOf(P2.row)));
+  $("s2-angle").addEventListener("input", e => { setAngle(sliderToAngle(parseFloat(e.target.value))); P2.nudge = 0; P2.anim = null; });
+  $("b2-notebook").addEventListener("click", () => { P2.row = [1, 1.001]; P2.rhs2 = 2.001; P2.nudge = 0; P2.anim = null; $("s2-angle").value = Math.round(angleToSlider(angleOf(P2.row))); });
+  $("b2-nudge").addEventListener("click", () => { P2.anim = {t: 0}; });
+  $("b2-back").addEventListener("click", () => { P2.nudge = 0; P2.anim = null; });
+  function solve2(a, b, c, d, e, f) { const det = a * e - b * d; return [(c * e - b * f) / det, (a * f - c * d) / det]; }
+  function draw2() {
+    const [p, q] = P2.row, r = P2.rhs2, nd = P2.nudge * DELTA;
+    const good = solve2(1, 1, 2, 1, -1, 0 + nd), bad = solve2(1, 1, 2, p, q, r + nd);
+    const movedGood = Math.hypot(good[0] - 1, good[1] - 1), movedBad = Math.hypot(bad[0] - 1, bad[1] - 1);
+    for (const [ctx, row2, rhs, sol, moved] of [[ctxA, [1, -1], 0, good, movedGood], [ctxB, [p, q], r, bad, movedBad]]) {
+      plot2d(ctx, 460, -1, 5, (X, Y) => {
+        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 460, 460); ctx.clip();
+        line2d(ctx, X, Y, 1, 1, 2, "#2a78d6", false, -30, 30);
+        line2d(ctx, X, Y, row2[0], row2[1], rhs, "#eb6834", false, -30, 30);
+        if (P2.nudge > 0) line2d(ctx, X, Y, row2[0], row2[1], rhs + nd, "#eb6834", true, -30, 30, 2);
+        ctx.restore();
+        dot2d(ctx, X, Y, 1, 1, P2.nudge > 0 ? "" : "(1, 1)", "#1A1A1A");
+        if (P2.nudge > 0) {
+          ctx.save(); ctx.strokeStyle = "#CC0033"; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.moveTo(X(1), Y(1)); ctx.lineTo(X(sol[0]), Y(sol[1])); ctx.stroke(); ctx.restore();
+          const inside = sol[0] > -1 && sol[0] < 5 && sol[1] > -1 && sol[1] < 5;
+          if (inside) dot2d(ctx, X, Y, sol[0], sol[1], "moved by " + fmt(moved, 4), "#CC0033");
+          else { ctx.save(); ctx.font = "600 15px " + FONT; ctx.fillStyle = "#CC0033"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+                 ctx.fillText("the crossing left the window: moved by " + fmt(moved, 2), 230, 410); ctx.restore(); }
+        }
+      });
+    }
+    const cond = cond2(1, 1, p, q);
+    $("r2-cond").textContent = isFinite(cond) ? fmtBig(cond) : "infinite";
+    $("r2-moved").textContent = fmt(movedBad, 4);
+    $("r2-amp").textContent = fmtBig(movedBad / DELTA);
+    $("r2-good").textContent = fmt(movedGood, 4);
+    $("v2-angle").textContent = fmt(angleOf(P2.row), 3) + "°";
+    $("cap2b").textContent = "Nearly parallel: x + y = 2 and " + eqText(p, q, r, 3).replace(/^1x/, "x") + ".";
+  }
+  function tick2(dt) {
+    if (!P2.anim) return;
+    P2.anim.t = Math.min(1, P2.anim.t + dt / 1.2);
+    P2.nudge = ease(P2.anim.t);
+    if (P2.anim.t >= 1) P2.anim = null;
+  }
+
+  // ================================================================ 3D: planes in a box
+  const BOX = [[-4, 6], [-4, 6], [-6, 10]];
+  const COL = [[42, 120, 214], [235, 104, 52], [42, 138, 58]];
+  function makeView(canvas) {
+    const v = {az: -0.95, el: 0.42, drag: null, auto: true, canvas: canvas};
+    canvas.addEventListener("pointerdown", e => { v.drag = {x: e.clientX, y: e.clientY, az: v.az, el: v.el}; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = "grabbing"; });
+    canvas.addEventListener("pointermove", e => { if (!v.drag) return; v.az = v.drag.az + (e.clientX - v.drag.x) * 0.012; v.el = Math.max(-1.4, Math.min(1.4, v.drag.el + (e.clientY - v.drag.y) * 0.012)); });
+    const up = () => { v.drag = null; canvas.style.cursor = "grab"; };
+    canvas.addEventListener("pointerup", up); canvas.addEventListener("pointercancel", up);
+    return v;
+  }
+  function projector(view, Wd, Hd) {
+    const ca = Math.cos(view.az), sa = Math.sin(view.az), ce = Math.cos(view.el), se = Math.sin(view.el);
+    const cx = (BOX[0][0] + BOX[0][1]) / 2, cy = (BOX[1][0] + BOX[1][1]) / 2, cz = (BOX[2][0] + BOX[2][1]) / 2;
+    const S = Math.min(Wd, Hd) / 23.5;
+    return function (p) {
+      const x = p[0] - cx, y = p[1] - cy, z = p[2] - cz;
+      const x1 = ca * x - sa * y, y1 = sa * x + ca * y;           // turn about z
+      const y2 = ce * y1 - se * z, z2 = se * y1 + ce * z;          // tilt
+      return [Wd / 2 + S * x1, Hd / 2 - S * z2, y2];               // screen x, screen y, depth (larger = nearer)
+    };
+  }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function det3(r) { return r[0][0] * (r[1][1] * r[2][2] - r[1][2] * r[2][1]) - r[0][1] * (r[1][0] * r[2][2] - r[1][2] * r[2][0]) + r[0][2] * (r[1][0] * r[2][1] - r[1][1] * r[2][0]); }
+  function solve3(rows) {        // rows: [a, b, c, d] each; Cramer
+    const A = rows.map(r => r.slice(0, 3)), D = det3(A);
+    if (Math.abs(D) < 1e-9) return null;
+    const col = k => A.map((r, i) => r.map((v, j) => j === k ? rows[i][3] : v));
+    return [det3(col(0)) / D, det3(col(1)) / D, det3(col(2)) / D];
+  }
+  function meetLine(r1, r2) {     // the line where two planes meet: a point of least norm, and a direction
+    const n = cross(r1, r2), a = r1.slice(0, 3), b = r2.slice(0, 3);
+    const aa = a[0] * a[0] + a[1] * a[1] + a[2] * a[2], bb = b[0] * b[0] + b[1] * b[1] + b[2] * b[2], ab = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const D = aa * bb - ab * ab;
+    if (Math.abs(D) < 1e-9) return null;
+    const l1 = (r1[3] * bb - r2[3] * ab) / D, l2 = (r2[3] * aa - r1[3] * ab) / D;
+    const p = [l1 * a[0] + l2 * b[0], l1 * a[1] + l2 * b[1], l1 * a[2] + l2 * b[2]];
+    let t0 = -Infinity, t1 = Infinity;        // clip to the box
+    for (let k = 0; k < 3; k++) {
+      if (Math.abs(n[k]) < 1e-12) { if (p[k] < BOX[k][0] || p[k] > BOX[k][1]) return null; continue; }
+      let ta = (BOX[k][0] - p[k]) / n[k], tb = (BOX[k][1] - p[k]) / n[k];
+      if (ta > tb) [ta, tb] = [tb, ta];
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+    }
+    if (t0 > t1) return null;
+    return [p.map((v, k) => v + t0 * n[k]), p.map((v, k) => v + t1 * n[k])];
+  }
+  function inBox(p) { return p.every((v, k) => v >= BOX[k][0] - 1e-6 && v <= BOX[k][1] + 1e-6); }
+  function clipPoly(poly, f) {          // the part of a convex polygon where the linear function f is >= 0
+    const out = [];
+    for (let m = 0; m < poly.length; m++) {
+      const p = poly[m], q = poly[(m + 1) % poly.length], fp = f(p), fq = f(q);
+      if (fp >= 0) out.push(p);
+      if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push(p.map((v, k) => v + t * (q[k] - v))); }
+    }
+    return out;
+  }
+
+  function render3(ctx, Wd, Hd, view, rows, opts) {
+    opts = opts || {};
+    const P = projector(view, Wd, Hd);
+    ctx.clearRect(0, 0, Wd, Hd);
+    // the box
+    const corners = [];
+    for (let i = 0; i < 8; i++) corners.push([BOX[0][i & 1], BOX[1][(i >> 1) & 1], BOX[2][(i >> 2) & 1]]);
+    ctx.save(); ctx.strokeStyle = "#d4d3cc"; ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) {
+      const diff = (i ^ j); if (diff !== 1 && diff !== 2 && diff !== 4) continue;
+      const a = P(corners[i]), b = P(corners[j]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+    ctx.restore();
+    // the planes, as cells sorted far to near
+    const cells = [];
+    const NC = 12;
+    rows.forEach((r, pi) => {
+      if (opts.hide && opts.hide[pi]) return;
+      const a = r.slice(0, 3), d = r[3];
+      let k = 0; for (let m = 1; m < 3; m++) if (Math.abs(a[m]) > Math.abs(a[k])) k = m;
+      if (Math.abs(a[k]) < 1e-9) return;
+      const [i, j] = [0, 1, 2].filter(m => m !== k);
+      for (let u = 0; u < NC; u++) for (let v = 0; v < NC; v++) {
+        // the cell as a polygon in the plane, clipped where the plane leaves the box along axis k
+        let poly = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([du, dv]) => {
+          const pi_ = BOX[i][0] + (u + du) / NC * (BOX[i][1] - BOX[i][0]);
+          const pj_ = BOX[j][0] + (v + dv) / NC * (BOX[j][1] - BOX[j][0]);
+          const p = [0, 0, 0]; p[i] = pi_; p[j] = pj_; p[k] = (d - a[i] * pi_ - a[j] * pj_) / a[k];
+          return p;
+        });
+        poly = clipPoly(poly, p => p[k] - BOX[k][0]);
+        poly = clipPoly(poly, p => BOX[k][1] - p[k]);
+        if (poly.length < 3) continue;
+        const pts = poly.map(P);
+        cells.push({pts: pts, depth: pts.reduce((s, q) => s + q[2], 0) / pts.length, c: COL[pi], alpha: opts.alpha ? opts.alpha[pi] : 0.42});
+      }
+    });
+    cells.sort((x, y) => x.depth - y.depth);
+    for (const c of cells) {
+      ctx.beginPath(); ctx.moveTo(c.pts[0][0], c.pts[0][1]);
+      for (let m = 1; m < c.pts.length; m++) ctx.lineTo(c.pts[m][0], c.pts[m][1]);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(" + c.c.join(",") + "," + c.alpha + ")"; ctx.fill();
+      ctx.strokeStyle = "rgba(" + c.c.join(",") + "," + Math.min(1, c.alpha + 0.2) + ")"; ctx.lineWidth = 0.6; ctx.stroke();
+    }
+    // the line shared by two planes
+    if (opts.line) {
+      const seg = meetLine(rows[opts.line[0]], rows[opts.line[1]]);
+      if (seg) { const a = P(seg[0]), b = P(seg[1]); ctx.save(); ctx.strokeStyle = "rgba(26,26,26,0.85)"; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.restore(); }
+    }
+    // the solution
+    if (opts.point && inBox(opts.point)) {
+      const s = P(opts.point);
+      ctx.beginPath(); ctx.arc(s[0], s[1], 8, 0, 2 * Math.PI); ctx.fillStyle = "#1A1A1A"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+      if (opts.pointLabel) { ctx.font = "600 15px " + FONT; ctx.fillStyle = "#1A1A1A"; ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(opts.pointLabel, s[0] + 12, s[1] - 8); }
+    }
+    // the axes' names at the box's far corners
+    ctx.save(); ctx.font = "600 14px " + FONT; ctx.fillStyle = "#555"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const ax = P([BOX[0][1] + 0.8, BOX[1][0], BOX[2][0]]), ay = P([BOX[0][0], BOX[1][1] + 0.8, BOX[2][0]]), az = P([BOX[0][0], BOX[1][0], BOX[2][1] + 0.9]);
+    ctx.fillText("x", ax[0], ax[1]); ctx.fillText("y", ay[0], ay[1]); ctx.fillText("z", az[0], az[1]);
+    ctx.restore();
+  }
+  function rowText(r) {
+    const term = (v, name, first) => {
+      if (Math.abs(v) < 1e-9) return "";
+      const sign = v < 0 ? "− " : (first ? "" : "+ ");
+      const mag = Math.abs(Math.abs(v) - 1) < 1e-9 ? "" : fmt(Math.abs(v));
+      return sign + mag + name + " ";
+    };
+    let s = "", first = true;
+    [["x", 0], ["y", 1], ["z", 2]].forEach(([n, k]) => { const t = term(r[k], n, first); if (t) { s += t; first = false; } });
+    if (!s) s = "0 ";
+    return s + "= " + fmt(r[3]);
+  }
+
+  // ================================================================ part 3
+  const P3 = {mix: 0, off: 0};
+  const view3 = makeView($("c3"));
+  const ctx3 = $("c3").getContext("2d");
+  $("c3-auto").addEventListener("change", e => { view3.auto = e.target.checked; });
+  $("s3-mix").addEventListener("input", e => { P3.mix = parseInt(e.target.value, 10) / 100; });
+  $("s3-off").addEventListener("input", e => { P3.off = parseInt(e.target.value, 10) / 10; });
+  function set3(mix, off) { P3.mix = mix; P3.off = off; $("s3-mix").value = Math.round(mix * 100); $("s3-off").value = Math.round(off * 10); }
+  $("b3-point").addEventListener("click", () => set3(0, 0));
+  $("b3-line").addEventListener("click", () => set3(1, 0));
+  $("b3-none").addEventListener("click", () => set3(1, 1));
+  function rows3() {
+    const s = P3.mix;
+    return [[1, 1, 1, 6], [1, -1, 2, 5], [2, 1 - s, -1 + 4 * s, 1 + 10 * s + P3.off]];
+  }
+  function rank3(rows) {
+    const A = rows.map(r => r.slice(0, 3));
+    if (Math.abs(det3(A)) > 1e-6) return 3;
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) { const c = cross(A[i], A[j]); if (Math.hypot(c[0], c[1], c[2]) > 1e-6) return 2; }
+    return 1;
+  }
+  function draw3() {
+    const rows = rows3(), sol = solve3(rows), rk = rank3(rows);
+    const consistent = rk === 2 && Math.abs(rows[2][3] - rows[0][3] - rows[1][3]) < 1e-6 && Math.abs(P3.mix - 1) < 1e-9;
+    render3(ctx3, 720, 560, view3, rows, {line: [0, 1], point: sol, pointLabel: sol && inBox(sol) ? "(" + sol.map(v => fmt(v, 1)).join(", ") + ")" : null});
+    $("v3-mix").textContent = Math.round(P3.mix * 100) + "%";
+    $("v3-off").textContent = fmt(P3.off, 1);
+    $("r3-rows").textContent = rowText(rows[2]);
+    $("r3-rank").textContent = rk;
+    $("r3-det").textContent = fmt(det3(rows.map(r => r.slice(0, 3))), 2);
+    if (sol) {
+      $("r3-sol").textContent = "x = " + fmt(sol[0], 2) + ", y = " + fmt(sol[1], 2) + ", z = " + fmt(sol[2], 2);
+      const small = Math.abs(det3(rows.map(r => r.slice(0, 3)))) < 1.5;
+      $("r3-note").textContent = !inBox(sol) ? "The point has left the box, far along the line: a small lift moved it a long way."
+        : small && P3.off > 0 ? "A small lift moved the point far along the line: an ill-conditioned system."
+        : small ? "The green plane still passes through the point, but nearly contains the line: lift it a little and watch the point run." : "";
+      $("r3-note").className = "warn";
+    } else if (consistent || (rk === 2 && Math.abs(P3.off) < 1e-9)) {
+      $("r3-sol").textContent = "a whole line of solutions";
+      $("r3-note").textContent = "The green plane contains the black line: the third equation is the sum of the first two. NumPy: Singular matrix."; $("r3-note").className = "warn";
+    } else {
+      $("r3-sol").textContent = "no solution";
+      $("r3-note").textContent = "The green plane is parallel to the black line and misses it: no point is on all three planes. NumPy: Singular matrix."; $("r3-note").className = "warn";
+    }
+  }
+
+  // ================================================================ part 4
+  const R0 = [[1, 1, 1, 6], [1, -1, 2, 5], [2, 1, -1, 1]];
+  const STEPS = [{i: 1, k: 0, f: 1, text: "Step 1 done: row 2 is now 0, −2, 1 | −1. The second plane pivoted about the line it shares with the first, and the point did not move."},
+                 {i: 2, k: 0, f: 2, text: "Step 2 done: row 3 is now 0, −1, −3 | −11. Column 1 is clear below the pivot."},
+                 {i: 2, k: 1, f: 0.5, text: "Step 3 done: row 3 is −3.5 z = −10.5, a horizontal plane at z = 3. Back substitution: z = 3, then −2y + 3 = −1 gives y = 2, then x + 2 + 3 = 6 gives x = 1."}];
+  const P4 = {rows: R0.map(r => r.slice()), step: 0, anim: null};
+  const view4 = makeView($("c4"));
+  const ctx4 = $("c4").getContext("2d");
+  $("c4-auto").addEventListener("change", e => { view4.auto = e.target.checked; });
+  function buttons4() {
+    for (let s = 0; s < 3; s++) { const b = $("b4-" + (s + 1)); b.disabled = !(P4.step === s && !P4.anim); b.className = P4.step === s && !P4.anim ? "primary" : ""; }
+  }
+  for (let s = 0; s < 3; s++) $("b4-" + (s + 1)).addEventListener("click", () => { if (P4.step === s && !P4.anim) { P4.anim = {t: 0, step: STEPS[s], from: P4.rows.map(r => r.slice())}; buttons4(); } });
+  $("b4-reset").addEventListener("click", () => { P4.rows = R0.map(r => r.slice()); P4.step = 0; P4.anim = null; $("r4-text").textContent = "The pivot of step 1 is the 1 in row 1, column 1. Subtracting row 1 from row 2 removes x from the second equation."; buttons4(); });
+  function currentRows4() {
+    if (!P4.anim) return P4.rows;
+    const {t, step, from} = P4.anim, e = ease(t);
+    const rows = from.map(r => r.slice());
+    rows[step.i] = from[step.i].map((v, m) => v - e * step.f * from[step.k][m]);
+    return rows;
+  }
+  function draw4() {
+    const rows = currentRows4();
+    const moving = P4.anim ? P4.anim.step.i : -1, pivot = P4.anim ? P4.anim.step.k : -1;
+    const alpha = [0.42, 0.42, 0.42];
+    if (P4.anim) { for (let m = 0; m < 3; m++) alpha[m] = (m === moving || m === pivot) ? 0.5 : 0.12; }
+    render3(ctx4, 720, 560, view4, rows, {line: P4.anim ? [pivot, moving] : null, point: [1, 2, 3], pointLabel: "(1, 2, 3)", alpha: alpha});
+    for (let r = 0; r < 3; r++) {
+      const tr = $("m4r" + r), tds = tr.querySelectorAll("td");
+      for (let m = 0; m < 4; m++) tds[m].textContent = fmt(rows[r][m], P4.anim && r === moving ? 2 : 1);
+      tr.className = r === moving ? "hot" : r === pivot ? "pivot" : "";
+    }
+  }
+  function tick4(dt) {
+    if (!P4.anim) return;
+    P4.anim.t = Math.min(1, P4.anim.t + dt / 1.8);
+    if (P4.anim.t >= 1) {
+      const {step, from} = P4.anim;
+      P4.rows = from.map(r => r.slice());
+      P4.rows[step.i] = from[step.i].map((v, m) => v - step.f * from[step.k][m]);
+      P4.step += 1; $("r4-text").textContent = step.text; P4.anim = null; buttons4();
+    }
+  }
+
+  // ================================================================ the loop
+  let last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+    if (active === 0) { tick1(dt); draw1(); }
+    if (active === 1) { tick2(dt); draw2(); }
+    if (active === 2) { if (view3.auto && !view3.drag) view3.az += dt * 0.25; draw3(); }
+    if (active === 3) { if (view4.auto && !view4.drag) view4.az += dt * 0.2; tick4(dt); draw4(); }
+    requestAnimationFrame(frame);
+  }
+  sync1(); buttons4();
+  const q = new URLSearchParams(location.search);
+  if (q.get("test") === "nudge") { P2.nudge = 1; }
+  if (q.get("test") === "step") { P4.anim = {t: 0.5, step: STEPS[0], from: P4.rows.map(r => r.slice())}; }
+  if (q.get("test") === "mix") { set3(0.9, 0); }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

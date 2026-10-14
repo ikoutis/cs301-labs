@@ -30,6 +30,14 @@ the datasets from this repository's public site,
     matrices is divided on each.
   - `matrix-costs.html` (meeting 11): the number of operations behind each matrix
     operation of the lab, and a calculator that turns a count into a time.
+  - `random-walk.html` (meeting 13): the random walk of the first notebook, animated on
+    the notebook's own graph: one walker step by step, or a thousand at once, and the
+    fraction that reaches red first under every node; the exact answer, a linear
+    system, behind a button.
+  - `linear-systems.html` (meeting 13): moving pictures of the notions of the first
+    notebook and of elimination: two lines and their crossing, nearly parallel lines
+    and the condition number, three planes that turn, and elimination as planes that
+    pivot while the solution stays.
 - `unit-2/data/`: thirty tabular datasets, numbered 1 to 30.
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
