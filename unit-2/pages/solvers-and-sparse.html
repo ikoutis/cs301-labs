@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — Solvers, round-off and sparse matrices, in motion</title>
+<!--
+  CS 301, Unit II, meeting 13. A page in place of slides for the recap of the second notebook
+  (meeting-13-solvers.ipynb), with moving pictures: the three ways to solve a system racing on a
+  Colab clock at a chosen size, with repeated runs for the small sizes (Part 1); the residual
+  against the error, as the band of points that almost satisfy both equations, which stretches as
+  the lines close up, beside the notebook's own round-off numbers (Part 2); and the sparse formats
+  on the matrix of the 3 x 3 grid, built entry by entry with the zeros skipped, and a product that
+  counts the multiplications by zero that dense storage pays for (Part 3).
+
+  The race is calibrated on the class's own Colab measurements, posted on the board of meeting 13
+  on October 10 to 14, 2026: the loops of Python 1.41 s at n = 200; the inverse about 6 s and
+  np.linalg.solve about 1.5 s at n = 4,000; scaled as n cubed, with a small fixed cost for a
+  library call. The round-off numbers of Part 2 are the output of Part 3 of the notebook as run
+  for the decks. Self-contained on purpose: no CDN, no fonts, no network. Tabs: the left and right
+  arrow keys; the address can name a part (solvers-and-sparse.html#3).
+-->
+<style>
+  :root {
+    --red: #CC0033; --ink: #1A1A1A; --muted: #555; --faint: #DDD; --paper: #F7F7F5;
+    --c1: #2a78d6; --c2: #eb6834; --c3: #2a8a3a; --grey: #777;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 20px 48px; font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: #fff; line-height: 1.6; font-size: 17px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  header { border-top: 4px solid var(--red); padding-top: 16px; margin-bottom: 18px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); margin: 0 0 4px; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; line-height: 1.25; }
+  header p.lead { margin: 0; color: var(--muted); font-size: 17px; max-width: 50em; }
+  h2 { font-size: 22px; font-weight: 600; margin: 4px 0 10px; line-height: 1.3; }
+  h3 { font-size: 17px; font-weight: 600; margin: 14px 0 6px; }
+  p { margin: 0 0 12px; max-width: 50em; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 4px; border-radius: 3px; }
+  a { color: #0b57a4; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+  [role="tablist"] { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--faint); margin: 0 0 20px; }
+  [role="tab"] { font: inherit; font-size: 15px; font-weight: 600; padding: 9px 16px; border: 1px solid transparent; border-bottom: none; background: none; color: var(--muted); cursor: pointer; border-radius: 3px 3px 0 0; margin-bottom: -1px; }
+  [role="tab"][aria-selected="true"] { color: var(--red); border-color: var(--faint); border-bottom: 1px solid #fff; background: #fff; }
+  [role="tab"]:hover { color: var(--ink); }
+  .part { margin-bottom: 34px; }
+  .part[hidden] { display: none; }
+  .stage { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; margin-top: 8px; }
+  .board { flex: 1 1 520px; min-width: 0; }
+  .board.two { display: flex; gap: 12px; flex-wrap: wrap; }
+  .board.two > div { flex: 1 1 300px; min-width: 0; }
+  canvas { display: block; width: 100%; height: auto; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  .caption { font-size: 14.5px; color: var(--muted); margin-top: 6px; }
+  .panel { flex: 0 0 330px; max-width: 100%; }
+  .label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .panel .label:first-child, .race .label:first-child { margin-top: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; align-items: center; }
+  button { font: inherit; font-size: 15px; font-weight: 600; padding: 7px 14px; border: 1px solid var(--faint); background: #fff; color: var(--ink); border-radius: 3px; cursor: pointer; }
+  button:hover { border-color: var(--ink); }
+  button.primary { border-color: var(--ink); background: var(--ink); color: #fff; }
+  button.primary:hover { background: #000; }
+  button.on { border-color: var(--red); color: var(--red); }
+  button[disabled] { opacity: .45; cursor: default; }
+  select { font: inherit; font-size: 15px; padding: 6px 8px; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  label.slider { display: block; font-size: 15px; margin-top: 8px; }
+  input[type="range"] { width: 100%; margin: 2px 0 0; }
+  .readout { background: var(--paper); border-radius: 3px; padding: 10px 14px; margin-top: 10px; font-size: 15.5px; }
+  .readout p { margin: 0 0 5px; }
+  .readout .big { font-size: 24px; font-weight: 600; line-height: 1.2; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+  .warn { color: var(--red); font-weight: 600; }
+  .story { background: var(--paper); padding: 12px 16px; border-radius: 3px; margin: 14px 0; max-width: 52em; }
+  .story p:last-child { margin-bottom: 0; }
+  table { border-collapse: collapse; margin: 6px 0 12px; font-size: 15.5px; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid var(--faint); padding: 6px 16px 6px 0; text-align: left; vertical-align: top; }
+  thead th { border-bottom: 2px solid var(--ink); }
+  td.num, th.num { text-align: right; }
+
+  /* the race */
+  .race { margin-top: 8px; }
+  .clock { display: flex; gap: 24px; align-items: baseline; flex-wrap: wrap; margin: 10px 0 8px; }
+  .clock .time { font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .clock .n { font-size: 17px; color: var(--muted); }
+  .lane { display: grid; grid-template-columns: 190px 1fr 250px; gap: 14px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--faint); }
+  .lane .name { font-weight: 600; font-size: 15.5px; }
+  .lane .name small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+  .track { position: relative; height: 30px; background: var(--paper); border-radius: 15px; overflow: hidden; }
+  .track .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 15px; opacity: .35; }
+  .track .runner { position: absolute; top: 3px; width: 24px; height: 24px; border-radius: 50%; margin-left: -12px; left: 12px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .track .flag { position: absolute; right: 10px; top: 5px; font-size: 14px; color: var(--muted); }
+  .lane .status { font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  .lane .status strong { font-size: 16px; }
+  .lane.c1 .fill, .lane.c1 .runner { background: var(--c1); } .lane.c2 .fill, .lane.c2 .runner { background: var(--c2); } .lane.c3 .fill, .lane.c3 .runner { background: var(--grey); }
+  .strip { margin-top: 12px; }
+  .strip canvas { border: none; }
+
+  /* the formats */
+  .arrays { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: 13px; margin-top: 6px; }
+  .arr { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin: 3px 0; }
+  .arr .nm { width: 70px; flex: 0 0 70px; color: var(--muted); font-family: inherit; }
+  .arr span.e { display: inline-block; min-width: 26px; padding: 2px 3px; text-align: center; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  .arr span.e.hi { background: #fde0c5; border-color: var(--c2); }
+  .arr span.e.new { background: #cfe1f2; border-color: var(--c1); }
+  .arr span.e.ptr { background: #e3f1e4; }
+  .fmt { margin: 10px 0 2px; font-weight: 600; font-size: 15px; }
+  .board.matrix { flex: 0 1 520px; }
+  .counters { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .counters > div { background: var(--paper); border-radius: 3px; padding: 8px 12px; flex: 1 1 140px; }
+  .counters .k { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+  .counters .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .counters .v small { font-size: 13px; font-weight: 400; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--faint); margin-top: 28px; padding-top: 12px; font-size: 14.5px; color: var(--muted); }
+  #errors { color: var(--red); font-family: monospace; white-space: pre-wrap; }
+  @media print { [role="tablist"] { display: none; } .part[hidden] { display: block; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CS 301 · Unit II · Meeting 13</p>
+  <h1>Solvers, round-off and sparse matrices, in motion</h1>
+  <p class="lead">Three ways to solve a system race on a Colab clock; the residual and the error come apart as two lines close up; and a matrix mostly of zeros is stored and multiplied without them.</p>
+</header>
+
+<main>
+<div role="tablist" aria-label="The parts of this page" id="tabs">
+  <button type="button" role="tab" id="tab-1" aria-controls="part-1" aria-selected="true">1. The race</button>
+  <button type="button" role="tab" id="tab-2" aria-controls="part-2" aria-selected="false" tabindex="-1">2. Residual and error</button>
+  <button type="button" role="tab" id="tab-3" aria-controls="part-3" aria-selected="false" tabindex="-1">3. Sparse formats</button>
+</div>
+
+<!-- ================================================================ part 1 -->
+<section class="part" id="part-1" aria-labelledby="h-1">
+  <h2 id="h-1">1. Three ways to solve, racing</h2>
+  <p>The same system of n equations solved three ways, as in Parts 1 and 2 of the notebook: the three loops of Python, the inverse <code>np.linalg.inv(A) @ b</code>, and <code>np.linalg.solve(A, b)</code>. The clock runs in Colab seconds, at the speed you choose. Pick a size and start.</p>
+  <div class="race">
+    <div class="buttons" id="sizes">
+      <span style="font-weight:600; margin-right:6px">n =</span>
+      <button type="button" data-n="50">50</button><button type="button" data-n="100">100</button><button type="button" data-n="200">200</button>
+      <button type="button" data-n="500">500</button><button type="button" data-n="1000">1,000</button><button type="button" data-n="2000">2,000</button>
+      <button type="button" data-n="4000" class="on">4,000</button><button type="button" data-n="10000">10,000</button>
+    </div>
+    <div class="buttons">
+      <button type="button" id="b-start" class="primary">Start the race</button>
+      <button type="button" id="b-reset">Reset</button>
+      <button type="button" id="b-runs">Run it 12 times</button>
+      <label style="font-size:15px; margin-left:8px">1 second on screen =
+        <select id="sel-speed"><option value="0.1">0.1 s</option><option value="1" selected>1 s</option><option value="10">10 s</option><option value="100">100 s</option><option value="1000">1,000 s</option></select> on Colab</label>
+    </div>
+    <div class="clock"><span class="time" id="clock">0.000 s</span><span class="n" id="clock-n">n = 4,000 · 64 billion multiplications in the loops' count</span></div>
+    <div class="lane c3" id="lane-0"><div class="name">Python, three loops<small>the elimination of Part 1</small></div><div class="track"><div class="fill"></div><div class="runner"></div><span class="flag">finish</span></div><div class="status"></div></div>
+    <div class="lane c2" id="lane-1"><div class="name">np.linalg.inv(A) @ b<small>the inverse, then a product</small></div><div class="track"><div class="fill"></div><div class="runner"></div><span class="flag">finish</span></div><div class="status"></div></div>
+    <div class="lane c1" id="lane-2"><div class="name">np.linalg.solve(A, b)<small>elimination in compiled code</small></div><div class="track"><div class="fill"></div><div class="runner"></div><span class="flag">finish</span></div><div class="status"></div></div>
+    <div class="strip" id="strip" hidden>
+      <p class="label">Twelve runs at this size, on a logarithmic time axis: the dots are the runs, the bar the median</p>
+      <canvas id="c-strip" width="1000" height="150" aria-label="Twelve simulated runs of each method as dots on a logarithmic time axis, with the median marked."></canvas>
+    </div>
+  </div>
+  <div class="story">
+    <p><strong>Where the numbers come from.</strong> Your posts on Colab: the loops took 1.4 seconds at n = 200, the inverse about 6 seconds and <code>solve</code> about 1.5 seconds at n = 4,000. The clock scales them as n³, the count of elimination, with a small fixed cost for a library call, and jitters each run by a few per cent, as measurements do. Doubling n multiplies every time by about 8; the loops pay about 500 nanoseconds a pass against a fraction of a nanosecond in compiled code, and the inverse does three times the arithmetic of one elimination.</p>
+  </div>
+</section>
+
+<!-- ================================================================ part 2 -->
+<section class="part" id="part-2" aria-labelledby="h-2" hidden>
+  <h2 id="h-2">2. A tiny residual, a large error</h2>
+  <p>The <strong>residual</strong> of a candidate solution is how far it is from satisfying the equations; the <strong>error</strong> is how far it is from the true solution. The red band holds every point whose residual is at most ε. As the lines close up, the band stretches: a point can satisfy both equations almost exactly and still be far from the solution.</p>
+  <div class="stage">
+    <div class="board two">
+      <div><canvas id="c2" width="520" height="520" aria-label="Two lines, their crossing, and the band of points whose residual is below the tolerance, a parallelogram that stretches along the lines when they are nearly parallel."></canvas><p class="caption" id="cap2">x + y = 2 and the second line at the chosen angle, both through (1, 1).</p></div>
+      <div><canvas id="c2b" width="520" height="520" aria-label="A bar chart on a logarithmic axis from the notebook's experiment: for condition numbers ten to the 4, 8, 12 and 16, the residual of solve stays near ten to the minus 16 while its error climbs to about 1."></canvas><p class="caption">Part 3 of the notebook: 100 nearly identical equations, the condition number set by eps. The residual of <code>solve</code> never moves; the error climbs with the condition number.</p></div>
+    </div>
+    <aside class="panel">
+      <label class="slider" for="s2-angle">Angle between the lines: <span id="v2-angle">10°</span>
+        <input type="range" id="s2-angle" min="0" max="1000" step="1" value="700">
+      </label>
+      <label class="slider" for="s2-eps">Residual tolerance ε: <span id="v2-eps">0.05</span>
+        <input type="range" id="s2-eps" min="0" max="1000" step="1" value="600">
+      </label>
+      <div class="buttons"><button type="button" id="b2-close" class="primary">Close the angle</button><button type="button" id="b2-notebook">The notebook's pair</button></div>
+      <div class="readout" aria-live="polite">
+        <p>condition number <span class="big" style="display:inline" id="r2-cond">—</span></p>
+        <p>the farthest point of the band is <strong id="r2-far">—</strong> from the solution</p>
+        <p>that is <strong id="r2-ratio">—</strong> times the residual ε</p>
+        <p id="r2-note"></p>
+      </div>
+    </aside>
+  </div>
+  <div class="story">
+    <p>A well-made solver always returns an x with a tiny residual: it satisfies, to round-off, a system within a hair of the one it was given. Whether that x is close to the true solution is another matter, and the condition number is what says how far apart the two can be: error up to about the condition number times the residual. With sixteen digits in float64, a condition number of 10<sup>k</sup> can cost up to k of them.</p>
+  </div>
+</section>
+
+<!-- ================================================================ part 3 -->
+<section class="part" id="part-3" aria-labelledby="h-3" hidden>
+  <h2 id="h-3">3. Mostly zeros: the formats, and why the zeros can go</h2>
+  <p>The matrix of the 3 × 3 grid of Part 4: 9 rows, 9 columns, 33 nonzeros among 81 numbers. Dense storage keeps every number. A sparse format keeps the nonzeros and where they are. Click a cell to make it a nonzero or a zero and watch the arrays follow.</p>
+  <div class="stage">
+    <div class="board matrix">
+      <canvas id="c3" width="600" height="520" aria-label="A 9 by 9 matrix drawn as cells, the nonzeros coloured and the zeros white; a cursor passes over the cells during the animations, and the running sums of the product appear at the right."></canvas>
+      <p class="caption" id="cap3">The matrix of the 3 × 3 grid: 4 on the diagonal, −1 for each neighbour, blank where the number is 0.</p>
+    </div>
+    <aside class="panel">
+      <p class="label">The matrix</p>
+      <div class="buttons"><button type="button" id="b3-grid" class="on">the 3 × 3 grid's</button><button type="button" id="b3-random">random 9 × 9</button></div>
+      <label class="slider" for="s3-density">Density of the random matrix: <span id="v3-density">20%</span>
+        <input type="range" id="s3-density" min="5" max="100" step="5" value="20">
+      </label>
+      <p class="label">Animate</p>
+      <div class="buttons"><button type="button" id="b3-build" class="primary">Build CSR, row by row</button></div>
+      <div class="buttons"><button type="button" id="b3-dense">Multiply dense</button><button type="button" id="b3-sparse">Multiply with CSR</button><button type="button" id="b3-stop">Stop</button></div>
+      <div class="readout" aria-live="polite"><p id="r3-text">Hover a coloured cell to find it in the three formats.</p></div>
+      <div class="counters">
+        <div><div class="k">dense storage</div><div class="v" id="k-dense">648 <small>bytes</small></div></div>
+        <div><div class="k">CSR storage</div><div class="v" id="k-csr">436 <small>bytes</small></div></div>
+        <div><div class="k">multiplications, dense</div><div class="v" id="k-mul-dense">0 <small>of 81</small></div></div>
+        <div><div class="k">multiplications, CSR</div><div class="v" id="k-mul-sparse">0 <small>of 33</small></div></div>
+      </div>
+    </aside>
+  </div>
+  <div class="arrays" id="arrays"></div>
+  <div class="story">
+    <p><strong>Zeros are neutral.</strong> In the product <code>A @ v</code> a zero entry adds 0 × v<sub>j</sub> = 0 to its row's sum: the dense product computes it anyway, once for every zero, and reads the zero from memory to do so. CSR never stores the zero, so it never reads it and never multiplies it. The same is true of elimination with the zeros it does not create, which is the deeper look's story: a sparse solver's cost follows the nonzeros it has to handle, not the size of the matrix.</p>
+  </div>
+</section>
+<p id="errors" aria-hidden="true"></p>
+</main>
+
+<footer>
+  <p>The timings of Part 1 are the class's own Colab measurements, posted on the board of meeting 13, scaled as n³. The numbers of Part 2's chart are the output of Part 3 of the second notebook. See also: <a href="random-walk.html">A walk on a graph</a> and <a href="linear-systems.html">Linear systems, in pictures</a>.</p>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  window.onerror = function (m, s, l) { document.getElementById("errors").textContent += m + " (" + l + ")\n"; };
+  const $ = id => document.getElementById(id);
+  const FONT = getComputedStyle(document.body).fontFamily;
+  const ease = t => t * t * (3 - 2 * t);
+  const fmtInt = x => Math.round(x).toLocaleString("en-US");
+  const trim = s => s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;      // 1.50 -> 1.5, 100 stays 100
+  function duration(s) {
+    if (s < 1e-3) return trim((s * 1e6).toPrecision(2)) + " µs";
+    if (s < 1) return trim((s * 1e3).toPrecision(2)) + " ms";
+    if (s < 120) return trim(s.toPrecision(3)) + " s";
+    if (s < 7200) return trim((s / 60).toPrecision(2)) + " minutes";
+    if (s < 172800) return trim((s / 3600).toPrecision(2)) + " hours";
+    return trim((s / 86400).toPrecision(2)) + " days";
+  }
+  const sci = x => { if (x === 0) return "0"; const e = Math.floor(Math.log10(x)); const m = x / Math.pow(10, e); return (m >= 9.5 ? "1" : m.toPrecision(2).replace(/\.0$/, "")) + " × 10^" + (m >= 9.5 ? e + 1 : e); };
+
+  // ================================================================ tabs
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const parts = tabs.map(t => $(t.getAttribute("aria-controls")));
+  let active = 0;
+  function show(i) {
+    active = i;
+    tabs.forEach((t, k) => { t.setAttribute("aria-selected", k === i ? "true" : "false"); t.tabIndex = k === i ? 0 : -1; parts[k].hidden = k !== i; });
+    history.replaceState(null, "", "#" + (i + 1));
+    if (i === 1 && barsT === null) barsT = 0;
+  }
+  tabs.forEach((t, k) => t.addEventListener("click", () => show(k)));
+  document.addEventListener("keydown", e => {
+    if (["INPUT", "BUTTON", "SELECT"].includes(e.target.tagName)) return;
+    if (e.key === "ArrowRight") show((active + 1) % tabs.length);
+    if (e.key === "ArrowLeft") show((active + tabs.length - 1) % tabs.length);
+  });
+
+  // ================================================================ part 1: the race
+  // times in Colab seconds from the class's posts: loops 1.41 s at n = 200; inverse ~6 s, solve ~1.5 s at n = 4,000
+  const K_LOOPS = 1.41 / Math.pow(200, 3), K_SOLVE = 1.5 / Math.pow(4000, 3), K_INV = 6.0 / Math.pow(4000, 3);
+  const predict = n => [K_LOOPS * n ** 3, K_INV * n ** 3 + 0.0008, K_SOLVE * n ** 3 + 0.0004];
+  const R = {n: 4000, speed: 1, running: false, elapsed: 0, times: null, done: [false, false, false], runs: null};
+  const lanes = [0, 1, 2].map(i => $("lane-" + i));
+  const jitter = () => Math.exp((Math.random() - 0.5) * 0.3);
+  function setN(n) {
+    R.n = n; R.running = false; R.elapsed = 0; R.times = null; R.done = [false, false, false]; R.runs = null; $("strip").hidden = true;
+    document.querySelectorAll("#sizes button").forEach(b => b.classList.toggle("on", parseInt(b.dataset.n, 10) === n));
+    $("sel-speed").value = n <= 100 ? "0.1" : "1"; R.speed = parseFloat($("sel-speed").value);
+    $("b-start").textContent = "Start the race";
+    drawRace();
+  }
+  document.querySelectorAll("#sizes button").forEach(b => b.addEventListener("click", () => setN(parseInt(b.dataset.n, 10))));
+  $("sel-speed").addEventListener("change", e => { R.speed = parseFloat(e.target.value); });
+  $("b-start").addEventListener("click", () => {
+    if (R.running) { R.running = false; $("b-start").textContent = "Resume"; return; }
+    if (!R.times || R.done.every(d => d)) { R.times = predict(R.n).map(t => t * jitter()); R.elapsed = 0; R.done = [false, false, false]; }
+    R.running = true; $("b-start").textContent = "Pause";
+  });
+  $("b-reset").addEventListener("click", () => setN(R.n));
+  $("b-runs").addEventListener("click", () => {
+    const base = predict(R.n);
+    R.runs = base.map(t => Array.from({length: 12}, () => t * jitter()).sort((a, b) => a - b));
+    $("strip").hidden = false; drawStrip();
+  });
+  function tickRace(dt) {
+    if (!R.running || !R.times) return;
+    R.elapsed += dt * R.speed;
+    R.times.forEach((t, i) => { if (!R.done[i] && R.elapsed >= t) { R.done[i] = true; } });
+    if (R.done.every(d => d)) { R.running = false; $("b-start").textContent = "Race again"; }
+  }
+  function drawRace() {
+    const base = predict(R.n), times = R.times || base;
+    $("clock").textContent = R.elapsed < 1000 ? R.elapsed.toFixed(3) + " s" : duration(R.elapsed);
+    $("clock-n").textContent = "n = " + fmtInt(R.n) + " · the loops pass their innermost line " + fmtInt(R.n ** 3 / 3) + " times";
+    lanes.forEach((lane, i) => {
+      const t = times[i], p = Math.min(1, R.elapsed / t);
+      lane.querySelector(".fill").style.width = (p * 100) + "%";
+      lane.querySelector(".runner").style.left = (12 + p * (lane.querySelector(".track").clientWidth - 24)) + "px";
+      let s;
+      if (!R.times) s = "predicted <strong>" + duration(t) + "</strong>";
+      else if (R.done[i]) s = "finished in <strong>" + duration(t) + "</strong>";
+      else if (p < 0.001) s = (p * 100).toFixed(4) + " % done · needs <strong>" + duration(t) + "</strong>";
+      else s = (p * 100).toFixed(1) + " % done · needs <strong>" + duration(t) + "</strong>";
+      lane.querySelector(".status").innerHTML = s;
+    });
+  }
+  function drawStrip() {
+    const c = $("c-strip"), ctx = c.getContext("2d"), W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (!R.runs) return;
+    const all = R.runs.flat(), lo = Math.min(...all) / 2, hi = Math.max(...all) * 2;
+    const X = t => 150 + (Math.log(t) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * (W - 180);
+    ctx.font = "13px " + FONT; ctx.fillStyle = "#555"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let e = Math.ceil(Math.log10(lo)); e <= Math.floor(Math.log10(hi)); e++) {
+      const x = X(Math.pow(10, e)); ctx.strokeStyle = "#e1e0d9"; ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, H - 26); ctx.stroke();
+      ctx.fillText(duration(Math.pow(10, e)), x, H - 22);
+    }
+    const names = ["Python loops", "inverse", "solve"], cols = ["#777", "#eb6834", "#2a78d6"];
+    R.runs.forEach((runs, i) => {
+      const y = 24 + i * 36;
+      ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillStyle = "#1A1A1A"; ctx.font = "600 14px " + FONT; ctx.fillText(names[i], 138, y);
+      const med = (runs[5] + runs[6]) / 2;
+      ctx.fillStyle = cols[i];
+      for (const t of runs) { ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(X(t), y, 6, 0, 2 * Math.PI); ctx.fill(); }
+      ctx.globalAlpha = 1; ctx.fillRect(X(med) - 1.5, y - 13, 3, 26);
+      ctx.font = "13px " + FONT; ctx.fillStyle = "#1A1A1A";
+      if (X(runs[11]) > W - 150) { ctx.textAlign = "right"; ctx.fillText("median " + duration(med), X(runs[0]) - 14, y); }
+      else { ctx.textAlign = "left"; ctx.fillText("median " + duration(med), X(runs[11]) + 14, y); }
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // ================================================================ part 2: residual and error
+  const P2 = {angle: 10, eps: 0.05, anim: null};
+  const ctx2 = $("c2").getContext("2d"), ctx2b = $("c2b").getContext("2d");
+  const ANG_MIN = 0.02, ANG_MAX = 90, EPS_MIN = 1e-4, EPS_MAX = 0.5;
+  const s2a = s => ANG_MIN * Math.pow(ANG_MAX / ANG_MIN, s / 1000), a2s = a => 1000 * Math.log(a / ANG_MIN) / Math.log(ANG_MAX / ANG_MIN);
+  const s2e = s => EPS_MIN * Math.pow(EPS_MAX / EPS_MIN, s / 1000), e2s = e => 1000 * Math.log(e / EPS_MIN) / Math.log(EPS_MAX / EPS_MIN);
+  $("s2-angle").value = Math.round(a2s(P2.angle)); $("s2-eps").value = Math.round(e2s(P2.eps));
+  $("s2-angle").addEventListener("input", e => { P2.angle = s2a(parseFloat(e.target.value)); P2.anim = null; });
+  $("s2-eps").addEventListener("input", e => { P2.eps = s2e(parseFloat(e.target.value)); });
+  $("b2-close").addEventListener("click", () => { P2.anim = {t: 0, from: Math.max(P2.angle, 20)}; });
+  $("b2-notebook").addEventListener("click", () => { P2.angle = Math.abs(Math.atan2(1.001, 1) - Math.PI / 4) * 180 / Math.PI; P2.anim = null; $("s2-angle").value = Math.round(a2s(P2.angle)); });
+  function rows2() {           // row 1 = (1, 1), b = 2; row 2 at the angle, through (1, 1), the same norm
+    const th = Math.PI / 4 + P2.angle * Math.PI / 180, n = Math.SQRT2;
+    const r2 = [n * Math.cos(th), n * Math.sin(th)];
+    return [[1, 1, 2], [r2[0], r2[1], r2[0] + r2[1]]];
+  }
+  function cond2(a, b, c, d) {
+    const s = a * a + b * b + c * c + d * d, det = a * d - b * c, disc = Math.sqrt(Math.max(0, s * s - 4 * det * det));
+    const s1 = Math.sqrt((s + disc) / 2), s2 = Math.sqrt(Math.max(0, (s - disc) / 2));
+    return s2 < 1e-300 ? Infinity : s1 / s2;
+  }
+  function solve2(a, b, c, d, e, f) { const det = a * e - b * d; return [(c * e - b * f) / det, (a * f - c * d) / det]; }
+  function plot2d(ctx, Wd, lo, hi) {
+    ctx.clearRect(0, 0, Wd, Wd);
+    const X = x => (x - lo) / (hi - lo) * Wd, Y = y => Wd - (y - lo) / (hi - lo) * Wd;
+    ctx.save(); ctx.strokeStyle = "#e1e0d9"; ctx.lineWidth = 1;
+    for (let k = Math.ceil(lo); k <= hi; k++) { ctx.beginPath(); ctx.moveTo(X(k), 0); ctx.lineTo(X(k), Wd); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, Y(k)); ctx.lineTo(Wd, Y(k)); ctx.stroke(); }
+    ctx.strokeStyle = "#999"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X(0), 0); ctx.lineTo(X(0), Wd); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, Y(0)); ctx.lineTo(Wd, Y(0)); ctx.stroke();
+    ctx.fillStyle = "#555"; ctx.font = "13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let k = Math.ceil(lo); k <= hi; k++) if (k) ctx.fillText(String(k), X(k), Y(0) + 4);
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let k = Math.ceil(lo); k <= hi; k++) if (k) ctx.fillText(String(k), X(0) - 5, Y(k));
+    ctx.restore();
+    return [X, Y];
+  }
+  function draw2() {
+    const [r1, r2] = rows2(), eps = P2.eps, Wd = 520, lo = -1, hi = 5;
+    const [X, Y] = plot2d(ctx2, Wd, lo, hi);
+    const corners = [];
+    for (const s1 of [-1, 1]) for (const s2 of [-1, 1]) corners.push(solve2(r1[0], r1[1], r1[2] + s1 * eps, r2[0], r2[1], r2[2] + s2 * eps));
+    const order = [corners[0], corners[1], corners[3], corners[2]];
+    const far = Math.max(...corners.map(p => Math.hypot(p[0] - 1, p[1] - 1)));
+    ctx2.save(); ctx2.beginPath(); ctx2.rect(0, 0, Wd, Wd); ctx2.clip();
+    ctx2.beginPath(); ctx2.moveTo(X(order[0][0]), Y(order[0][1]));
+    for (let k = 1; k < 4; k++) ctx2.lineTo(X(order[k][0]), Y(order[k][1]));
+    ctx2.closePath(); ctx2.fillStyle = "rgba(204,0,51,0.28)"; ctx2.fill(); ctx2.strokeStyle = "rgba(204,0,51,0.9)"; ctx2.lineWidth = 1.5; ctx2.stroke();
+    for (const [r, col] of [[r1, "#2a78d6"], [r2, "#eb6834"]]) {
+      ctx2.strokeStyle = col; ctx2.lineWidth = 3; ctx2.beginPath();
+      if (Math.abs(r[1]) > 1e-9) { ctx2.moveTo(X(-30), Y((r[2] + 30 * r[0]) / r[1])); ctx2.lineTo(X(30), Y((r[2] - 30 * r[0]) / r[1])); }
+      ctx2.stroke();
+    }
+    ctx2.restore();
+    ctx2.beginPath(); ctx2.arc(X(1), Y(1), 7, 0, 2 * Math.PI); ctx2.fillStyle = "#1A1A1A"; ctx2.fill(); ctx2.lineWidth = 2.5; ctx2.strokeStyle = "#fff"; ctx2.stroke();
+    ctx2.font = "600 14px " + FONT; ctx2.fillStyle = "#1A1A1A"; ctx2.textAlign = "left"; ctx2.textBaseline = "bottom"; ctx2.fillText("the solution (1, 1)", X(1) + 10, Y(1) - 8);
+    ctx2.font = "600 14px " + FONT; ctx2.fillStyle = "#CC0033"; ctx2.textAlign = "left"; ctx2.textBaseline = "top";
+    ctx2.fillText("residual ≤ " + eps.toPrecision(2).replace(/\.0+$/, ""), 14, 14);
+    const cond = cond2(r1[0], r1[1], r2[0], r2[1]);
+    $("v2-angle").textContent = P2.angle.toPrecision(3).replace(/\.?0+$/, "") + "°";
+    $("v2-eps").textContent = eps.toPrecision(2).replace(/\.0+$/, "");
+    $("r2-cond").textContent = isFinite(cond) ? fmtInt(cond) : "infinite";
+    $("r2-far").textContent = far >= 100 ? sci(far) : far.toPrecision(3);
+    $("r2-ratio").textContent = fmtInt(far / eps);
+    $("r2-note").textContent = far > 6 ? "The band runs out of the window: a residual this small is compatible with an error of " + (far >= 100 ? sci(far) : far.toPrecision(2)) + "." : "";
+    $("r2-note").className = "warn";
+    $("cap2").textContent = "x + y = 2 and a second line at " + P2.angle.toPrecision(2).replace(/\.?0+$/, "") + "°, both through (1, 1). Red: every point whose residual is at most ε.";
+  }
+  // the notebook's experiment, as run for the decks: eps, condition number, error of solve, residual of solve, error of inverse
+  const ROWS = [[1e-2, 1e4, 4.7e-13, 1.1e-16, 7.1e-12], [1e-6, 1e8, 6.7e-9, 2.1e-16, 9.9e-8], [1e-10, 1e12, 5.3e-5, 2.0e-16, 4.1e-3], [1e-14, 1e16, 6.3e-1, 3.9e-16, 1.9e1]];
+  let barsT = null;
+  function draw2b() {
+    const c = $("c2b"), ctx = ctx2b, W = c.width, H = c.height, L = 70, Rm = 20, T = 40, B = 70;
+    ctx.clearRect(0, 0, W, H);
+    const lo = -17, hi = 2;
+    const Y = v => T + (hi - Math.log10(v)) / (hi - lo) * (H - T - B);
+    ctx.font = "12px " + FONT; ctx.fillStyle = "#555"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let e = -16; e <= 2; e += 2) { ctx.strokeStyle = "#e1e0d9"; ctx.beginPath(); ctx.moveTo(L, Y(Math.pow(10, e))); ctx.lineTo(W - Rm, Y(Math.pow(10, e))); ctx.stroke(); ctx.fillText("10^" + e, L - 6, Y(Math.pow(10, e))); }
+    const g = (W - L - Rm) / ROWS.length, bw = g * 0.22, grow = barsT === null ? 1 : ease(Math.min(1, barsT));
+    const cols = ["#2a78d6", "#CC0033", "#eb6834"], names = ["residual of solve", "error of solve", "error of the inverse"];
+    ROWS.forEach((r, i) => {
+      const x0 = L + i * g + g * 0.17;
+      [r[3], r[2], r[4]].forEach((v, k) => {
+        const top = Y(Math.pow(10, lo + (Math.log10(v) - lo) * grow)), base = Y(Math.pow(10, lo));
+        ctx.fillStyle = cols[k]; ctx.fillRect(x0 + k * bw, top, bw - 4, base - top);
+      });
+      ctx.fillStyle = "#1A1A1A"; ctx.font = "600 13px " + FONT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("cond 10^" + Math.round(Math.log10(r[1])), x0 + 1.5 * bw, H - B + 8);
+      ctx.font = "12px " + FONT; ctx.fillStyle = "#555"; ctx.fillText("about " + Math.max(0, 16 - Math.round(Math.log10(r[1]))) + " digits left", x0 + 1.5 * bw, H - B + 26);
+    });
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    names.forEach((nm, k) => { ctx.fillStyle = cols[k]; ctx.fillRect(L + k * 160, 12, 14, 14); ctx.fillStyle = "#1A1A1A"; ctx.font = "13px " + FONT; ctx.fillText(nm, L + k * 160 + 20, 19); });
+  }
+  function tick2(dt) {
+    if (P2.anim) { P2.anim.t = Math.min(1, P2.anim.t + dt / 6); const e = ease(P2.anim.t); P2.angle = Math.exp(Math.log(P2.anim.from) + e * (Math.log(0.03) - Math.log(P2.anim.from))); $("s2-angle").value = Math.round(a2s(P2.angle)); if (P2.anim.t >= 1) P2.anim = null; }
+    if (barsT !== null && barsT < 1) barsT += dt / 1.4;
+  }
+
+  // ================================================================ part 3: the formats
+  const N3 = 9;
+  function gridMatrix() {
+    const M = Array.from({length: N3}, () => Array(N3).fill(0));
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const k = i * 3 + j; M[k][k] = 4;
+      for (const [di, dj] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) { const a = i + di, b = j + dj; if (a >= 0 && a < 3 && b >= 0 && b < 3) M[k][a * 3 + b] = -1; }
+    }
+    return M;
+  }
+  function randomMatrix(density) {
+    const M = Array.from({length: N3}, () => Array(N3).fill(0));
+    for (let i = 0; i < N3; i++) for (let j = 0; j < N3; j++) if (Math.random() < density) M[i][j] = 1 + Math.floor(Math.random() * 9);
+    return M;
+  }
+  const S3 = {M: gridMatrix(), source: "grid", density: 0.2, anim: null, hover: null, built: null};
+  const ctx3 = $("c3").getContext("2d");
+  const V = Array.from({length: N3}, (_, j) => j + 1);          // v = 1, 2, ..., 9
+  function formats(M) {
+    const coo = [], csr = {data: [], indices: [], indptr: [0]}, csc = {data: [], indices: [], indptr: [0]};
+    for (let i = 0; i < N3; i++) { for (let j = 0; j < N3; j++) if (M[i][j] !== 0) { coo.push([i, j, M[i][j]]); csr.data.push(M[i][j]); csr.indices.push(j); } csr.indptr.push(csr.data.length); }
+    for (let j = 0; j < N3; j++) { for (let i = 0; i < N3; i++) if (M[i][j] !== 0) { csc.data.push(M[i][j]); csc.indices.push(i); } csc.indptr.push(csc.data.length); }
+    return {coo, csr, csc, nnz: coo.length};
+  }
+  const vtxt = v => (v < 0 ? "−" : "") + Math.abs(v);
+  function renderArrays() {
+    const F = formats(S3.M), hi = S3.hover, built = S3.built;       // built: how many CSR entries exist yet (during the build animation)
+    const row = (name, arr, cls, limit) => "<div class='arr'><span class='nm'>" + name + "</span>" +
+      arr.map((v, k) => "<span class='e" + (cls(k) ? " " + cls(k) : "") + "'>" + (typeof v === "number" ? vtxt(v) : v) + "</span>").slice(0, limit === undefined ? arr.length : limit).join("") + "</div>";
+    const cooHi = k => hi && F.coo[k][0] === hi[0] && F.coo[k][1] === hi[1] ? "hi" : "";
+    const csrK = hi ? F.coo.findIndex(e => e[0] === hi[0] && e[1] === hi[1]) : -1;
+    const cscK = hi ? F.csc.indices.reduce((f, i, k) => (f < 0 && i === hi[0] && F.csc.data.length && colOf(F, k) === hi[1]) ? k : f, -1) : -1;
+    let h = "";
+    const n = built === null ? F.csr.data.length : built;
+    const csrCls = k => (built !== null && k === built - 1) ? "new" : (k === csrK ? "hi" : "");
+    h += "<p class='fmt'>CSR, compressed sparse rows: the nonzero values and their columns, row by row, and where each row begins</p>";
+    h += row("data", F.csr.data, csrCls, n) + row("indices", F.csr.indices, csrCls, n);
+    const nptr = built === null ? F.csr.indptr.length : S3.anim && S3.anim.kind === "build" ? S3.anim.rowsDone + 1 : F.csr.indptr.length;
+    h += row("indptr", F.csr.indptr, k => (hi && (k === hi[0] || k === hi[0] + 1)) ? "ptr" : "", nptr);
+    h += "<p class='fmt'>COO, coordinates: " + F.nnz + " triples, the row, the column and the value of each nonzero</p>";
+    h += row("row", F.coo.map(e => e[0]), cooHi) + row("col", F.coo.map(e => e[1]), cooHi) + row("data", F.coo.map(e => e[2]), cooHi);
+    h += "<p class='fmt'>CSC, compressed sparse columns: the same by columns</p>";
+    h += row("data", F.csc.data, k => k === cscK ? "hi" : "") + row("indices", F.csc.indices, k => k === cscK ? "hi" : "") + row("indptr", F.csc.indptr, k => (hi && (k === hi[1] || k === hi[1] + 1)) ? "ptr" : "");
+    $("arrays").innerHTML = h;
+    $("k-dense").innerHTML = fmtInt(8 * N3 * N3) + " <small>bytes</small>";
+    $("k-csr").innerHTML = fmtInt(12 * F.nnz + 4 * (N3 + 1)) + " <small>bytes</small>";
+  }
+  function colOf(F, k) { let j = 0; while (F.csc.indptr[j + 1] <= k) j++; return j; }
+  const OX = 26, OY = 26, CS = 480 / N3;          // the grid sits at (OX, OY); the running sums use the right margin
+  function cellAt(x, y) { const j = Math.floor((x - OX) / CS), i = Math.floor((y - OY) / CS); return (x >= OX && y >= OY && i >= 0 && i < N3 && j >= 0 && j < N3) ? [i, j] : null; }
+  const canvasXY = e => { const r = $("c3").getBoundingClientRect(); return [(e.clientX - r.left) * 600 / r.width, (e.clientY - r.top) * 520 / r.height]; };
+  $("c3").addEventListener("mousemove", e => { const c = cellAt(...canvasXY(e)); S3.hover = c && S3.M[c[0]][c[1]] !== 0 ? c : null; renderArrays(); if (S3.hover && !S3.anim) hoverText(); });
+  $("c3").addEventListener("mouseleave", () => { S3.hover = null; renderArrays(); });
+  $("c3").addEventListener("click", e => {
+    if (S3.anim) return;
+    const c = cellAt(...canvasXY(e));
+    if (!c) return;
+    S3.M[c[0]][c[1]] = S3.M[c[0]][c[1]] === 0 ? 1 : 0;
+    resetCounters(); renderArrays();
+  });
+  function hoverText() {
+    const [i, j] = S3.hover, F = formats(S3.M), k = F.coo.findIndex(e => e[0] === i && e[1] === j);
+    $("r3-text").innerHTML = "A[" + i + ", " + j + "] = " + vtxt(S3.M[i][j]) + " is triple " + k + " of COO; in CSR it is data[" + k + "] with indices[" + k + "] = " + j + ", inside row " + i + ", which runs from indptr[" + i + "] = " + F.csr.indptr[i] + " to indptr[" + (i + 1) + "] = " + F.csr.indptr[i + 1] + ".";
+  }
+  function resetCounters() { $("k-mul-dense").innerHTML = "0 <small>of " + (N3 * N3) + "</small>"; $("k-mul-sparse").innerHTML = "0 <small>of " + formats(S3.M).nnz + "</small>"; }
+  $("b3-grid").addEventListener("click", () => { S3.M = gridMatrix(); S3.source = "grid"; S3.anim = null; S3.built = null; $("b3-grid").classList.add("on"); $("b3-random").classList.remove("on"); $("cap3").textContent = "The matrix of the 3 × 3 grid: 4 on the diagonal, −1 for each neighbour, blank where the number is 0."; resetCounters(); renderArrays(); });
+  $("b3-random").addEventListener("click", () => { S3.M = randomMatrix(S3.density); S3.source = "random"; S3.anim = null; S3.built = null; $("b3-random").classList.add("on"); $("b3-grid").classList.remove("on"); $("cap3").textContent = "A random 9 × 9 matrix with about " + Math.round(S3.density * 100) + "% of its entries nonzero."; resetCounters(); renderArrays(); });
+  $("s3-density").addEventListener("input", e => { S3.density = parseInt(e.target.value, 10) / 100; $("v3-density").textContent = Math.round(S3.density * 100) + "%"; if (S3.source === "random") $("b3-random").click(); });
+  $("b3-build").addEventListener("click", () => { S3.anim = {kind: "build", pos: 0, t: 0, rowsDone: 0}; S3.built = 0; S3.hover = null; $("r3-text").textContent = "Scanning the matrix row by row: a nonzero goes into data and indices, a zero is skipped; at the end of each row, indptr records how many are stored so far."; renderArrays(); });
+  $("b3-dense").addEventListener("click", () => { S3.anim = {kind: "dense", pos: 0, t: 0, y: Array(N3).fill(0), mul: 0, zeros: 0}; S3.built = null; S3.hover = null; resetCounters(); renderArrays(); $("r3-text").textContent = "Dense A @ v: every entry of A is read and multiplied by an entry of v, zeros included: 81 multiplications, most of them by zero."; });
+  $("b3-sparse").addEventListener("click", () => { S3.anim = {kind: "sparse", pos: 0, t: 0, y: Array(N3).fill(0), mul: 0}; S3.built = null; S3.hover = null; resetCounters(); renderArrays(); $("r3-text").textContent = "CSR A @ v: row i uses only its stored entries, data[indptr[i]:indptr[i+1]], each multiplied by v at its column: one multiplication for each nonzero, none by zero."; });
+  $("b3-stop").addEventListener("click", () => { S3.anim = null; S3.built = null; renderArrays(); });
+  const STEP = 0.11;                     // seconds for each cell visited
+  function tick3(dt) {
+    const a = S3.anim; if (!a) return;
+    a.t += dt;
+    const F = formats(S3.M);
+    while (a.t >= STEP) {
+      a.t -= STEP;
+      if (a.kind === "build" || a.kind === "dense") {
+        if (a.pos >= N3 * N3) { finish3(F); return; }
+        const i = Math.floor(a.pos / N3), j = a.pos % N3, v = S3.M[i][j];
+        if (a.kind === "build") { if (v !== 0) S3.built++; if (j === N3 - 1) a.rowsDone++; }
+        else { a.mul++; if (v === 0) a.zeros++; else a.y[i] += v * V[j]; $("k-mul-dense").innerHTML = a.mul + " <small>of " + (N3 * N3) + ", " + a.zeros + " by zero</small>"; }
+        a.pos++;
+        if (a.kind === "build") renderArrays();
+      } else {
+        if (a.pos >= F.nnz) { finish3(F); return; }
+        const [i, j, v] = F.coo[a.pos]; a.mul++; a.y[i] += v * V[j];
+        $("k-mul-sparse").innerHTML = a.mul + " <small>of " + F.nnz + ", none by zero</small>";
+        S3.hover = [i, j]; renderArrays();
+        a.pos++;
+      }
+    }
+  }
+  function finish3(F) {
+    const a = S3.anim;
+    if (a.kind === "build") { S3.built = null; $("r3-text").textContent = "CSR built: " + F.nnz + " values, " + F.nnz + " column numbers, and " + (N3 + 1) + " row pointers, in " + fmtInt(12 * F.nnz + 4 * (N3 + 1)) + " bytes against " + fmtInt(8 * N3 * N3) + " dense."; }
+    else { $("r3-text").innerHTML = (a.kind === "dense" ? "Dense: " + a.mul + " multiplications, " + a.zeros + " of them by zero, " : "CSR: " + a.mul + " multiplications, none by zero, ") + "and the same result y = [" + a.y.join(", ") + "]."; }
+    S3.anim = null; S3.hover = null; renderArrays();
+  }
+  function draw3() {
+    const M = S3.M, cs = CS, a = S3.anim, F = formats(M);
+    ctx3.clearRect(0, 0, 600, 520);
+    let cur = null;
+    if (a) { if (a.kind === "sparse") cur = a.pos < F.nnz ? [F.coo[a.pos][0], F.coo[a.pos][1]] : null; else cur = a.pos < N3 * N3 ? [Math.floor(a.pos / N3), a.pos % N3] : null; }
+    ctx3.fillStyle = "#555"; ctx3.font = "12px " + FONT; ctx3.textAlign = "center"; ctx3.textBaseline = "middle";
+    for (let k = 0; k < N3; k++) { ctx3.fillText(String(k), OX + k * cs + cs / 2, OY / 2); ctx3.fillText(String(k), OX / 2, OY + k * cs + cs / 2); }
+    for (let i = 0; i < N3; i++) for (let j = 0; j < N3; j++) {
+      const v = M[i][j], x = OX + j * cs, y = OY + i * cs;
+      let fill = v === 0 ? "#fff" : (v === 4 ? "#1f5fa8" : v < 0 ? "#cfe1f2" : "#9cc3ec");
+      const passed = a && a.kind !== "sparse" && (i * N3 + j) < a.pos;
+      if (passed && v === 0) fill = a.kind === "dense" ? "#eeeeea" : "#f7f7f5";
+      ctx3.fillStyle = fill; ctx3.fillRect(x, y, cs, cs);
+      ctx3.strokeStyle = "#d4d3cc"; ctx3.lineWidth = 1; ctx3.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+      if (v !== 0) { ctx3.fillStyle = v === 4 ? "#fff" : "#1A1A1A"; ctx3.font = "600 20px " + FONT; ctx3.textAlign = "center"; ctx3.textBaseline = "middle"; ctx3.fillText(vtxt(v), x + cs / 2, y + cs / 2); }
+      else if (passed && a.kind === "dense") { ctx3.fillStyle = "#999"; ctx3.font = "13px " + FONT; ctx3.textAlign = "center"; ctx3.textBaseline = "middle"; ctx3.fillText("0 × " + V[j], x + cs / 2, y + cs / 2); }
+      if (S3.hover && S3.hover[0] === i && S3.hover[1] === j) { ctx3.strokeStyle = "#eb6834"; ctx3.lineWidth = 4; ctx3.strokeRect(x + 2, y + 2, cs - 4, cs - 4); }
+    }
+    if (cur) { ctx3.strokeStyle = "#CC0033"; ctx3.lineWidth = 4; ctx3.strokeRect(OX + cur[1] * cs + 2, OY + cur[0] * cs + 2, cs - 4, cs - 4); }
+    if (a && a.kind !== "build") {      // the running sums of y in the right margin
+      ctx3.font = "600 13px " + FONT; ctx3.textAlign = "left"; ctx3.textBaseline = "middle"; ctx3.fillStyle = "#CC0033";
+      for (let i = 0; i < N3; i++) ctx3.fillText("y" + i + " = " + vtxt(a.y[i]), OX + N3 * cs + 10, OY + i * cs + cs / 2);
+    }
+  }
+
+  // ================================================================ the loop
+  let last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+    if (active === 0) { tickRace(dt); drawRace(); }
+    if (active === 1) { tick2(dt); draw2(); draw2b(); }
+    if (active === 2) { tick3(dt); draw3(); }
+    requestAnimationFrame(frame);
+  }
+  renderArrays(); resetCounters();
+  const h = parseInt((location.hash || "#1").slice(1), 10);
+  show(h >= 1 && h <= 3 ? h - 1 : 0);
+  setN(4000);
+  const q = new URLSearchParams(location.search);
+  if (q.get("test") === "race") { $("b-start").click(); R.elapsed = 2.2; $("b-runs").click(); }
+  if (q.get("test") === "band") { P2.angle = 0.5; $("s2-angle").value = Math.round(a2s(P2.angle)); barsT = 1; }
+  if (q.get("test") === "build") { $("b3-build").click(); S3.anim.pos = 30; S3.built = 11; S3.anim.rowsDone = 3; }
+  if (q.get("test") === "dense") { $("b3-dense").click(); S3.anim.pos = 40; }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

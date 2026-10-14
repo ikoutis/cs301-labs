@@ -38,6 +38,11 @@ the datasets from this repository's public site,
     notebook and of elimination: two lines and their crossing, nearly parallel lines
     and the condition number, three planes that turn, and elimination as planes that
     pivot while the solution stays.
+  - `solvers-and-sparse.html` (meeting 13): the three ways to solve a system racing on
+    a Colab clock, with repeated runs; the residual against the error as a band of
+    near-solutions that stretches as two lines close up; and the sparse formats on the
+    3 x 3 grid's matrix, built entry by entry, with a product that counts the
+    multiplications by zero.
 - `unit-2/data/`: thirty tabular datasets, numbered 1 to 30.
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
