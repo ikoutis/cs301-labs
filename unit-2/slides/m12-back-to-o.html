@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting 12, Closing: Back to the O</title>
+<!-- Built by slides/build-html.py from m12-back-to-o.py. Research sources checked 2026-10-11. Edit the Python source in the course repository. -->
+<style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+pre.code .hll { background-color: #ffffcc }
+pre.code { background: #f8f8f8; }
+pre.code .c { color: #3D7B7B; font-style: italic } /* Comment */
+pre.code .err { border: 1px solid #F00 } /* Error */
+pre.code .k { color: #008000; font-weight: bold } /* Keyword */
+pre.code .o { color: #666 } /* Operator */
+pre.code .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+pre.code .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+pre.code .cp { color: #9C6500 } /* Comment.Preproc */
+pre.code .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+pre.code .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+pre.code .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+pre.code .gd { color: #A00000 } /* Generic.Deleted */
+pre.code .ge { font-style: italic } /* Generic.Emph */
+pre.code .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+pre.code .gr { color: #E40000 } /* Generic.Error */
+pre.code .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+pre.code .gi { color: #008400 } /* Generic.Inserted */
+pre.code .go { color: #717171 } /* Generic.Output */
+pre.code .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+pre.code .gs { font-weight: bold } /* Generic.Strong */
+pre.code .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+pre.code .gt { color: #04D } /* Generic.Traceback */
+pre.code .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+pre.code .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+pre.code .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+pre.code .kp { color: #008000 } /* Keyword.Pseudo */
+pre.code .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+pre.code .kt { color: #B00040 } /* Keyword.Type */
+pre.code .m { color: #666 } /* Literal.Number */
+pre.code .s { color: #BA2121 } /* Literal.String */
+pre.code .na { color: #687822 } /* Name.Attribute */
+pre.code .nb { color: #008000 } /* Name.Builtin */
+pre.code .nc { color: #00F; font-weight: bold } /* Name.Class */
+pre.code .no { color: #800 } /* Name.Constant */
+pre.code .nd { color: #A2F } /* Name.Decorator */
+pre.code .ni { color: #717171; font-weight: bold } /* Name.Entity */
+pre.code .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+pre.code .nf { color: #00F } /* Name.Function */
+pre.code .nl { color: #767600 } /* Name.Label */
+pre.code .nn { color: #00F; font-weight: bold } /* Name.Namespace */
+pre.code .nt { color: #008000; font-weight: bold } /* Name.Tag */
+pre.code .nv { color: #19177C } /* Name.Variable */
+pre.code .ow { color: #A2F; font-weight: bold } /* Operator.Word */
+pre.code .w { color: #BBB } /* Text.Whitespace */
+pre.code .mb { color: #666 } /* Literal.Number.Bin */
+pre.code .mf { color: #666 } /* Literal.Number.Float */
+pre.code .mh { color: #666 } /* Literal.Number.Hex */
+pre.code .mi { color: #666 } /* Literal.Number.Integer */
+pre.code .mo { color: #666 } /* Literal.Number.Oct */
+pre.code .sa { color: #BA2121 } /* Literal.String.Affix */
+pre.code .sb { color: #BA2121 } /* Literal.String.Backtick */
+pre.code .sc { color: #BA2121 } /* Literal.String.Char */
+pre.code .dl { color: #BA2121 } /* Literal.String.Delimiter */
+pre.code .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+pre.code .s2 { color: #BA2121 } /* Literal.String.Double */
+pre.code .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+pre.code .sh { color: #BA2121 } /* Literal.String.Heredoc */
+pre.code .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+pre.code .sx { color: #008000 } /* Literal.String.Other */
+pre.code .sr { color: #A45A77 } /* Literal.String.Regex */
+pre.code .s1 { color: #BA2121 } /* Literal.String.Single */
+pre.code .ss { color: #19177C } /* Literal.String.Symbol */
+pre.code .bp { color: #008000 } /* Name.Builtin.Pseudo */
+pre.code .fm { color: #00F } /* Name.Function.Magic */
+pre.code .vc { color: #19177C } /* Name.Variable.Class */
+pre.code .vg { color: #19177C } /* Name.Variable.Global */
+pre.code .vi { color: #19177C } /* Name.Variable.Instance */
+pre.code .vm { color: #19177C } /* Name.Variable.Magic */
+pre.code .il { color: #666 } /* Literal.Number.Integer.Long */
+pre.code .c, pre.code .c1 { color: #5f6b6b; font-style: italic; }
+pre.code .k, pre.code .kn, pre.code .ow { color: #0b57a4; font-weight: 700; }
+pre.code .s, pre.code .s1, pre.code .s2, pre.code .sa, pre.code .si, pre.code .sd { color: #9a2d1f; }
+pre.code .m, pre.code .mi, pre.code .mf { color: #5a3d99; }
+pre.code .nb, pre.code .bp { color: #0b6b4f; }
+pre.code .o { color: #333; }
+
+:root { --red:#CC0033; --ink:#1A1A1A; --muted:#555; --faint:#DDD; --paper:#F7F7F5; --blue:#1c5cab; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #2b2b2b; color: var(--ink);
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #fff; overflow: hidden; }
+.slide { position: absolute; inset: 0; padding: 40px 64px 56px; border-top: 8px solid var(--red); font-size: 27px; line-height: 1.4; }
+.slide[hidden] { display: none; }
+h1 { font-size: 56px; line-height: 1.15; margin: 36px 0 18px; font-weight: 700; }
+h2 { font-size: 38px; line-height: 1.2; margin: 0 0 18px; font-weight: 700; }
+.eyebrow { font-size: 20px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); margin: 120px 0 0; }
+.subtitle { font-size: 30px; color: var(--muted); max-width: 30em; }
+p { margin: 0 0 12px; max-width: 44em; }
+ul { margin: 0 0 12px; padding-left: 1.1em; max-width: 44em; }
+li { margin-bottom: 8px; }
+li::marker { color: var(--red); }
+.formula { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 80px; row-gap: 12px;
+  font-size: 32px; margin: 16px 0 22px; }
+.formula math { margin: 0; }
+math { font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", math; }
+code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 6px; border-radius: 4px; }
+pre { margin: 0 0 14px; font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; white-space: pre; overflow: hidden; }
+pre.code { font-size: 21px; line-height: 1.32; background: var(--paper); border-left: 5px solid var(--blue); padding: 12px 18px; border-radius: 0 6px 6px 0; }
+pre.code.small { font-size: 18.5px; line-height: 1.25; }
+pre.code.tiny { font-size: 16px; line-height: 1.22; padding: 8px 14px; }
+pre.code code { background: none; padding: 0; font-size: inherit; }
+p code, li code, td code, figcaption code { white-space: nowrap; }
+pre.out { font-size: 20px; line-height: 1.3; color: var(--ink); background: #fff; border-left: 5px solid var(--faint); padding: 8px 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cols { display: grid; gap: 28px; align-items: start; }
+.cols > div { min-width: 0; }
+.small { font-size: 22px; color: var(--muted); }
+.cols p, .cols ul { max-width: none; }
+figure { margin: 0; text-align: center; }
+img.fig { max-width: 100%; max-height: 520px; object-fit: contain; display: block; margin: 0 auto; }
+figcaption { font-size: 21px; color: var(--muted); margin-top: 6px; }
+table { border-collapse: collapse; font-size: 24px; margin: 8px 0 14px; }
+caption { text-align: left; font-weight: 700; padding-bottom: 6px; }
+th, td { border-bottom: 1px solid var(--faint); padding: 6px 22px 6px 0; text-align: left; vertical-align: top; }
+thead th { border-bottom: 2px solid var(--ink); }
+.df table { font-size: 19px; }
+.df th, .df td { padding: 3px 14px 3px 0; text-align: right; }
+.df th:first-child { text-align: left; }
+.lab { background: #fff8f9; }
+.lab .badge { display: inline-block; background: var(--red); color: #fff; font-weight: 700; font-size: 20px; padding: 4px 14px; border-radius: 4px; margin: -6px 0 10px; }
+.lab ul { font-size: 29px; }
+.notes { display: none; font-size: 18px; color: var(--muted); background: var(--paper); padding: 10px 14px; margin-top: 12px; }
+.foot { position: absolute; left: 64px; right: 240px; bottom: 18px; font-size: 16px; color: var(--muted); display: flex; justify-content: space-between; }
+.pfoot { display: none; position: absolute; left: 64px; right: 64px; bottom: 18px; font-size: 16px; color: var(--muted); justify-content: space-between; }
+.nav { position: fixed; right: 18px; bottom: 14px; display: flex; gap: 8px; z-index: 5; }
+.nav button { font: inherit; font-size: 16px; padding: 6px 12px; border: 1px solid #888; background: #fff; color: #222; border-radius: 4px; cursor: pointer; }
+.nav button:focus-visible { outline: 3px solid #ffd600; }
+/* A slide's heading receives the focus when the slide changes, so that a screen reader announces the new slide. A heading is
+   not a control, so it shows no focus ring: Chrome draws that ring around the glyphs, which left a step in the box. */
+.slide h1:focus, .slide h2:focus { outline: none; }
+body.stacked { background: #fff; }
+body.stacked .stage { position: static; width: auto; height: auto; transform: none !important; overflow: visible; }
+body.stacked .slide { position: relative; inset: auto; height: 720px; width: 1280px; margin: 0 auto 24px; border: 1px solid var(--faint); border-top: 8px solid var(--red); zoom: .72; }
+body.stacked .slide[hidden] { display: block; }
+body.stacked .notes { display: block; }
+body.stacked .foot { display: none; }
+body.stacked .pfoot { display: flex; }
+/* On paper and in the PDF: one slide on each 16:9 page, as it is shown, without the notes. */
+@page { size: 1280px 720px; margin: 0; }
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body, body.stacked { height: auto; background: #fff; }
+  .stage, body.stacked .stage { position: static; width: 1280px; height: auto; transform: none !important; overflow: visible; }
+  .slide, body.stacked .slide { position: relative; inset: auto; width: 1280px; height: 720px; margin: 0; zoom: 1;
+    border: 0; border-top: 8px solid var(--red); overflow: hidden; break-inside: avoid; }
+  .slide + .slide { break-before: page; }
+  .slide[hidden] { display: block; }
+  .notes, .nav, .foot { display: none !important; }
+  .pfoot { display: flex; }
+}
+</style>
+</head>
+<body class="deck">
+<div class="stage" role="group" aria-label="Meeting 12, Closing: Back to the O">
+<section class="slide title" id="s1" aria-roledescription="slide" aria-label="Slide 1 of 3: Back to the O"><p class="eyebrow">CS 301 · Meeting 12 · Closing</p><h1>Back to the O</h1><p class="subtitle">Can we reduce the number of operations?</p></section><section hidden class="slide" id="s2" aria-roledescription="slide" aria-label="Slide 2 of 3: The exponent can change"><h2>The exponent can change</h2><div class="body"><table><thead><tr><th>Algorithm or bound</th><th>Arithmetic exponent</th></tr></thead><tbody><tr><td>The three-loop algorithm</td><td>3</td></tr><tr><td>Strassen (1969)</td><td>log₂ 7 ≈ 2.807</td></tr><tr><td>Dupont et al. (August 2026)</td><td>ω &lt; 2.371177</td></tr><tr><td><strong>OpenAI preprint (October 2026)</strong></td><td><strong>ω ≤ 9/4 = 2.25</strong></td></tr></tbody></table><ul><li>Our cubic count belongs to a particular algorithm</li><li>OpenAI reports a lower upper bound on the exponent</li></ul><p class="small">Paper: October 2, 2026 · OpenAI release: October 6, 2026</p></div><aside class="notes"><strong>Notes.</strong> The three loops perform about 2n^3 scalar operations, but that is not a lower bound on the problem. Strassen's recursion uses seven half-size products, giving exponent log2(7). Dupont and colleagues reported the bound below 2.371177 in August 2026. OpenAI's October preprint reports omega at most 9/4 over the complex numbers. Omega describes the best asymptotic arithmetic exponent. The release attributes the manuscripts to an internal OpenAI model. Present this as a newly released preprint result. Sources: https://arxiv.org/abs/2608.16884 ; https://github.com/openai/math/blob/main/preprints/Matrix-Multiplication-Nine-Fourths-October-2-2026/paper.pdf ; https://openai.com/index/sharing-ai-progress-in-mathematics/</aside><div class="pfoot" aria-hidden="true"><span>CS 301 · Meeting 12 · Closing · Back to the O</span><span>2 / 3</span></div></section><section hidden class="slide" id="s3" aria-roledescription="slide" aria-label="Slide 3 of 3: The exponent and the seconds"><h2>The exponent and the seconds</h2><div class="body"><div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>O</mi><mspace width="negativethinmathspace" /><mrow><mo stretchy="true" fence="true" form="prefix">&#x00028;</mo><msup><mi>n</mi><mrow><mn>9</mn><mo>&#x0002F;</mo><mn>4</mn><mo>&#x0002B;</mo><mi>&#x003B5;</mi></mrow></msup><mo stretchy="true" fence="true" form="postfix">&#x00029;</mo></mrow><mspace width="1em" /><mtext>for&#x000A0;every&#x000A0;fixed&#x000A0;</mtext><mi>&#x003B5;</mi><mo>&#x0003E;</mo><mn>0</mn></mrow></math></div><p class="small">Arithmetic operations for square complex matrices</p><ul><li>A smaller exponent reduces growth with matrix size</li><li>Constants, memory traffic, and precision still matter</li><li>The preprint gives no competitive finite matrix size</li></ul><p class="small">OpenAI, An Upper Bound of 9/4 for the Matrix Multiplication Exponent (2026)</p></div><aside class="notes"><strong>Notes.</strong> The epsilon can be any fixed positive number; the algorithm's constant may depend on it. The stated result is O_epsilon(n^(9/4+epsilon)), not an exact O(n^(9/4)) runtime claim. Arithmetic counts treat field operations as unit cost. The paper explicitly leaves the competitive finite size unspecified. Do not predict a speedup for our 4,096-square GPU product. Close by returning to the meeting's two concerns: algorithms can reduce the amount of work, and implementation and hardware determine how efficiently that work runs. Source: https://github.com/openai/math/blob/main/preprints/Matrix-Multiplication-Nine-Fourths-October-2-2026/paper.pdf</aside><div class="pfoot" aria-hidden="true"><span>CS 301 · Meeting 12 · Closing · Back to the O</span><span>3 / 3</span></div></section>
+<div class="foot"><span>CS 301 · Meeting 12 · Closing · Back to the O</span><span id="counter" aria-live="polite">1 / 3</span></div>
+</div>
+<div class="nav"><button type="button" id="prev" aria-label="Previous slide">&#9664;</button><button type="button" id="next" aria-label="Next slide">&#9654;</button><button type="button" id="stack" aria-label="Show all the slides stacked, to read or to print">&#8801;</button></div>
+<noscript><style>.slide[hidden]{display:block;position:relative;inset:auto} .stage{position:static;width:auto;height:auto}</style></noscript>
+<script>
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var stage = document.querySelector(".stage");
+  var counter = document.getElementById("counter");
+  var k = 0;
+  function fit() {
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = "scale(" + s + ")";
+    stage.style.left = Math.max(0, (window.innerWidth - 1280 * s) / 2) + "px";
+    stage.style.top = Math.max(0, (window.innerHeight - 720 * s) / 2) + "px";
+  }
+  function go(n, focus) {
+    k = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, i) { s.hidden = i !== k; });
+    counter.textContent = (k + 1) + " / " + slides.length;
+    if (history.replaceState) { history.replaceState(null, "", "#" + (k + 1)); }
+    document.documentElement.setAttribute("data-slide", String(k + 1));
+    if (focus) {
+      var h = slides[k].querySelector("h1, h2");
+      h.setAttribute("tabindex", "-1");
+      h.focus({preventScroll: true});
+    }
+  }
+  function fromHash() { var n = parseInt(location.hash.replace("#", ""), 10); go(isNaN(n) ? 0 : n - 1, false); }
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) { return; }
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown" || e.key === "ArrowDown") { e.preventDefault(); go(k + 1, true); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "ArrowUp") { e.preventDefault(); go(k - 1, true); }
+    else if (e.key === "Home") { e.preventDefault(); go(0, true); }
+    else if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
+    else if (e.key === "p" || e.key === "P") { document.body.classList.toggle("stacked"); }
+  });
+  document.getElementById("prev").addEventListener("click", function () { go(k - 1, true); });
+  document.getElementById("next").addEventListener("click", function () { go(k + 1, true); });
+  document.getElementById("stack").addEventListener("click", function () { document.body.classList.toggle("stacked"); });
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", fromHash);
+  fit();
+  fromHash();
+  document.documentElement.setAttribute("data-ready", "yes");
+})();
+</script>
+</body>
+</html>
