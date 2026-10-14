@@ -49,6 +49,8 @@
   .board.two { display: flex; gap: 12px; flex-wrap: wrap; }
   .board.two > div { flex: 1 1 300px; min-width: 0; }
   canvas { display: block; width: 100%; height: auto; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  canvas[hidden] { display: none; }
+  canvas.turn { cursor: grab; }
   .caption { font-size: 14.5px; color: var(--muted); margin-top: 6px; }
   .panel { flex: 0 0 330px; max-width: 100%; }
   .label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
@@ -272,19 +274,26 @@
   <p>Elimination builds the answer in a fixed number of operations. An <strong>iterative method</strong> starts from a guess and improves it, one cheap step at a time, until the residual is as small as we want. Kaczmarz's step is the simplest there is: take one equation, and move the guess to the nearest point of its line, straight down the perpendicular. Then the next equation, and so on. Click anywhere to choose the starting guess.</p>
   <div class="stage">
     <div class="board two">
-      <div><canvas id="c5" width="520" height="520" aria-label="Two or three lines in the plane, a starting guess, and the path of the Kaczmarz iterations: each step moves the point perpendicularly onto one of the lines, zigzagging toward the crossing."></canvas><p class="caption" id="cap5">Each step projects the guess onto one equation's line. The hollow circle is the true solution, known here because we built the system.</p></div>
+      <div><canvas id="c5" width="520" height="520" aria-label="Two or three lines in the plane, a starting guess, and the path of the Kaczmarz iterations: each step moves the point perpendicularly onto one of the lines, zigzagging toward the crossing."></canvas><canvas id="c5c" class="turn" width="520" height="520" hidden aria-label="Three planes in a box that turns, all through the solution, and the path of the Kaczmarz iterations: each step moves the point perpendicularly onto one of the planes."></canvas><p class="caption" id="cap5">Each step projects the guess onto one equation's line. The hollow circle is the true solution, known here because we built the system.</p></div>
       <div><canvas id="c5b" width="520" height="520" aria-label="A chart of the residual and the error against the iteration number, on a logarithmic axis, both falling along a straight line whose slope depends on the angle between the lines."></canvas><p class="caption">The residual, which we can measure, and the error, which we cannot, against the iteration. Both fall by the same factor each cycle.</p></div>
     </div>
     <aside class="panel">
+      <div class="buttons"><button type="button" id="m5-plane" class="on">in the plane</button><button type="button" id="m5-space">in space: three planes</button></div>
       <div class="buttons"><button type="button" id="b5-step" class="primary">One projection</button><button type="button" id="b5-play">Play</button><button type="button" id="b5-reset">Reset</button></div>
       <label class="slider" for="s5-speed">Projections a second: <span id="v5-speed">4</span>
         <input type="range" id="s5-speed" min="1" max="30" step="1" value="4">
       </label>
-      <label class="slider" for="s5-angle">Angle between the first two lines: <span id="v5-angle">60°</span>
+      <label class="slider" for="s5-angle"><span id="l5-angle">Angle between the first two lines</span>: <span id="v5-angle">60°</span>
         <input type="range" id="s5-angle" min="0" max="1000" step="1" value="900">
       </label>
+      <div id="p5-2d">
       <p class="label">The equations</p>
       <div class="buttons"><button type="button" id="t5-none" class="on">two lines</button><button type="button" id="t5-third">a third line through the solution</button><button type="button" id="t5-off">a third line that misses it</button></div>
+      </div>
+      <div id="p5-3d" hidden>
+      <div class="buttons"><button type="button" id="b5-start3">Another starting guess</button></div>
+      <label class="check"><input type="checkbox" id="c5-auto" checked> keep turning</label>
+      </div>
       <p class="label">The order of the equations</p>
       <div class="buttons"><button type="button" id="o5-cyclic" class="on">in turn</button><button type="button" id="o5-random">at random</button></div>
       <div class="readout" aria-live="polite">
@@ -842,9 +851,9 @@
     K.x = K.anim.to; K.path.push(K.x.slice()); K.iter++; K.res.push(residual5(K.x)); K.err.push(Math.hypot(K.x[0] - 1, K.x[1] - 1)); K.anim = null;
     if (K.path.length > 400) K.path.shift();
   }
-  $("b5-step").addEventListener("click", step5);
-  $("b5-play").addEventListener("click", () => { K.playing = !K.playing; $("b5-play").textContent = K.playing ? "Pause" : "Play"; });
-  $("b5-reset").addEventListener("click", reset5);
+  $("b5-step").addEventListener("click", () => { if (K.mode === "space") step3(); else step5(); });
+  $("b5-play").addEventListener("click", () => { const st = K.mode === "space" ? K3 : K; st.playing = !st.playing; $("b5-play").textContent = st.playing ? "Pause" : "Play"; });
+  $("b5-reset").addEventListener("click", () => { if (K.mode === "space") reset3(); else reset5(); });
   $("s5-speed").addEventListener("input", e => { K.speed = parseInt(e.target.value, 10); $("v5-speed").textContent = K.speed; });
   $("s5-angle").addEventListener("input", e => { K.angle = k2a(parseFloat(e.target.value)); reset5(); });
   for (const t of ["none", "third", "off"]) $("t5-" + t).addEventListener("click", () => { K.third = t === "none" ? "none" : t === "third" ? "consistent" : "inconsistent"; ["none", "third", "off"].forEach(u => $("t5-" + u).classList.toggle("on", u === t)); reset5(); });
@@ -875,25 +884,7 @@
     ctx5.beginPath(); ctx5.arc(X(K.start[0]), Y(K.start[1]), 6, 0, 2 * Math.PI); ctx5.fillStyle = "#999"; ctx5.fill();
     ctx5.font = "600 13px " + FONT; ctx5.fillStyle = "#555"; ctx5.textAlign = "left"; ctx5.textBaseline = "bottom"; ctx5.fillText("start", X(K.start[0]) + 9, Y(K.start[1]) - 6);
     ctx5.beginPath(); ctx5.arc(X(cur[0]), Y(cur[1]), 8, 0, 2 * Math.PI); ctx5.fillStyle = "#CC0033"; ctx5.fill(); ctx5.lineWidth = 2.5; ctx5.strokeStyle = "#fff"; ctx5.stroke();
-    // the chart
-    const c = ctx5b, L = 64, T = 24, B = 54, R = 16, n = Math.max(12, K.res.length);
-    c.clearRect(0, 0, Wd, Wd);
-    const lo = -8, hi = 1;
-    const CX = k => L + k / (n - 1) * (Wd - L - R), CY = v => T + (hi - Math.max(lo, Math.log10(Math.max(v, 1e-300)))) / (hi - lo) * (Wd - T - B);
-    c.font = "12px " + FONT; c.fillStyle = "#555"; c.textAlign = "right"; c.textBaseline = "middle";
-    for (let e = lo; e <= hi; e++) { c.strokeStyle = "#e1e0d9"; c.beginPath(); c.moveTo(L, CY(Math.pow(10, e))); c.lineTo(Wd - R, CY(Math.pow(10, e))); c.stroke(); c.fillText("10^" + e, L - 6, CY(Math.pow(10, e))); }
-    c.textAlign = "center"; c.textBaseline = "top";
-    const tickStep = n <= 24 ? 2 : n <= 60 ? 5 : n <= 150 ? 20 : 50;
-    for (let k = 0; k < n; k += tickStep) c.fillText(String(k), CX(k), Wd - B + 8);
-    c.fillText("iteration", (L + Wd - R) / 2, Wd - B + 28);
-    for (const [series, colour] of [[K.err, "#1A1A1A"], [K.res, "#CC0033"]]) {
-      c.strokeStyle = colour; c.lineWidth = 2.5; c.beginPath();
-      series.forEach((v, k) => { if (k === 0) c.moveTo(CX(k), CY(v)); else c.lineTo(CX(k), CY(v)); }); c.stroke();
-      c.fillStyle = colour; for (let k = 0; k < series.length; k++) { c.beginPath(); c.arc(CX(k), CY(series[k]), 3, 0, 2 * Math.PI); c.fill(); }
-    }
-    c.textAlign = "left"; c.textBaseline = "middle"; c.font = "13px " + FONT;
-    c.fillStyle = "#CC0033"; c.fillRect(L + 8, 8, 14, 3); c.fillStyle = "#1A1A1A"; c.fillText("residual", L + 28, 10);
-    c.fillStyle = "#1A1A1A"; c.fillRect(L + 110, 8, 14, 3); c.fillText("error", L + 130, 10);
+    drawChart5(K.res, K.err);
     // readouts
     const res = K.res[K.res.length - 1], err = K.err[K.err.length - 1], cos2 = Math.pow(Math.cos(K.angle * Math.PI / 180), 2);
     $("r5-iter").textContent = K.iter;
@@ -906,7 +897,145 @@
     $("r5-note").className = "warn";
     $("cap5").textContent = (rows.length === 2 ? "Two lines through (1, 1) at " : "Three lines; the first two at ") + trim(K.angle.toPrecision(2)) + "°. Each step projects the guess onto one line. The hollow circle is the true solution, known here because we built the system.";
   }
+  function drawChart5(resSeries, errSeries) {
+    const Wd = 520, c = ctx5b, L = 64, T = 24, B = 54, R = 16, n = Math.max(12, resSeries.length);
+    c.clearRect(0, 0, Wd, Wd);
+    const lo = -8, hi = 1;
+    const CX = k => L + k / (n - 1) * (Wd - L - R), CY = v => T + (hi - Math.max(lo, Math.log10(Math.max(v, 1e-300)))) / (hi - lo) * (Wd - T - B);
+    c.font = "12px " + FONT; c.fillStyle = "#555"; c.textAlign = "right"; c.textBaseline = "middle";
+    for (let e = lo; e <= hi; e++) { c.strokeStyle = "#e1e0d9"; c.beginPath(); c.moveTo(L, CY(Math.pow(10, e))); c.lineTo(Wd - R, CY(Math.pow(10, e))); c.stroke(); c.fillText("10^" + e, L - 6, CY(Math.pow(10, e))); }
+    c.textAlign = "center"; c.textBaseline = "top";
+    const tickStep = n <= 24 ? 2 : n <= 60 ? 5 : n <= 150 ? 20 : 50;
+    for (let k = 0; k < n; k += tickStep) c.fillText(String(k), CX(k), Wd - B + 8);
+    c.fillText("iteration", (L + Wd - R) / 2, Wd - B + 28);
+    for (const [series, colour] of [[errSeries, "#1A1A1A"], [resSeries, "#CC0033"]]) {
+      c.strokeStyle = colour; c.lineWidth = 2.5; c.beginPath();
+      series.forEach((v, k) => { if (k === 0) c.moveTo(CX(k), CY(v)); else c.lineTo(CX(k), CY(v)); }); c.stroke();
+      c.fillStyle = colour; for (let k = 0; k < series.length; k++) { c.beginPath(); c.arc(CX(k), CY(series[k]), 3, 0, 2 * Math.PI); c.fill(); }
+    }
+    c.textAlign = "left"; c.textBaseline = "middle"; c.font = "13px " + FONT;
+    c.fillStyle = "#CC0033"; c.fillRect(L + 8, 8, 14, 3); c.fillStyle = "#1A1A1A"; c.fillText("residual", L + 28, 10);
+    c.fillStyle = "#1A1A1A"; c.fillRect(L + 110, 8, 14, 3); c.fillText("error", L + 130, 10);
+  }
   reset5();
+
+  // ---- the same iteration in space: three planes through (1, 1, 1), two of them at the chosen angle from the first
+  const K3 = {x: null, start: [3.4, 3.1, -1.2], path: [], iter: 0, res: [], err: [], anim: null, playing: false, acc: 0};
+  const view5 = {az: -0.9, el: 0.36, drag: null, auto: true};
+  const BOX3 = [[-2, 4], [-2, 4], [-2, 4]], SOL3 = [1, 1, 1];
+  const ctx5c = $("c5c").getContext("2d");
+  const unit = v => { const n = Math.hypot(...v); return v.map(x => x / n); };
+  function planes3() {
+    const th = K.angle * Math.PI / 180, n1 = unit([1, 1, 1]), u = unit([1, -1, 0]), v = unit([1, 1, -2]);
+    const n2 = n1.map((a, k) => Math.cos(th) * a + Math.sin(th) * u[k]), n3 = n1.map((a, k) => Math.cos(th) * a + Math.sin(th) * v[k]);
+    return [n1, n2, n3].map(n => [n[0], n[1], n[2], n[0] * SOL3[0] + n[1] * SOL3[1] + n[2] * SOL3[2]]);
+  }
+  const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const residual3 = x => Math.max(...planes3().map(p => Math.abs(dot3(p, x) - p[3])));
+  const err3 = x => Math.hypot(x[0] - 1, x[1] - 1, x[2] - 1);
+  function reset3() { K3.x = K3.start.slice(); K3.path = [K3.x.slice()]; K3.iter = 0; K3.res = [residual3(K3.x)]; K3.err = [err3(K3.x)]; K3.anim = null; K3.playing = false; $("b5-play").textContent = "Play"; }
+  function step3() {
+    if (K3.anim) return;
+    const ps = planes3(), i = K.order === "cyclic" ? K3.iter % 3 : Math.floor(Math.random() * 3), p = ps[i];
+    const t = dot3(p, K3.x) - p[3];
+    K3.anim = {from: K3.x.slice(), to: K3.x.map((v, k) => v - t * p[k]), plane: i, t: 0};
+  }
+  function finishStep3() { K3.x = K3.anim.to; K3.path.push(K3.x.slice()); K3.iter++; K3.res.push(residual3(K3.x)); K3.err.push(err3(K3.x)); K3.anim = null; if (K3.path.length > 400) K3.path.shift(); }
+  function tick3K(dt) {
+    if (view5.auto && !view5.drag) view5.az += dt * 0.18;
+    if (K3.anim) { K3.anim.t += dt * Math.max(2, K.speed); if (K3.anim.t >= 1) finishStep3(); return; }
+    if (K3.playing) { K3.acc += dt * K.speed; if (K3.acc >= 1) { K3.acc = 0; step3(); } }
+  }
+  function proj3(Wd, Hd) {
+    const ca = Math.cos(view5.az), sa = Math.sin(view5.az), ce = Math.cos(view5.el), se = Math.sin(view5.el), S = Math.min(Wd, Hd) / 11.5;
+    return function (p) {
+      const x = p[0] - 1, y = p[1] - 1, z = p[2] - 1;
+      const x1 = ca * x - sa * y, y1 = sa * x + ca * y, y2 = ce * y1 - se * z, z2 = se * y1 + ce * z;
+      return [Wd / 2 + S * x1, Hd / 2 - S * z2, y2];
+    };
+  }
+  function clipPoly3(poly, f) {
+    const out = [];
+    for (let m = 0; m < poly.length; m++) {
+      const p = poly[m], q = poly[(m + 1) % poly.length], fp = f(p), fq = f(q);
+      if (fp >= 0) out.push(p);
+      if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push(p.map((v, k) => v + t * (q[k] - v))); }
+    }
+    return out;
+  }
+  function draw5c() {
+    const g = ctx5c, Wd = 520, Hd = 520, P = proj3(Wd, Hd), ps = planes3(), cols = [[42, 120, 214], [235, 104, 52], [42, 138, 58]];
+    g.clearRect(0, 0, Wd, Hd);
+    const corners = []; for (let i = 0; i < 8; i++) corners.push([BOX3[0][i & 1], BOX3[1][(i >> 1) & 1], BOX3[2][(i >> 2) & 1]]);
+    g.strokeStyle = "#d4d3cc"; g.lineWidth = 1;
+    for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) { const d = i ^ j; if (d !== 1 && d !== 2 && d !== 4) continue; const a = P(corners[i]), b = P(corners[j]); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+    const cells = [], NC = 10;
+    ps.forEach((p, pi) => {
+      let k = 0; for (let m = 1; m < 3; m++) if (Math.abs(p[m]) > Math.abs(p[k])) k = m;
+      const [i, j] = [0, 1, 2].filter(m => m !== k);
+      for (let u = 0; u < NC; u++) for (let v = 0; v < NC; v++) {
+        let poly = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([du, dv]) => {
+          const pi_ = BOX3[i][0] + (u + du) / NC * (BOX3[i][1] - BOX3[i][0]), pj_ = BOX3[j][0] + (v + dv) / NC * (BOX3[j][1] - BOX3[j][0]);
+          const q = [0, 0, 0]; q[i] = pi_; q[j] = pj_; q[k] = (p[3] - p[i] * pi_ - p[j] * pj_) / p[k]; return q;
+        });
+        poly = clipPoly3(poly, q => q[k] - BOX3[k][0]); poly = clipPoly3(poly, q => BOX3[k][1] - q[k]);
+        if (poly.length < 3) continue;
+        const pts = poly.map(P);
+        cells.push({pts, depth: pts.reduce((s, q) => s + q[2], 0) / pts.length, c: cols[pi], hot: K3.anim && K3.anim.plane === pi});
+      }
+    });
+    cells.sort((a, b) => a.depth - b.depth);
+    for (const c of cells) {
+      g.beginPath(); g.moveTo(c.pts[0][0], c.pts[0][1]); for (let m = 1; m < c.pts.length; m++) g.lineTo(c.pts[m][0], c.pts[m][1]); g.closePath();
+      g.fillStyle = "rgba(" + c.c.join(",") + "," + (c.hot ? 0.5 : 0.3) + ")"; g.fill(); g.strokeStyle = "rgba(" + c.c.join(",") + ",0.55)"; g.lineWidth = 0.6; g.stroke();
+    }
+    // the path, the perpendicular of the current step, the solution and the guess
+    g.strokeStyle = "rgba(26,26,26,0.7)"; g.lineWidth = 2; g.beginPath();
+    K3.path.forEach((p, k) => { const s = P(p); if (k === 0) g.moveTo(s[0], s[1]); else g.lineTo(s[0], s[1]); }); g.stroke();
+    g.fillStyle = "rgba(26,26,26,0.7)"; for (const p of K3.path) { const s = P(p); g.beginPath(); g.arc(s[0], s[1], 3, 0, 2 * Math.PI); g.fill(); }
+    let cur = K3.x;
+    if (K3.anim) {
+      const e = ease(Math.min(1, K3.anim.t)); cur = K3.anim.from.map((v, k) => v + e * (K3.anim.to[k] - v));
+      const a = P(K3.anim.from), b = P(K3.anim.to); g.save(); g.setLineDash([5, 5]); g.strokeStyle = "rgb(" + cols[K3.anim.plane].join(",") + ")"; g.lineWidth = 2; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); g.restore();
+    }
+    const s0 = P(K3.start); g.beginPath(); g.arc(s0[0], s0[1], 6, 0, 2 * Math.PI); g.fillStyle = "#999"; g.fill();
+    g.font = "600 13px " + FONT; g.fillStyle = "#555"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillText("start", s0[0] + 9, s0[1] - 6);
+    const ss = P(SOL3); g.beginPath(); g.arc(ss[0], ss[1], 9, 0, 2 * Math.PI); g.lineWidth = 2.5; g.strokeStyle = "#1A1A1A"; g.stroke();
+    const sc = P(cur); g.beginPath(); g.arc(sc[0], sc[1], 8, 0, 2 * Math.PI); g.fillStyle = "#CC0033"; g.fill(); g.lineWidth = 2.5; g.strokeStyle = "#fff"; g.stroke();
+    g.font = "600 14px " + FONT; g.fillStyle = "#555"; g.textAlign = "center"; g.textBaseline = "middle";
+    const ax = P([BOX3[0][1] + 0.5, BOX3[1][0], BOX3[2][0]]), ay = P([BOX3[0][0], BOX3[1][1] + 0.5, BOX3[2][0]]), az = P([BOX3[0][0], BOX3[1][0], BOX3[2][1] + 0.5]);
+    g.fillText("x", ax[0], ax[1]); g.fillText("y", ay[0], ay[1]); g.fillText("z", az[0], az[1]);
+    drawChart5(K3.res, K3.err);
+    const res = K3.res[K3.res.length - 1], err = K3.err[K3.err.length - 1];
+    $("r5-iter").textContent = K3.iter;
+    $("r5-res").textContent = res < 1e-3 ? sci(res) : res.toPrecision(3);
+    $("r5-err").textContent = err < 1e-3 ? sci(err) : err.toPrecision(3);
+    $("v5-angle").textContent = trim(K.angle.toPrecision(3)) + "°";
+    $("r5-rate").hidden = true;
+    $("r5-note").textContent = K.angle < 15 ? "The three planes nearly coincide: each projection moves the guess only a little within the slab they share, and the path creeps. Ill-conditioned for the iteration as for elimination." : K.angle > 80 ? "Three planes at right angles: three projections finish the job." : "";
+    $("r5-note").className = "warn";
+    $("cap5").textContent = "Three planes through (1, 1, 1): the blue one, and the orange and the green at " + trim(K.angle.toPrecision(2)) + "° from it. Each step projects the guess onto one plane. The hollow circle is the true solution. Drag to turn.";
+  }
+  function setMode5(mode) {
+    K.mode = mode;
+    $("m5-plane").classList.toggle("on", mode === "plane"); $("m5-space").classList.toggle("on", mode === "space");
+    $("c5").hidden = mode === "space"; $("c5c").hidden = mode !== "space";
+    $("p5-2d").hidden = mode === "space"; $("p5-3d").hidden = mode !== "space";
+    $("l5-angle").textContent = mode === "space" ? "Angle of the other two planes from the first" : "Angle between the first two lines";
+    if (mode === "space") reset3(); else reset5();
+  }
+  K.mode = "plane";
+  $("m5-plane").addEventListener("click", () => setMode5("plane"));
+  $("m5-space").addEventListener("click", () => setMode5("space"));
+  $("b5-start3").addEventListener("click", () => { K3.start = [0, 1, 2].map(() => -1.5 + Math.random() * 5); reset3(); });
+  $("c5-auto").addEventListener("change", e => { view5.auto = e.target.checked; });
+  $("s5-angle").addEventListener("input", () => { if (K.mode === "space") reset3(); });
+  for (const o of ["cyclic", "random"]) $("o5-" + o).addEventListener("click", () => { if (K.mode === "space") reset3(); });
+  $("c5c").addEventListener("pointerdown", e => { view5.drag = {x: e.clientX, y: e.clientY, az: view5.az, el: view5.el}; $("c5c").setPointerCapture(e.pointerId); });
+  $("c5c").addEventListener("pointermove", e => { if (!view5.drag) return; view5.az = view5.drag.az + (e.clientX - view5.drag.x) * 0.012; view5.el = Math.max(-1.4, Math.min(1.4, view5.drag.el + (e.clientY - view5.drag.y) * 0.012)); });
+  const up5 = () => { view5.drag = null; };
+  $("c5c").addEventListener("pointerup", up5); $("c5c").addEventListener("pointercancel", up5);
+  reset3();
 
   // ================================================================ the loop
   let last = null;
@@ -917,7 +1046,7 @@
     if (active === 1) { tick2(dt); draw2(); draw2b(); }
     if (active === 2) { tick3(dt); draw3(); }
     if (active === 3) { tick4(dt); draw4(); }
-    if (active === 4) { tick5(dt); draw5(); }
+    if (active === 4) { if (K.mode === "space") { tick3K(dt); draw5c(); } else { tick5(dt); draw5(); } }
     requestAnimationFrame(frame);
   }
   renderArrays(); resetCounters();
@@ -930,6 +1059,8 @@
   if (q.get("test") === "band2") { P2.angle = 0.5; $("s2-angle").value = Math.round(a2s(P2.angle)); barsT = 1; $("b2-reveal").click(); }
   if (q.get("test") === "fill") { load4("walk", false); for (let i = 0; i < 4; i++) { step4(); F4.anim = null; } step4(); F4.anim.t = 0.4; }
   if (q.get("test") === "kacz") { for (let i = 0; i < 14; i++) { step5(); finishStep5(); } step5(); K.anim.t = 0.5; }
+  if (q.get("test") === "kacz3") { setMode5("space"); for (let i = 0; i < 8; i++) { step3(); finishStep3(); } step3(); K3.anim.t = 0.5; }
+  if (q.get("test") === "kacz3flat") { K.angle = 8; $("s5-angle").value = Math.round(a2k(8)); setMode5("space"); for (let i = 0; i < 20; i++) { step3(); finishStep3(); } }
   if (q.get("test") === "fillgrid") { load4("grid", false); setOrder4("natural"); for (let i = 0; i < 14; i++) { step4(); F4.anim = null; } step4(); F4.anim.t = 0.4; }
   if (q.get("test") === "build") { $("b3-build").click(); S3.anim.pos = 30; S3.built = 11; S3.anim.rowsDone = 3; }
   if (q.get("test") === "dense") { $("b3-dense").click(); S3.anim.pos = 40; }
