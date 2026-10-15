@@ -24,7 +24,9 @@ Minnesota.
 - **Files:** `ratings.csv` (userId, movieId, rating, timestamp), `movies.csv`
   (movieId, title, genres, with the genres separated by `|`), `tags.csv` (userId,
   movieId, tag, timestamp). `links.csv` of the original is not included.
-- **Changes:** none. The files are byte-for-byte copies of those in the zip.
+- **Changes:** none to the content. The files are copies of those in the zip; the
+  repository stores them with Unix line endings, which the zip's files do not all
+  have.
 
 This copy is course material of CS 301 at NJIT and is not endorsed by the
 University of Minnesota or by GroupLens Research.
