@@ -43,6 +43,19 @@ the datasets from this repository's public site,
     near-solutions that stretches as two lines close up; and the sparse formats on the
     3 x 3 grid's matrix, built entry by entry, with a product that counts the
     multiplications by zero.
+  - `correlation.html` (meeting 14): the correlation coefficient as the average
+    product of two standardized columns, on real pairs of features of the movies;
+    and the correlation matrix of the 19 genres built cell by cell, then ordered
+    so that blocks appear.
+  - `two-products.html` (meeting 14): the same matrix multiplied two ways, on a
+    small matrix of people by genres and on the has-rated matrix of 610 people by
+    1,297 movies, computed on the page; one movie under three definitions of
+    similar; forty movies in one picture; and the size of the two products of the
+    word vectors.
+  - `axes.html` (meeting 14): a line that turns through a cloud of 1,297 movies
+    and finds the direction of greatest spread; the two axes and the ellipse; the
+    cloud flattened until the matrix loses rank; the 19 genres by their weights in
+    the first two components, with a copied column; and a map of 50 movies.
 - `unit-2/data/`: thirty tabular datasets, numbered 1 to 30.
   - `datasets.csv` lists them: number, file, title, size, and what one row is.
   - `SOURCES.md` gives the source and the licence of each dataset, and states
@@ -56,9 +69,14 @@ the datasets from this repository's public site,
   - `SOURCES.md` gives their source and licence.
 - `unit-2/weather/`: the daily weather at Newark airport from 2006 to 2024
   (`newark-weather.csv`), with `SOURCES.md`.
-- `tools/build_unit2_datasets.py`, `tools/build_unit2_images.py` and
-  `tools/build_unit2_embeddings.py`: the scripts that built the datasets, the
-  images and the word vectors from their sources.
+- `unit-2/movies/`: the MovieLens small dataset of GroupLens Research, 100,836
+  ratings of 9,742 movies by 610 people (`ratings.csv`, `movies.csv`, `tags.csv`),
+  with the dataset's own `README.txt`, which holds its usage license, and
+  `SOURCES.md`. For research use, not for commercial use; see the license.
+- `tools/build_unit2_datasets.py`, `tools/build_unit2_images.py`,
+  `tools/build_unit2_embeddings.py` and `tools/build_unit2_movies.py`: the scripts
+  that built the datasets, the images, the word vectors and the movie ratings from
+  their sources.
 
 ## The datasets
 
