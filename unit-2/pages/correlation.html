@@ -121,7 +121,7 @@
 <header>
   <p class="eyebrow">CS 301 · Unit II · Meeting 14</p>
   <h1>Correlation, in pictures</h1>
-  <p class="lead">Two columns of a table make a cloud of points. The correlation coefficient is one number that says how close the cloud is to a straight line. For many columns, all the coefficients come from one matrix product.</p>
+  <p class="lead">Two columns of a table make a cloud of points. The correlation coefficient measures the direction and strength of a linear association. For many columns, all the coefficients come from one matrix product.</p>
 </header>
 
 <main>
@@ -199,7 +199,7 @@
     </aside>
   </div>
   <div class="story">
-    <p>The <strong>correlation matrix</strong> of the genres is one product: Z<sup>T</sup>Z / n, in NumPy <code>Z.T @ Z / n</code>, where n is the number of movies. Cell (i, j) is the average of z<sub>i</sub> × z<sub>j</sub>. The diagonal is 1: a column has correlation 1 with itself. The matrix is <strong>symmetric</strong>: cell (j, i) equals cell (i, j). Reordering moves each row together with its column and changes no number. The new order comes from hierarchical clustering, which puts genres with high correlations next to each other. A <strong>block</strong> is then a group of genres with positive correlations among them: genres that appear on the same movies more often than they would if they were independent. The blocks: Musical, Animation, Children, Fantasy; Adventure, Action, Sci-Fi, IMAX; Crime, Thriller, Mystery, Film-Noir. Drama has negative correlations with Action and with Comedy.</p>
+    <p>Compute the <strong>correlation matrix</strong> of the genres as Z<sup>T</sup>Z / n, in NumPy <code>Z.T @ Z / n</code>, where n is the number of movies. Cell (i, j) is the average of z<sub>i</sub> × z<sub>j</sub>. The diagonal is 1: a column has correlation 1 with itself. The matrix is <strong>symmetric</strong>: cell (j, i) equals cell (i, j). Reordering moves each row together with its column and changes no number. The new order comes from hierarchical clustering, which puts genres with high correlations next to each other. A <strong>block</strong> is then a group of genres with positive correlations among them: genres that appear on the same movies more often than they would if they were independent. The blocks: Musical, Animation, Children, Fantasy; Adventure, Action, Sci-Fi, IMAX; Crime, Thriller, Mystery, Film-Noir. Drama has negative correlations with Action and with Comedy.</p>
   </div>
 </section>
 <p id="errors" aria-hidden="true"></p>

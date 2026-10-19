@@ -118,7 +118,7 @@
 <header>
   <p class="eyebrow">CS 301 · Unit II · Meeting 14</p>
   <h1>The axes of a cloud</h1>
-  <p class="lead">A cloud of points spreads more in some directions than in others. The directions of largest and smallest spread are its axes. Their lengths give the rank and the condition number of the data matrix.</p>
+  <p class="lead">A cloud of points spreads more in some directions than in others. The directions of largest and smallest spread are its axes. The singular values measure spread along the principal axes. They determine the rank and condition number of the centred data matrix.</p>
 </header>
 
 <main>
@@ -167,7 +167,7 @@
     </aside>
   </div>
   <div class="story">
-    <p>The <strong>projection</strong> of a point on a direction u, a vector of length 1, is the dot product of the centred point with u. The centred point is the point minus the mean of the cloud. The <strong>variance of the projections</strong> is the sum of their squares divided by n, as in the notebook's <code>np.var</code>. We use this population-variance convention throughout; using n − 1 instead would scale both eigenvalues equally and leave the axes and their ratios unchanged. The <strong>first principal axis</strong> is the direction along which the projections have the largest variance. Here it is u = <span data-k="u1">(0.71, 0.70)</span>, near the diagonal: along it, both halves rate a movie high or both rate it low.</p>
+    <p>The <strong>scalar projection</strong> onto a unit direction u is the dot product of the centred point with u. Multiplying this coordinate by u gives the projected point in centred coordinates. The centred point is the point minus the mean of the cloud. The <strong>variance of the projections</strong> is the sum of their squares divided by n, as in the notebook's <code>np.var</code>. We use this population-variance convention throughout; using n − 1 instead would scale both eigenvalues equally and leave the axes and their ratios unchanged. The <strong>first principal axis</strong> is the direction along which the projections have the largest variance. Here it is u = <span data-k="u1">(0.71, 0.70)</span>, near the diagonal: along it, both halves rate a movie high or both rate it low.</p>
   </div>
 </section>
 
@@ -285,7 +285,7 @@
     </div>
   </div>
   <div class="story">
-    <p>Each movie is a point with 610 coordinates, one per user: the rating minus that user's mean rating, 0 where the user did not rate the movie. The picture shows the two directions along which those <span data-k="n">1,297</span> points are most spread. The first axis moves with the mean rating: over the <span data-k="n">1,297</span> movies their correlation is <span data-k="corrmean">0.82</span>. At its right end are <span data-k="ax1hi">Pulp Fiction</span>; at its left end, <span data-k="ax1lo">Independence Day</span>. The second axis has blockbusters at the top (<span data-k="ax2hi">Independence Day</span>) and cult and art films at the bottom (<span data-k="ax2lo">Fargo</span>). The axes come from the ratings alone; the genres only colour the points.</p>
+    <p>Each movie is a point with 610 coordinates, one per user: the rating minus that user's mean rating, 0 where the user did not rate the movie. The picture shows the two directions along which those <span data-k="n">1,297</span> points are most spread. The first axis moves with the mean rating: over the <span data-k="n">1,297</span> movies their correlation is <span data-k="corrmean">0.83</span>. At its right end are <span data-k="ax1hi">Pulp Fiction</span>; at its left end, <span data-k="ax1lo">Independence Day</span>. The second axis has blockbusters at the top (<span data-k="ax2hi">Independence Day</span>) and cult and art films at the bottom (<span data-k="ax2lo">Fargo</span>). The axes come from the ratings alone; the genres only colour the points.</p>
   </div>
 </section>
 <p id="errors" aria-hidden="true"></p>

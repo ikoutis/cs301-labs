@@ -175,7 +175,7 @@
     </aside>
   </div>
   <div class="story">
-    <p><strong>The same matrix, two questions.</strong> X X<sup>T</sup> compares rows against rows: it compares the people by what they rated. X<sup>T</sup> X compares columns against columns: it compares the genres by who rated them. With n rows and m columns, X X<sup>T</sup> is n × n and costs n × n × m multiplications; X<sup>T</sup> X is m × m and costs m × m × n. Here n = <span data-fill="small_n"></span> and m = <span data-fill="small_m"></span>: <span data-fill="small_cost_rows"></span> and <span data-fill="small_cost_cols"></span> multiplications. Both products are symmetric: cell (i, j) equals cell (j, i).</p>
+    <p>X X<sup>T</sup> compares rows against rows: it compares the people by what they rated. X<sup>T</sup> X compares columns against columns: it compares the genres by who rated them. With n rows and m columns, X X<sup>T</sup> is n × n and costs n × n × m multiplications; X<sup>T</sup> X is m × m and costs m × m × n. Here n = <span data-fill="small_n"></span> and m = <span data-fill="small_m"></span>: <span data-fill="small_cost_rows"></span> and <span data-fill="small_cost_cols"></span> multiplications. Both products are symmetric: cell (i, j) equals cell (j, i).</p>
   </div>
 </section>
 
@@ -220,7 +220,7 @@
   <p id="nb-note">The seven movies most similar to the chosen one under each of three matrices, by cosine similarity, on one scale from 0 to 0.9.</p>
   <div class="lists js-only" id="lists"></div>
   <div class="story">
-    <p><strong>One product, three matrices.</strong> The <strong>cosine similarity</strong> of two columns is their dot product divided by the product of their lengths. Divide every column by its length, and all the cosines at once are one product, U<sup>T</sup> U. All three lists come from that product. What changes is the matrix.</p>
+    <p><strong>Cosine similarity.</strong> The <strong>cosine similarity</strong> of two columns is their dot product divided by the product of their lengths. Divide every column by its length, and all the cosines at once are one product, U<sup>T</sup> U. The lists use this calculation on different representations of the ratings.</p>
     <p>In B a column records only who rated the movie. Popularity and overlap in raters influence these similarities; ratings of a movie do not tell us whether people liked it. With the ratings as given and 0 in the missing cells, a missing rating counts as a rating of zero stars. A missing rating is not a rating of zero. Subtract each person's mean over the kept movies they rated, and then put 0 in the missing cells. Zero represents no deviation from that person's usual rating; it is a modelling choice, not an observed opinion. Two above-mean ratings or two below-mean ratings both add a positive product; opposite deviations add a negative one. Centred similarity therefore measures agreement in deviations, including shared dislikes, and still depends on which ratings are missing.</p>
   </div>
 </section>
@@ -253,7 +253,7 @@
     </aside>
   </div>
   <div class="story">
-    <p><strong>Under B and under the ratings as given, every cell is positive.</strong> Off the diagonal the values run from <span id="s3-bin"></span> under B and from <span id="s3-raw"></span> under the ratings as given; half of them are above <span id="s3-bmed"></span> and <span id="s3-rmed"></span>. Every pair of popular movies shares raters, so the picture is orange throughout. Only the series stand out: the people who rated one film of a series rated the others.</p>
+    <p><strong>Under B and under the ratings as given, every cell is positive.</strong> Off the diagonal the values run from <span id="s3-bin"></span> under B and from <span id="s3-raw"></span> under the ratings as given; half of them are above <span id="s3-bmed"></span> and <span id="s3-rmed"></span>. Every pair of popular movies shares raters, so the picture is orange throughout. The series have especially high similarities: the people who rated one film of a series rated the others.</p>
     <p><strong>Under the user-centred ratings, blocks appear.</strong> Half the values off the diagonal are below <span id="s3-cmed"></span>. The three films of <em>The Lord of the Rings</em> have similarities from <span id="s3-lotr"></span> with one another, the three of <em>Star Wars</em> from <span id="s3-sw"></span>. A weaker block holds dark films of the 1990s, Pulp Fiction, The Usual Suspects, Fight Club, Seven, Fargo and American Beauty, with The Godfather beside them; its largest value is <span id="s3-dark"></span>. The blue cells are pairs that the same people rate in opposite directions: above their own mean for one movie, below it for the other. Independence Day, Speed and Mission: Impossible are blue against that block, down to <span id="s3-neg"></span>.</p>
   </div>
 </section>
