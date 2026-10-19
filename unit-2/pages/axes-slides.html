@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — The axes of a cloud (slides)</title>
+<!--
+  CS 301, Unit II, meeting 14. The slide version of axes.html, for the projector: the same pictures,
+  the same numbers and the same points, as a deck of 1280 x 720 slides that scale to the window, in
+  the format of the Unit II decks. One picture a slide, with its controls and readouts in large type
+  beside it; the explanation of each part follows its picture as a slide of short lines. The text
+  drawn inside the pictures is 1.5 times the size of the page's. The page axes.html stays as it is,
+  for reading.
+
+  Slides: 1 the title; 2 a line through the cloud; 3 the projection and the first axis; 4 two axes,
+  an ellipse; 5 axes from the covariance matrix; 6 flatten the cloud; 7 nearly parallel columns;
+  8 in 19 dimensions; 9 rank and condition from the eigenvalues; 10 the map of 50 movies; 11 what
+  the map shows. The arrow keys, PageUp and PageDown turn the slides; Home and End go to the ends;
+  F toggles full screen; the address can name a slide (axes-slides.html#6). The arrow keys are left
+  to a slider or a list while it has the focus.
+
+  The numbers are those of axes.json (tools/meeting-14-page-data.py), embedded below as DATA by
+  tools/meeting-14-pages/build-pages.py. The query ?test=turn, axis, ellipse, flat, flat0, family,
+  noise, map (or synth, flat1, decade) sets a slide in a fixed state for headless checks, as in
+  axes.html.
+
+  Self-contained on purpose: no CDN, no fonts, no network.
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+    --blue: #2a78d6;    /* the points, axis 1's column */
+    --orange: #eb6834;  /* projections, axis 2, the added column */
+    --purple: #6a3fb5;  /* the third category of the map */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #2b2b2b; color: var(--ink);
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #fff; overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 28px 48px 52px; border-top: 8px solid var(--red); font-size: 27px; line-height: 1.4;
+    display: flex; flex-direction: column; }
+  .slide[hidden] { display: none; }
+  h1 { font-size: 56px; line-height: 1.15; margin: 36px 0 18px; font-weight: 700; }
+  h2 { font-size: 36px; line-height: 1.15; margin: 0 0 12px; font-weight: 700; flex: 0 0 auto; }
+  h2 .right { float: right; font-size: 20px; font-weight: 400; margin-top: 2px; display: flex; gap: 10px; align-items: center; }
+  h2 .right .label { margin: 0 4px 0 0; }
+  .eyebrow { font-size: 20px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); margin: 100px 0 0; }
+  .subtitle { font-size: 30px; color: var(--muted); max-width: 34em; margin: 0; }
+  .credit { position: absolute; left: 48px; right: 48px; bottom: 50px; font-size: 16px; line-height: 1.4; color: var(--muted); margin: 0; }
+  a { color: #0b57a4; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  sup { font-size: .7em; line-height: 0; }
+  sub { font-size: .7em; line-height: 0; }
+
+  /* a slide of points */
+  ul.points { margin: 4px 0 0; padding-left: 1.1em; font-size: 29px; line-height: 1.35; }
+  ul.points li { margin-bottom: 14px; }
+  ul.points li::marker { color: var(--red); }
+  ul.points.tight { font-size: 27px; }
+  ul.points.tight li { margin-bottom: 10px; }
+  .formula { font-size: 34px; margin: 6px 0 20px; text-align: center; }
+  .formula .op { color: var(--muted); margin: 0 .25em; }
+
+  /* a slide with a picture: the picture at the left, the controls and the readouts at the right */
+  .row { display: flex; gap: 26px; flex: 1 1 auto; min-height: 0; align-items: flex-start; }
+  .pic { flex: 0 0 auto; }
+  .pic canvas { display: block; border: 1px solid var(--faint); border-radius: 3px; background: #fff; }
+  .pic.two { display: flex; gap: 16px; }
+  #c1, #c2 { height: 576px; width: auto; cursor: crosshair; }
+  #c4a { height: 540px; width: auto; cursor: crosshair; }
+  #c3a, #c3b { width: 400px; height: 400px; }
+  #c5 { height: 576px; width: auto; cursor: crosshair; }
+  .side { flex: 1 1 0; min-width: 0; font-size: 22px; line-height: 1.35; }
+  .setup { font-size: 21px; color: var(--muted); margin: 0 0 12px; line-height: 1.35; }
+  .cap { font-size: 19px; color: var(--muted); margin: 10px 0 0; line-height: 1.35; }
+  .label { font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .side .label:first-child, .readout .label:first-child { margin-top: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+  button { font: inherit; font-size: 20px; font-weight: 600; padding: 8px 16px; border: 1px solid #b8b8b2;
+    background: #fff; color: var(--ink); border-radius: 4px; cursor: pointer; }
+  button:hover { border-color: var(--ink); }
+  button.primary, button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
+  button.primary:hover { background: #000; }
+  button[disabled] { opacity: .45; cursor: default; }
+  button[disabled]:hover { border-color: #b8b8b2; }
+  select { font: inherit; font-size: 20px; padding: 6px 10px; border: 1px solid #b8b8b2; border-radius: 4px; background: #fff; color: var(--ink); max-width: 100%; }
+  label.slider { display: block; font-size: 20px; margin: 10px 0 0; }
+  label.slider.off { display: none; }
+  label.slider.inline { display: flex; align-items: center; gap: 12px; }
+  label.slider.inline input { width: auto; flex: 1 1 0; margin: 0; }
+  input[type="range"] { width: 100%; margin: 2px 0 0; accent-color: var(--red); }
+  .gauges { display: flex; gap: 16px; margin-top: 12px; }
+  .gauges canvas { display: block; border: none; }
+  .readout { background: var(--paper); border-radius: 4px; padding: 12px 16px; margin-top: 12px; font-size: 22px; line-height: 1.35; }
+  .readout p { margin: 0 0 6px; }
+  .readout p:last-child { margin-bottom: 0; }
+  .readout .big { font-size: 38px; font-weight: 600; line-height: 1.15; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+  .readout .warn { color: var(--red); font-weight: 600; }
+  .readout.small { font-size: 20px; }
+  .readout.small .big { font-size: 34px; }
+  .side strong { font-weight: 600; }
+  table.t { border-collapse: collapse; margin: 10px 0 0; font-size: 20px; font-variant-numeric: tabular-nums; width: 100%; }
+  table.t th, table.t td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--faint); font-weight: 400; }
+  table.t th { color: var(--muted); font-size: 16px; }
+  table.t th:first-child, table.t td:first-child { text-align: left; }
+  #c4b { display: block; width: 560px; height: 160px; border: none; margin: 0 0 6px; }
+
+  .foot { position: absolute; left: 48px; right: 170px; bottom: 14px; font-size: 16px; color: var(--muted); display: flex; justify-content: space-between; }
+  #errors { position: absolute; left: 48px; bottom: 36px; color: var(--red); font-family: monospace; font-size: 14px; white-space: pre-wrap; margin: 0; }
+  .nav { position: fixed; right: 18px; bottom: 14px; display: flex; gap: 8px; z-index: 5; }
+  .nav button { font-size: 16px; padding: 6px 12px; border: 1px solid #888; color: #222; }
+  .nav button:focus-visible { outline: 3px solid #ffd600; }
+  .slide h1:focus, .slide h2:focus { outline: none; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="stage" role="group" aria-label="The axes of a cloud: the slides">
+
+<!-- ================================================================ 1: the title -->
+<section class="slide title" id="s1" data-part="title" aria-roledescription="slide">
+  <p class="eyebrow">CS 301 · Unit II · Meeting 14</p>
+  <h1>The axes of a cloud</h1>
+  <p class="subtitle">A cloud of points spreads more in some directions than in others. The directions of largest and smallest spread are its axes. The singular values measure spread along the principal axes. They determine the rank and condition number of the centred data matrix.</p>
+  <p class="credit">The data are the MovieLens ratings <code>ml-latest-small</code> (GroupLens Research, University of Minnesota; F. M. Harper and J. A. Konstan, 2015): 100,836 ratings by 610 users, in <a href="../movies/README.txt">unit-2/movies</a>, used under the dataset's licence, for research and not for commercial use. Only the movies with 20 or more ratings are kept. The axes are computed with <code>np.linalg.svd</code> and <code>np.linalg.eigh</code>. The same pictures as one page, for reading: <a href="axes.html">axes.html</a>.</p>
+</section>
+
+<!-- ================================================================ 2: a line through the cloud -->
+<section class="slide" id="s2" data-part="1" aria-roledescription="slide" hidden>
+  <h2>A line through the cloud</h2>
+  <div class="row">
+    <div class="pic">
+      <canvas id="c1" width="680" height="650" aria-label="The cloud of movies, a line through its mean, and the perpendicular from each point to the line."></canvas>
+    </div>
+    <div class="side">
+      <p class="setup">One dot per movie: x its mean rating from 305 of the users, y from the other 305. Turn the line; watch the spread of the projections.</p>
+      <select id="s1-src" aria-label="The cloud">
+        <option value="real">the movies: 1,297 real points</option>
+        <option value="synth">a synthetic cloud: 400 points</option>
+      </select>
+      <label class="slider" for="s1-rho" id="l1-rho">correlation of the synthetic cloud: <strong id="v1-rho">0.6</strong>
+        <input type="range" id="s1-rho" min="-1" max="1" step="0.01" value="0.6" disabled>
+      </label>
+      <label class="slider" for="s1-angle">angle of the line: <strong id="v1-angle">20°</strong>
+        <input type="range" id="s1-angle" min="0" max="180" step="0.5" value="20">
+      </label>
+      <div class="buttons" style="margin-top:10px">
+        <button type="button" id="b1-turn">Turn</button>
+        <button type="button" id="b1-find" class="primary">Find it</button>
+      </div>
+      <div class="gauges">
+        <canvas id="c1g" width="270" height="140" aria-label="A bar: the variance of the projections at the current angle, against the largest possible."></canvas>
+        <canvas id="c1v" width="270" height="150" aria-label="The variance of the projections against the angle of the line, drawn as the line turns."></canvas>
+      </div>
+      <div class="readout" aria-live="polite">
+        <p>direction u = <strong id="r1-u">(0.94, 0.34)</strong> · variance of the projections <strong id="r1-var">0.2</strong></p>
+        <p id="r1-found"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 3: the projection and the first axis -->
+<section class="slide" id="s3" data-part="points" aria-roledescription="slide" hidden>
+  <h2>The projection, and the first axis</h2>
+  <p class="formula">scalar projection on u <span class="op">=</span> (point − mean) · u</p>
+  <ul class="points">
+    <li>u is a unit direction: a vector of length 1. The centred point is the point minus the mean of the cloud. All the scalar projections at once: <code>Xc @ u</code>.</li>
+    <li>Multiplying the scalar projection by u gives the projected point, in centred coordinates.</li>
+    <li>The <strong>variance of the projections</strong> is the sum of their squares divided by n, as in the notebook's <code>np.var</code>. Using n − 1 instead would scale both eigenvalues equally and leave the axes and their ratios unchanged.</li>
+    <li>The <strong>first principal axis</strong> is the direction along which the projections have the largest variance.</li>
+    <li>Here it is u = <span data-k="u1">(0.71, 0.70)</span>, near the diagonal: along it, both halves rate a movie high, or both rate it low.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 4: two axes, an ellipse -->
+<section class="slide" id="s4" data-part="2" aria-roledescription="slide" hidden>
+  <h2>Two axes, an ellipse</h2>
+  <div class="row">
+    <div class="pic">
+      <canvas id="c2" width="680" height="650" aria-label="The cloud of movies with its two axes through the mean and the ellipse they span."></canvas>
+    </div>
+    <div class="side">
+      <p class="setup">The second axis passes through the mean, perpendicular to the first; along it the projections have the smallest variance. The <strong>singular value</strong> of an axis is the length of the vector of all the projections on it.</p>
+      <div class="readout">
+        <p>axis lengths, the singular values</p>
+        <p class="big"><span data-k="sv1">22.4</span> and <span data-k="sv2">7.9</span></p>
+        <p>their ratio <strong data-k="ratio">2.8</strong> is the condition number of the centred data matrix</p>
+        <p>the ratio of the covariance eigenvalues is its square, <strong data-k="eratio">8.1</strong></p>
+      </div>
+      <table class="t">
+        <tr><th></th><th>axis 1</th><th>axis 2</th></tr>
+        <tr><td>singular value σ</td><td data-k="sv1f">22.37</td><td data-k="sv2f">7.88</td></tr>
+        <tr><td>eigenvalue σ² / n</td><td data-k="ev1">0.386</td><td data-k="ev2">0.048</td></tr>
+        <tr><td>standard deviation σ / √n</td><td data-k="sd1">0.62</td><td data-k="sd2">0.22</td></tr>
+      </table>
+      <p class="cap">Each axis is drawn to two standard deviations of the projections on it: <span data-k="sd1x2">1.24</span> and <span data-k="sd2x2">0.44</span> stars from the mean. The dashed ellipse has these semi-axes. n = <span data-k="n">1,297</span>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 5: axes from the covariance matrix -->
+<section class="slide" id="s5" data-part="points" aria-roledescription="slide" hidden>
+  <h2>Axes from the covariance matrix</h2>
+  <p class="formula">covariance matrix <span class="op">=</span> X<sup>T</sup>X / n <span class="op">=</span> <code>Xc.T @ Xc / n</code></p>
+  <ul class="points">
+    <li>X: the centred points in the rows, n rows and two columns.</li>
+    <li>The eigenvectors of X<sup>T</sup>X / n are the two axes. Its eigenvalues are the squared singular values of X divided by n: <span data-k="ev1">0.386</span> and <span data-k="ev2">0.048</span>, the variances along the axes.</li>
+    <li>The condition number of X is the ratio of its largest to its smallest singular value: <span data-k="ratio">2.8</span>.</li>
+    <li>So the condition number of the covariance matrix, the ratio of its eigenvalues, is the square of that: <span data-k="eratio">8.1</span>.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 6: flatten the cloud -->
+<section class="slide" id="s6" data-part="3" aria-roledescription="slide" hidden>
+  <h2>Flatten the cloud</h2>
+  <div class="row">
+    <div class="pic two">
+      <canvas id="c3a" width="400" height="400" aria-label="The cloud in the frame of its two axes, squeezed along axis 2."></canvas>
+      <canvas id="c3b" width="400" height="400" aria-label="The two columns of the data as two arrows from the origin, at the angle whose cosine is their correlation."></canvas>
+    </div>
+    <div class="side">
+      <label class="slider" for="s3" style="margin-top:0">factor on axis 2: <strong id="v3">1</strong>
+        <input type="range" id="s3" min="0" max="1000" step="1" value="1000">
+      </label>
+      <div class="buttons" style="margin-top:10px">
+        <button type="button" id="b3-near">Nearly flat</button>
+        <button type="button" id="b3-flat">Flat</button>
+        <button type="button" id="b3-back">Back to 1</button>
+      </div>
+      <div class="readout small" aria-live="polite">
+        <p>axis 2 length (singular value)</p>
+        <p class="big" id="r3-len">7.88</p>
+        <p>axis ratio = condition number</p>
+        <p class="big" id="r3-ratio">2.8</p>
+        <p>correlation of x and y: <strong id="r3-r">0.779</strong> · angle between the columns: <strong id="r3-ang">38.8°</strong></p>
+        <p id="r3-note"></p>
+      </div>
+    </div>
+  </div>
+  <p class="cap" style="margin-top:6px">Left: the cloud in the frame of its axes, equal scales; the slider scales every coordinate along axis 2, and nothing is re-centred or re-standardized. Right: the centred columns x and y as two vectors (<span data-k="n">1,297</span> entries each) in the plane they span; the cosine of the angle between them is r.</p>
+</section>
+
+<!-- ================================================================ 7: nearly parallel columns -->
+<section class="slide" id="s7" data-part="points" aria-roledescription="slide" hidden>
+  <h2>Nearly parallel columns</h2>
+  <ul class="points">
+    <li>As the cloud flattens, the columns x and y turn toward each other, and the ratio of the axes grows.</li>
+    <li>Two nearly parallel columns give a nearly singular matrix and a large condition number.</li>
+    <li>It is the picture of the two nearly parallel lines of meeting 13 (<a href="linear-systems.html#2">Linear systems, Part 2</a>): there the rows were nearly parallel, here the columns are.</li>
+    <li>At 0 the column y is a multiple of the column x, and the rank drops by one, from 2 to 1.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 8: in 19 dimensions -->
+<section class="slide" id="s8" data-part="4" aria-roledescription="slide" hidden>
+  <h2>In 19 dimensions</h2>
+  <div class="row">
+    <div class="pic">
+      <canvas id="c4a" width="680" height="640" aria-label="The 19 genres as points at their weights in components 1 and 2."></canvas>
+    </div>
+    <div class="side">
+      <p class="setup">The 19-dimensional genre cloud, each column standardized: its axes are the eigenvectors of the correlation matrix Z<sup>T</sup>Z / n. Left: the genres' weights in components 1 and 2. Right: the eigenvalues, largest first.</p>
+      <canvas id="c4b" width="560" height="160" aria-label="The eigenvalues of the correlation matrix as bars, largest first."></canvas>
+      <div class="buttons">
+        <button type="button" id="b4-add" class="primary">Add Family = Animation + Children</button>
+        <button type="button" id="b4-remove" disabled>Remove Family</button>
+      </div>
+      <label class="slider inline off" for="s4-noise" id="l4-noise"><span>noise on Family, standard deviation <strong id="v4-noise">0</strong></span>
+        <input type="range" id="s4-noise" min="0" max="7" step="1" value="0" disabled>
+      </label>
+      <div class="readout small" aria-live="polite" style="font-size:19px">
+        <p id="r4-a">condition number of the correlation matrix</p>
+        <p class="big" id="r4-big">7.3</p>
+        <p id="r4-b">of the standardized data: 2.7</p>
+        <p id="r4-c"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 9: rank and condition from the eigenvalues -->
+<section class="slide" id="s9" data-part="points" aria-roledescription="slide" hidden>
+  <h2>Rank and condition, from the eigenvalues</h2>
+  <ul class="points tight">
+    <li>The eigenvalues of the correlation matrix are the variances along the principal axes in 19 dimensions.</li>
+    <li>A zero eigenvalue: a direction with no spread. One column is a combination of the others. A tiny eigenvalue: nearly so.</li>
+    <li>The ratio of the largest eigenvalue to the smallest is the condition number of the correlation matrix, <span data-k="condC">7.3</span> here. Its square root, <span data-k="condZ">2.7</span>, is the condition number of the standardized data matrix Z.</li>
+    <li>Add Family = Animation + Children: the twentieth eigenvalue is zero up to round-off; the rank is 19 of 20; the exact condition numbers are infinite. Dividing by a round-off residual would give a misleading finite ratio.</li>
+    <li>With noise on that column the eigenvalue is small but not zero: the column is nearly the sum of two others; the rank is 20 and the condition number is large.</li>
+  </ul>
+</section>
+
+<!-- ================================================================ 10: the map of 50 movies -->
+<section class="slide" id="s10" data-part="5" aria-roledescription="slide" hidden>
+  <h2>The map of 50 movies <span class="right" role="group" aria-label="Colour the points by"><span class="label">colour by</span><button type="button" id="b5-class" aria-pressed="true">genre class</button><button type="button" id="b5-decade" aria-pressed="false">decade</button></span></h2>
+  <div class="row">
+    <div class="pic">
+      <canvas id="c5" width="1180" height="600" aria-label="The 50 most-rated movies as points along the first two axes of the cloud of ratings."></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 11: what the map shows -->
+<section class="slide" id="s11" data-part="points" aria-roledescription="slide" hidden>
+  <h2>What the map shows</h2>
+  <ul class="points tight">
+    <li>Each movie is a point with 610 coordinates, one per user: the rating minus that user's mean rating, 0 where the user did not rate the movie.</li>
+    <li>The map shows the two directions along which those <span data-k="n">1,297</span> points are most spread; the 50 most-rated movies are drawn.</li>
+    <li>The first axis moves with the mean rating: over the <span data-k="n">1,297</span> movies their correlation is <span data-k="corrmean">0.82</span>. At its right end, <span data-k="ax1hi">Pulp Fiction</span>; at its left end, <span data-k="ax1lo">Independence Day</span>.</li>
+    <li>The second axis has blockbusters at the top (<span data-k="ax2hi">Independence Day</span>) and cult and art films at the bottom (<span data-k="ax2lo">Fargo</span>).</li>
+    <li>The axes come from the ratings alone; the genres only colour the points.</li>
+  </ul>
+</section>
+
+<div class="foot"><span>CS 301 · Meeting 14 · The axes of a cloud · the arrow keys turn the slides</span><span id="counter" aria-live="polite"></span></div>
+<p id="errors" aria-hidden="true"></p>
+</div>
+<div class="nav">
+  <button type="button" id="prev" aria-label="Previous slide">&#9664;</button>
+  <button type="button" id="next" aria-label="Next slide">&#9654;</button>
+  <button type="button" id="full" aria-label="Full screen">&#x26F6;</button>
+</div>
+<noscript><style>.slide[hidden]{display:flex;position:relative;inset:auto} .stage{position:static;width:auto;height:auto}</style></noscript>
+<script>
+const DATA = {"cloud":{"x":[3.889,3.402,3.26,3.056,3.991,3.019,3.597,3.632,4.06,3.8,3.875,2.756,3.368,3.333,3.15,3.657,4.118,3.087,3.867,3.724,3.923,3.337,2.542,3.188,3.895,3.054,4.337,3.458,4.125,3.139,3.792,2.567,3.143,3.5,2.878,4.125,3.4,3.375,3.346,3.988,4.028,3.857,2.9,3.35,3.36,3.953,3.523,2.908,2.75,2.972,3.6,3.7,3.603,3.196,3.105,2.914,2.471,4.0,3.429,2.783,2.593,2.727,2.5,2.769,3.611,2.611,3.143,2.842,3.929,3.35,3.885,3.452,3.42,2.769,3.5,3.11,3.603,3.364,3.3,4.364,3.833,3.618,3.49,2.75,4.298,3.853,3.778,3.722,3.589,3.725,3.036,3.4,3.059,3.094,3.344,3.436,4.075,4.232,3.473,2.933,3.636,4.071,3.206,3.441,3.037,4.419,3.5,2.605,3.447,3.94,3.621,3.5,3.286,3.071,3.35,3.375,3.741,3.242,3.656,2.367,4.103,3.4,3.632,3.914,3.062,3.557,3.191,3.5,2.875,2.464,3.132,3.388,2.25,3.489,3.5,3.014,2.714,2.5,2.833,3.727,2.712,3.028,2.443,3.375,3.941,3.024,3.638,2.654,3.883,2.926,3.167,3.529,3.581,4.0,3.702,3.111,3.391,3.522,3.297,3.859,3.633,3.6,2.5,3.145,3.5,4.214,3.875,3.467,3.357,4.246,3.526,2.208,3.544,3.32,3.891,3.742,3.4,3.0,3.119,3.404,3.753,3.974,3.875,3.366,4.226,3.527,3.675,3.685,3.492,4.121,3.618,3.475,3.688,2.7,3.469,3.577,3.071,3.333,3.656,2.574,2.45,3.435,2.857,4.143,2.821,3.564,3.233,2.682,4.321,2.324,3.879,3.0,4.344,2.405,4.094,3.431,3.269,3.0,3.333,3.071,2.769,3.25,3.413,3.737,3.188,3.421,3.294,4.115,2.86,3.283,4.284,3.885,2.868,4.042,3.75,3.458,4.146,4.234,4.3,3.545,3.935,4.228,4.229,3.75,3.409,3.636,3.849,3.568,4.227,3.946,3.868,4.136,4.214,4.136,3.804,3.773,3.684,3.375,3.062,2.219,3.286,3.6,3.107,3.939,3.367,3.5,3.211,3.6,3.883,3.842,2.867,3.278,3.353,3.5,3.7,3.969,3.708,3.873,3.536,3.667,4.0,4.0,4.056,3.342,4.25,4.2,2.708,3.104,3.471,3.425,3.91,3.381,4.312,3.75,3.55,3.636,3.524,4.254,4.032,4.346,3.75,3.583,3.891,3.667,3.889,4.157,4.287,4.303,4.269,4.222,4.073,4.122,4.05,4.222,4.052,3.968,4.161,4.153,4.269,4.289,4.086,4.065,4.068,3.866,4.25,4.196,3.929,4.267,4.029,3.75,4.227,4.176,3.844,4.375,3.939,4.158,4.167,4.167,3.976,3.912,4.067,4.062,4.417,3.692,4.036,3.5,4.173,3.964,3.8,4.042,3.538,4.109,4.13,4.179,3.938,3.995,3.292,4.125,4.118,3.86,4.25,4.062,3.545,3.35,3.853,4.0,4.167,3.833,4.318,3.556,3.95,4.375,3.154,3.621,3.782,3.146,3.75,3.794,3.292,3.833,3.333,2.792,3.6,3.969,3.611,3.727,3.065,3.515,2.964,3.37,2.694,3.946,3.083,3.521,3.125,3.0,3.03,2.958,3.915,2.895,3.738,3.981,3.396,3.176,3.177,3.781,2.5,3.944,2.818,3.6,3.63,3.833,3.0,3.236,2.038,3.712,3.273,3.706,3.716,2.691,2.845,2.111,3.385,3.571,3.289,3.466,3.833,3.071,3.361,3.143,2.676,2.923,2.706,3.35,3.844,2.778,3.0,3.96,3.732,3.82,4.024,1.962,3.28,3.986,3.679,4.176,3.4,3.362,3.786,3.658,3.312,2.682,4.148,3.167,2.812,3.411,3.417,3.704,4.127,3.2,3.78,3.462,2.542,3.673,2.75,3.409,3.059,2.192,3.152,1.735,2.955,3.81,3.65,3.479,2.389,3.625,3.0,2.654,3.885,3.826,3.944,3.312,3.417,3.85,3.703,3.875,3.625,3.815,4.0,3.077,4.0,3.78,3.773,3.289,3.636,3.632,3.3,2.909,3.364,3.638,3.155,4.071,3.58,3.347,3.688,3.25,4.19,4.4,3.417,3.175,4.263,3.143,2.409,1.95,2.833,3.344,3.654,4.25,3.95,3.848,3.172,3.537,2.3,3.34,3.475,3.44,3.375,2.97,3.387,3.423,3.208,3.824,3.375,3.818,3.2,3.083,3.5,3.429,3.69,3.462,3.333,4.067,4.462,3.74,3.269,3.402,3.65,3.575,3.893,3.941,3.208,3.208,3.273,3.781,2.611,3.855,3.452,3.595,3.84,3.933,3.726,3.167,3.857,3.214,3.568,4.31,4.198,2.955,3.667,4.0,4.0,3.529,3.547,3.5,3.588,2.812,3.071,3.2,3.429,3.179,3.125,3.722,3.062,3.636,3.688,3.865,3.5,2.875,3.464,3.25,3.125,2.923,3.267,3.594,2.591,3.833,3.0,3.25,2.562,3.458,3.25,3.426,3.15,3.107,2.6,3.472,2.778,3.786,4.108,3.176,3.845,3.068,3.5,4.036,4.247,3.861,3.676,2.75,3.056,3.46,3.556,2.667,2.958,3.25,3.209,3.621,3.121,2.227,3.309,3.654,3.284,3.714,4.041,3.24,3.021,4.012,2.146,3.415,3.15,2.685,3.452,3.79,2.947,1.75,3.036,3.308,2.818,3.304,4.5,3.944,3.583,2.969,4.031,3.947,3.571,3.612,3.95,3.125,2.731,2.722,4.074,3.929,3.955,3.636,3.818,3.263,3.796,3.848,3.941,3.862,3.944,3.737,4.125,2.767,4.309,3.688,3.458,2.9,3.561,3.792,3.353,3.75,3.5,3.97,4.0,2.875,3.833,3.469,3.588,3.889,3.75,3.632,3.536,3.429,3.52,3.361,3.393,3.727,3.773,2.722,3.364,3.556,3.45,3.75,3.933,4.22,3.55,3.69,3.3,3.654,3.779,3.288,3.5,3.45,3.265,3.682,3.574,3.214,3.429,3.765,2.944,2.955,2.45,3.088,2.714,4.119,3.385,3.556,3.475,3.476,3.55,2.375,3.8,3.588,4.067,3.808,3.433,3.5,3.433,2.357,3.053,3.647,4.188,2.611,4.079,3.567,3.7,3.682,3.562,3.7,3.204,3.762,3.955,3.375,3.706,3.25,3.741,3.182,4.0,3.4,3.95,4.049,2.9,3.111,2.721,3.214,3.429,3.9,4.206,2.727,3.139,3.833,4.295,3.208,3.54,3.9,3.75,3.569,3.167,3.561,3.158,2.778,3.803,3.111,3.219,2.75,2.265,3.083,3.281,3.6,3.667,2.583,3.707,3.875,3.659,3.962,3.426,3.75,3.808,3.05,2.833,2.547,2.6,3.5,3.125,2.893,3.266,3.75,3.786,3.727,4.186,3.233,2.462,3.921,2.85,3.75,3.71,3.0,3.239,4.068,3.703,2.9,3.646,3.833,4.062,2.944,3.111,3.4,4.142,2.885,4.312,4.045,3.345,2.714,4.041,3.031,3.583,3.987,3.958,2.929,3.364,3.083,2.923,2.864,3.0,3.125,3.19,2.688,3.5,3.067,3.5,3.533,3.312,3.812,3.636,3.0,3.429,3.0,2.9,3.344,3.125,3.711,3.235,3.708,3.63,3.214,3.696,3.625,3.9,3.4,3.972,3.909,3.0,3.852,3.346,3.143,3.807,4.198,3.472,3.708,3.25,4.167,3.973,3.935,4.214,3.978,3.909,3.455,3.864,3.143,3.682,2.923,4.35,3.4,3.0,2.792,3.067,2.071,3.728,3.735,3.116,3.4,3.888,3.6,3.75,2.889,3.125,3.667,3.032,3.1,2.778,3.15,3.85,4.216,3.115,3.6,3.88,3.464,3.3,3.235,3.582,2.833,2.571,4.136,3.875,3.111,4.048,3.773,3.536,4.269,3.864,3.54,4.167,4.141,3.227,2.273,3.6,3.413,3.333,4.0,2.912,3.643,3.875,3.75,4.143,3.417,3.375,4.03,3.583,4.037,2.5,2.955,3.114,3.815,2.654,3.222,3.5,3.865,3.615,3.542,4.071,3.975,3.4,3.841,3.286,4.033,2.0,3.284,3.694,3.741,3.833,3.0,3.636,3.125,3.824,3.941,4.077,3.885,4.018,4.22,2.773,3.594,3.545,3.625,3.25,3.062,4.075,3.5,3.25,4.45,3.856,3.375,3.688,3.75,2.727,3.3,3.633,3.024,4.0,3.722,3.467,3.725,3.675,3.075,3.5,3.471,3.756,3.641,3.707,3.943,3.35,3.783,3.925,3.05,4.0,3.972,3.5,3.567,3.75,4.05,3.265,3.828,2.333,3.667,3.233,3.375,2.941,3.5,3.286,4.167,3.389,3.977,3.909,3.0,3.821,3.583,3.042,4.562,4.0,2.868,3.682,3.7,3.571,3.796,3.429,3.5,3.385,4.009,3.432,2.806,3.419,3.542,3.917,3.286,3.727,2.571,3.9,2.722,3.469,3.5,4.0,3.625,4.281,3.5,3.714,3.0,3.887,3.733,3.571,3.4,3.909,3.273,3.844,4.031,3.818,4.341,3.932,3.75,2.864,3.565,3.278,2.9,3.467,3.485,3.318,3.743,3.182,3.346,3.318,3.794,3.941,3.929,3.279,4.0,4.343,3.857,3.983,4.024,3.89,3.5,2.889,3.875,3.887,3.911,3.611,3.575,4.167,3.35,2.875,3.548,3.667,3.65,3.25,3.357,2.458,3.5,3.35,3.353,3.361,3.935,3.808,3.542,3.776,3.667,4.083,3.833,3.972,3.333,3.5,4.235,3.922,3.469,3.673,4.0,3.0,4.0,3.556,3.136,3.944,4.29,3.794,3.888,3.559,2.971,3.446,3.1,4.204,3.375,2.75,4.025,3.333,3.231,3.542,3.208,3.111,3.883,3.389,3.35,2.214,3.833,3.962,3.656,3.667,3.964,3.55,3.75,4.094,4.156,3.042,3.84,4.125,3.526,4.071,2.4,3.472,4.019,3.844,3.846,3.615,2.438,3.364,3.68,3.685,4.097,2.682,3.826,3.625,3.925,4.207,3.393,4.022,3.125,3.476,3.897,3.962,3.409,3.643,3.429,3.5,3.955,4.0,4.0,3.545,3.25,4.036,3.125,3.719,3.676,3.4,3.455,3.5,3.947,3.682,3.167,4.022,3.938,3.559,3.846,2.65,3.458,3.3,3.692,3.897,3.48,4.088,3.737,3.773,3.05,4.441,3.65,4.0,3.1,3.708,3.429,3.1,3.346,3.68,3.444,3.733,3.2,3.679,3.357,3.429,3.556,3.682,4.03,3.409,3.765,3.3,3.773,3.167,3.308,3.7,3.4,3.95,3.227,3.821,3.406,3.786,3.978,3.875,3.727,3.389,3.594,3.696,4.071,3.767,3.967,3.957,3.292,3.889,3.433,4.13,3.833,3.706,4.067,4.1,3.9,3.154,4.0,3.659,3.957,3.5,3.906,3.75,4.375,3.962,3.464,3.938,3.944,3.861,3.868,3.583,3.933,3.964,3.833,4.036],"y":[3.953,3.463,3.259,3.081,3.896,3.339,3.375,3.708,3.788,3.757,3.583,2.702,3.573,3.111,3.111,3.598,3.929,3.333,4.103,3.593,3.78,3.255,2.545,3.438,4.053,3.212,4.141,3.469,3.98,3.344,3.636,2.5,4.115,3.517,3.163,3.6,3.472,3.182,3.308,4.082,4.186,3.28,3.0,3.62,3.135,3.748,3.568,2.922,2.859,2.714,3.67,3.403,3.507,3.0,3.375,2.396,2.911,3.955,3.386,3.271,3.119,2.354,2.895,3.667,3.308,2.875,3.571,2.983,4.088,3.31,3.827,3.789,3.648,3.0,3.273,3.008,3.732,3.587,3.375,4.25,3.967,3.346,3.431,2.895,4.16,3.9,4.0,4.2,3.262,3.818,2.857,3.125,3.357,3.5,3.128,3.413,3.962,4.163,3.557,2.971,4.115,4.0,2.976,3.297,3.375,4.44,3.7,3.1,3.333,3.62,3.854,3.45,3.269,3.012,3.692,3.722,3.452,3.558,3.562,2.352,4.226,3.632,3.4,3.964,3.316,3.449,2.875,3.0,2.692,1.864,3.357,3.654,2.833,3.506,2.727,3.17,2.875,2.938,2.603,3.75,2.586,3.042,2.393,3.7,3.92,3.162,3.444,2.25,4.099,2.788,3.25,3.565,3.818,4.417,3.798,2.75,3.361,4.15,3.462,3.382,3.452,3.611,2.3,3.113,3.474,4.236,3.875,2.889,3.57,3.978,3.136,1.722,3.562,3.222,3.742,3.859,3.654,2.525,2.868,3.466,3.83,3.968,3.798,3.49,4.093,3.7,3.837,3.258,3.48,4.109,3.469,3.36,3.605,3.333,3.154,3.494,3.117,3.56,3.35,2.846,3.273,3.333,2.833,4.038,3.206,3.745,3.405,2.611,3.962,2.792,3.921,3.357,4.202,2.425,3.991,3.463,3.405,2.661,3.389,3.139,2.698,3.778,3.261,3.562,3.0,3.25,3.25,3.765,3.0,3.05,4.294,4.15,2.438,4.5,4.36,4.042,3.944,4.279,4.094,4.25,4.074,4.25,4.1,4.289,3.974,4.367,3.908,3.717,4.406,4.156,3.923,4.308,4.269,4.292,4.186,3.735,4.333,2.667,3.095,2.5,3.69,3.567,2.929,3.842,3.4,3.458,3.524,3.567,3.985,3.884,2.611,3.271,3.281,3.417,3.738,3.475,3.647,3.875,3.964,4.11,3.87,4.089,4.125,3.391,4.151,3.842,2.333,3.283,3.35,3.455,3.623,3.22,4.583,3.367,3.786,3.293,3.361,4.077,4.04,4.048,3.909,3.667,3.523,3.536,3.5,4.25,4.141,4.162,4.141,4.141,3.859,4.171,4.259,4.352,3.944,4.296,4.292,4.118,4.182,4.21,3.843,4.018,4.011,3.756,4.269,4.0,4.25,4.076,4.304,4.0,3.5,4.239,4.109,4.25,3.854,4.182,4.056,4.273,3.944,4.218,4.075,4.19,4.071,3.958,3.444,3.833,4.008,4.041,4.237,4.237,4.265,3.791,4.091,4.312,3.808,4.088,3.639,4.118,3.455,3.587,4.3,3.897,3.952,4.095,4.029,4.026,3.93,4.0,3.5,3.773,3.615,3.542,3.833,4.31,3.924,3.152,3.154,3.481,3.588,3.731,3.354,3.167,4.0,3.774,4.233,3.94,3.083,3.294,3.176,3.316,2.625,3.5,3.5,3.421,2.938,3.25,3.243,2.75,4.08,3.291,3.453,4.0,3.568,2.643,3.218,3.87,2.5,3.273,2.462,4.071,3.86,3.136,3.361,2.842,1.821,3.53,2.778,3.357,3.776,2.818,3.217,2.292,3.5,3.462,3.449,3.513,3.462,2.667,3.115,3.038,3.5,2.346,3.096,3.339,3.9,2.794,3.036,4.17,3.667,3.352,3.6,2.211,3.538,3.93,3.875,4.0,3.9,3.3,3.364,3.941,3.375,3.152,4.007,3.067,2.957,3.418,2.667,3.69,3.706,3.469,3.87,3.383,3.0,3.723,3.118,3.571,2.964,2.656,2.975,2.188,3.538,4.1,3.5,3.389,2.696,4.0,3.102,2.975,3.81,3.559,4.333,3.861,4.156,3.895,3.953,3.75,3.75,3.8,3.6,3.875,3.643,3.778,3.688,3.518,3.919,3.716,3.045,2.958,3.395,3.5,3.048,3.75,3.405,3.397,2.731,3.475,4.185,3.733,3.447,3.5,4.017,3.3,3.083,2.15,2.672,3.357,3.972,4.077,3.942,3.817,3.654,3.35,2.875,3.553,3.667,2.929,3.45,3.389,3.263,3.545,3.5,3.454,3.227,3.4,3.367,3.15,3.583,3.571,3.308,3.761,3.19,3.692,3.974,3.361,3.438,3.544,4.2,3.1,3.973,3.789,3.6,3.594,3.136,4.022,2.182,3.712,3.071,3.455,4.05,3.957,3.671,3.312,4.053,3.306,3.436,4.0,4.235,3.324,3.679,2.812,3.714,3.453,3.49,3.821,3.75,2.594,3.1,2.682,2.786,2.75,2.529,3.846,3.235,3.393,3.438,3.682,3.636,2.769,3.442,3.286,3.25,2.5,2.107,3.545,2.889,3.3,3.231,3.353,2.433,3.3,3.553,2.95,2.0,3.167,2.974,3.389,3.321,3.719,4.07,3.357,3.759,3.12,3.06,4.08,4.133,3.361,4.182,3.038,2.719,3.823,4.077,3.161,2.821,2.962,2.992,3.589,2.875,2.273,3.379,3.283,3.119,3.1,3.961,3.152,2.638,3.694,2.259,3.34,3.375,2.878,3.469,3.759,3.036,2.409,2.533,2.981,2.839,3.375,3.667,3.843,3.708,2.955,4.083,3.75,3.75,3.804,4.0,2.864,3.077,2.964,4.039,3.875,3.393,3.783,3.446,3.587,3.474,3.83,4.0,3.812,3.556,3.679,3.737,2.281,4.236,3.794,3.279,2.25,3.583,3.222,3.167,3.571,3.438,3.939,3.923,2.824,3.684,3.5,3.447,4.3,3.714,3.659,3.571,3.692,3.446,3.31,2.85,3.577,4.091,3.472,3.909,3.769,3.192,3.861,3.798,4.067,3.875,3.726,3.929,3.404,3.415,3.391,3.447,3.5,2.816,3.531,3.397,3.385,3.5,3.214,2.75,3.136,2.406,2.45,2.659,4.318,2.842,3.833,3.658,3.571,3.75,2.885,3.625,3.75,3.848,3.867,3.562,3.731,3.6,3.31,3.818,3.75,3.974,3.219,3.583,3.0,3.75,3.815,3.556,3.638,3.519,3.913,4.091,3.45,3.426,3.364,3.828,3.75,3.654,3.444,3.656,3.835,2.967,3.065,2.709,3.091,2.792,3.981,4.094,3.1,3.312,3.175,3.722,3.333,3.0,3.808,3.176,3.536,3.036,3.343,3.18,3.0,3.597,3.25,3.316,2.737,2.318,2.682,2.914,3.227,3.214,2.75,3.954,4.0,3.71,3.643,3.409,4.08,3.875,3.088,3.625,2.862,2.429,3.5,2.583,3.158,3.646,3.914,3.923,3.778,4.13,3.656,2.9,3.5,3.309,3.694,3.69,3.188,2.951,3.64,4.066,2.912,3.136,3.8,3.556,2.929,3.5,3.58,4.106,3.0,3.733,3.638,3.847,2.214,3.8,3.121,3.152,3.766,3.306,2.983,3.375,3.0,3.214,3.714,2.833,3.02,3.5,2.639,3.275,3.235,3.571,3.333,3.25,3.571,3.5,2.771,3.55,2.569,3.118,3.4,3.02,3.583,3.088,3.87,3.389,3.111,3.964,3.875,3.567,3.556,3.991,3.833,3.05,3.67,3.607,3.308,3.879,4.167,3.385,3.656,2.812,4.049,4.022,3.704,3.154,3.891,3.786,3.423,3.385,2.733,3.695,3.206,3.591,3.053,3.0,3.05,3.467,2.4,3.377,3.704,3.194,3.222,3.741,3.921,3.525,2.923,2.818,3.411,2.676,3.227,2.767,3.75,3.933,4.11,3.0,3.281,3.697,3.737,3.13,3.333,3.613,3.0,3.346,3.771,3.875,3.206,3.995,3.909,3.5,3.792,3.975,3.917,4.071,4.153,3.306,2.619,3.421,3.147,3.025,3.8,3.206,3.308,3.571,3.691,4.029,3.274,3.269,3.899,3.655,3.919,2.267,2.364,2.978,3.743,2.605,3.2,3.875,4.203,3.425,3.9,3.962,3.925,3.403,3.617,3.115,3.901,2.393,3.036,3.69,3.833,3.444,3.5,3.167,3.556,4.077,3.905,3.9,3.917,3.707,4.021,3.269,3.65,3.56,3.9,3.308,3.167,4.232,4.25,3.5,3.5,3.879,3.077,3.579,3.76,2.692,3.565,3.521,3.069,3.833,3.036,3.227,3.367,3.421,3.5,3.604,3.5,3.85,3.94,3.297,3.65,3.094,3.64,3.625,3.625,3.676,4.037,3.417,3.382,3.739,3.917,3.094,3.843,3.321,3.587,3.283,3.654,3.519,3.944,3.111,4.024,3.769,3.75,3.692,3.0,3.283,3.471,3.143,3.417,4.13,3.385,3.375,4.0,3.283,4.0,3.431,3.273,3.197,3.738,2.929,2.722,3.611,3.237,3.962,3.571,3.402,2.654,3.575,2.792,3.571,3.5,3.727,3.643,3.895,3.595,3.808,3.789,3.762,3.771,3.278,3.4,3.7,3.167,3.923,4.025,3.778,3.708,3.75,3.429,3.333,3.19,3.457,3.038,3.632,3.526,2.893,4.012,3.675,3.167,3.167,3.63,3.707,3.636,3.419,3.688,4.17,4.25,3.914,3.99,4.0,3.136,3.4,3.672,3.854,4.076,3.8,3.788,3.577,3.471,3.071,3.726,3.5,2.455,3.6,3.579,2.75,2.972,3.033,3.467,3.333,3.814,3.476,3.705,3.628,4.016,3.688,4.188,3.848,3.5,3.417,3.625,3.875,3.5,3.833,3.595,3.083,4.286,3.091,3.5,4.326,4.201,3.75,3.756,3.66,2.727,3.442,3.225,3.927,3.036,3.235,3.957,3.719,4.0,3.476,3.611,3.833,3.756,3.529,3.9,2.5,4.068,3.595,3.548,3.591,3.524,4.179,4.067,4.188,3.781,2.714,3.882,3.904,3.743,4.05,2.45,3.812,3.774,3.712,3.907,3.789,2.731,3.85,3.521,4.0,3.958,3.0,4.033,3.674,3.204,4.0,3.854,4.107,3.444,3.913,3.875,3.944,4.062,3.423,3.692,3.712,4.02,4.081,3.833,3.958,4.028,3.875,3.192,3.5,3.353,4.091,3.038,3.588,3.667,3.5,3.708,3.815,3.594,3.533,4.083,3.45,3.467,4.0,4.077,3.843,3.397,3.917,3.789,3.545,3.886,3.825,4.0,4.05,3.542,3.824,3.5,3.455,3.176,3.94,3.773,3.559,4.033,4.286,3.933,3.969,3.731,3.972,3.868,3.167,3.333,3.45,3.625,3.577,3.278,3.773,3.735,4.136,3.4,3.417,3.889,3.467,3.871,4.083,4.071,3.458,4.167,3.845,3.921,3.719,3.7,4.0,3.393,4.175,3.909,3.984,3.857,3.958,3.731,3.94,3.846,3.4,3.976,3.96,3.722,3.533,3.455,3.911,3.792,3.893,3.875,3.571,4.071,3.78,3.958,4.286,3.853,4.0,4.042,4.591],"titles":["Toy Story","Jumanji","Grumpier Old Men","Father of the Bride Part II","Heat","Sabrina (1995; movieId 7)","GoldenEye","The American President","Casino","Sense and Sensibility","Four Rooms","Ace Ventura: When Nature Calls","Get Shorty","Copycat","Powder","Leaving Las Vegas","The City of Lost Children","Dangerous Minds","Twelve Monkeys","Babe","Dead Man Walking","Clueless","Mortal Kombat","To Die For","Seven","Pocahontas","The Usual Suspects","Mighty Aphrodite","The Postman","The Indian in the Cupboard","Mr. Holland's Opus","Bio-Dome","Friday","From Dusk Till Dawn","Broken Arrow","Bottle Rocket","Happy Gilmore","The Bridges of Madison County","Muppet Treasure Island","Braveheart","Taxi Driver","Rumble in the Bronx","Down Periscope","The Birdcage","Bad Boys","Apollo 13","Rob Roy","Batman Forever","Casper","Congo","Crimson Tide","Desperado","Die Hard: With a Vengeance","First Knight","Hackers","Johnny Mnemonic","Judge Dredd","Kids","Mallrats","The Net","Nine Months","Showgirls","Species","Strange Days","To Wong Foo, Thanks for Everything! Julie Newmar","Under Siege 2: Dark Territory","A Walk in the Clouds","Waterworld","Before Sunrise","Billy Madison","Clerks","Don Juan DeMarco","Disclosure","Drop Zone","Dolores Claiborne","Dumb & Dumber","Ed Wood","French Kiss","Forget Paris","Hoop Dreams","Heavenly Creatures","I.Q.","Interview with the Vampire: The Vampire Chronicles","Junior","Star Wars: Episode IV - A New Hope","Little Women","A Little Princess","Like Water for Chocolate","Legends of the Fall","The Madness of King George","Mary Shelley's Frankenstein","Milk Money","Miracle on 34th Street","Nell","Natural Born Killers","Outbreak","Léon: The Professional","Pulp Fiction","Quiz Show","The Quick and the Dead","Three Colors: Blue","Three Colors: White","The Specialist","Stargate","The Santa Clause","The Shawshank Redemption","Shallow Grave","Tank Girl","Star Trek: Generations","Tommy Boy","What's Eating Gilbert Grape","While You Were Sleeping","Muriel's Wedding","Ace Ventura: Pet Detective","The Adventures of Priscilla, Queen of the Desert","Bullets Over Broadway","Clear and Present Danger","The Client","The Crow","The Flintstones","Forrest Gump","Four Weddings and a Funeral","The Jungle Book (1994; movieId 362)","The Lion King","The Mask","Maverick","Naked Gun 33 1/3: The Final Insult","The Paper","Reality Bites","Richie Rich","The River Wild","Speed","Timecop","True Lies","Wyatt Earp","Addams Family Values","Airheads","The Beverly Hillbillies","Beverly Hills Cop III","Carlito's Way","City Slickers II: The Legend of Curly's Gold","Cliffhanger","Coneheads","Dave","Dazed and Confused","Demolition Man","The Firm","Free Willy","The Fugitive","Hot Shots! Part Deux","The Englishman Who Went Up a Hill But Came Down a Mountain","The Hudsucker Proxy","In the Line of Fire","In the Name of the Father","Jurassic Park","Last Action Hero","Executive Decision","Much Ado About Nothing","Mrs. Doubtfire","Philadelphia","The Piano","The Remains of the Day","RoboCop 3","Robin Hood: Men in Tights","Rudy","Schindler's List","Searching for Bobby Fischer","The Secret Garden","Sleepless in Seattle","Blade Runner","So I Married an Axe Murderer","Super Mario Bros.","The Nightmare Before Christmas","The Three Musketeers","Tombstone","True Romance","Welcome to the Dollhouse","The Brady Bunch Movie","Home Alone","Ghost","Aladdin","Terminator 2: Judgment Day","Dances with Wolves","Batman","The Silence of the Lambs","Snow White and the Seven Dwarfs","Beauty and the Beast","Pinocchio","Pretty Woman","Fargo","Heavy Metal","The Aristocats","Primal Fear","Sgt. Bilko","Courage Under Fire","Mission: Impossible","Dragonheart","James and the Giant Peach","Mystery Science Theater 3000: The Movie","Space Jam","Mulholland Falls","The Truth About Cats & Dogs","Multiplicity","Wallace & Gromit: The Best of Aardman Animation","The Craft","The Rock","Twister","Barb Wire","Ghost in the Shell","Spy Hard","Wallace & Gromit: A Close Shave","The Arrival","Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb","Striptease","Trainspotting","Independence Day","The Hunchback of Notre Dame","The Cable Guy","Kingpin","Eraser","The Nutty Professor","The Frighteners","Phenomenon","A Time to Kill","The First Wives Club","Ransom","Matilda","Emma","Escape from L.A.","Tin Cup","The Godfather","Bound","The Island of Dr. Moreau","The Philadelphia Story","Singin' in the Rain","Breakfast at Tiffany's","Vertigo","Rear Window","North by Northwest","The Apartment","Some Like It Hot","Casablanca","The Maltese Falcon","My Fair Lady","Sabrina (1954; movieId 915)","Roman Holiday","The Wizard of Oz","Gone with the Wind","Sunset Blvd.","Citizen Kane","2001: A Space Odyssey","All About Eve","Notorious","To Catch a Thief","It's a Wonderful Life","Night of the Living Dead","The African Queen","Homeward Bound: The Incredible Journey","Cool Runnings","Angels in the Outfield","Cinderella","The Sword in the Stone","Robin Hood: Prince of Thieves","Mary Poppins","Dumbo","Bedknobs and Broomsticks","Alice in Wonderland (1951; movieId 1032)","The Fox and the Hound","The Sound of Music","Die Hard","The Lawnmower Man","That Thing You Do!","The Long Kiss Goodnight","The Ghost and the Darkness","William Shakespeare's Romeo + Juliet","Swingers","Sleepers","Willy Wonka & the Chocolate Factory","Sleeper","A Fish Called Wanda","Monty Python's Life of Brian","Bonnie and Clyde","Dial M for Murder","Dirty Dancing","Reservoir Dogs","Platoon","Weekend at Bernie's","Basic Instinct","The Doors","The Crying Game","E.T. the Extra-Terrestrial","Top Gun","A Streetcar Named Desire","The People vs. Larry Flynt","The Return of the Pink Panther","The Abyss","Escape from New York","Monty Python and the Holy Grail","Wallace & Gromit: The Wrong Trousers","Cinema Paradiso","Delicatessen","The Grifters","The English Patient","Sex, Lies, and Videotape","Strictly Ballroom","One Flew Over the Cuckoo's Nest","Star Wars: Episode V - The Empire Strikes Back","The Princess Bride","Raiders of the Lost Ark","Brazil","Aliens","The Good, the Bad and the Ugly","12 Angry Men","Lawrence of Arabia","A Clockwork Orange","To Kill a Mockingbird","Apocalypse Now","Star Wars: Episode VI - Return of the Jedi","The Third Man","Goodfellas","Alien","Army of Darkness","Psycho","The Blues Brothers","The Godfather: Part II","Full Metal Jacket","A Grand Day Out with Wallace and Gromit","Amadeus","Raging Bull","Annie Hall","The Right Stuff","Boot, Das","The Sting","Harold and Maude","The Terminator","Glory","Manhattan","Miller's Crossing","Dead Poets Society","The Graduate","Femme Nikita, La","The Bridge on the River Kwai","Chinatown","The Day the Earth Stood Still","Duck Soup","Better Off Dead...","The Shining","Stand by Me","Evil Dead II","The Great Escape","The Deer Hunter","Groundhog Day","Unforgiven","The Manchurian Candidate","Arsenic and Old Lace","Back to the Future","Fried Green Tomatoes","Patton","Akira","Highlander","Cool Hand Luke","Young Frankenstein","Fantasia","Heathers","Ben-Hur","This Is Spinal Tap","Indiana Jones and the Last Crusade","Being There","Gandhi","Real Genius","Pink Floyd: The Wall","The Killing Fields","Field of Dreams","Butch Cassidy and the Sundance Kid","When Harry Met Sally...","Alien³","An American Werewolf in London","The Birds","Dracula","Cape Fear","Carrie","A Nightmare on Elm Street","The Omen","Star Trek: First Contact","Shine","Sling Blade","101 Dalmatians (1996; movieId 1367)","Die Hard 2","Star Trek: The Motion Picture","Star Trek VI: The Undiscovered Country","Star Trek V: The Final Frontier","Star Trek II: The Wrath of Khan","Star Trek III: The Search for Spock","Star Trek IV: The Voyage Home","Batman Returns","Young Guns","Grease","Under Siege","Jaws","Mars Attacks!","Jerry Maguire","Raising Arizona","Sneakers","Beavis and Butt-Head Do America","Scream","The Last of the Mohicans","Michael","First Strike","Dante's Peak","Waiting for Guffman","Donnie Brasco","Private Parts","The Saint","Liar Liar","Anaconda","Grosse Pointe Blank","Romy and Michele's High School Reunion","Austin Powers: International Man of Mystery","The Fifth Element","The Lost World: Jurassic Park","Con Air","Batman & Robin","Hercules","My Best Friend's Wedding","Face/Off","Men in Black","Contact","G.I. Jane","Conan the Barbarian","George of the Jungle","Event Horizon","Spawn","Conspiracy Theory","Air Force One","The Hunt for Red October","In & Out","The Peacemaker","L.A. Confidential","The Game","Chasing Amy","The Full Monty","I Know What You Did Last Summer","The Devil's Advocate","Gattaca","Stripes","Boogie Nights","Witness","Starship Troopers","Sliding Doors","The Truman Show","Anastasia","Alien: Resurrection","Good Will Hunting","Midnight in the Garden of Good and Evil","Scream 2","Titanic","Tomorrow Never Dies","Jackie Brown","The Big Lebowski","Wag the Dog","Dark City","The Wedding Singer","Sphere","As Good as It Gets","U.S. Marshals","The Man in the Iron Mask","Wild Things","Lost in Space","Deep Impact","Godzilla","Bulworth","Fear and Loathing in Las Vegas","Mulan","The X-Files: Fight the Future","Dr. Dolittle","Out of Sight","Armageddon","Lethal Weapon 4","Pi","There's Something About Mary","On the Waterfront","West Side Story","Midnight Cowboy","The French Connection","Rocky","Terms of Endearment","The Last Emperor","Rain Man","Driving Miss Daisy","Repo Man","Labyrinth","The Breakfast Club","Halloween","Poltergeist","The Exorcist","Lethal Weapon","Lethal Weapon 2","Lethal Weapon 3","Gremlins","The Goonies","The Mask of Zorro","Metropolis","Back to the Future Part II","Back to the Future Part III","The Poseidon Adventure","Bambi","Seven Samurai","Dangerous Liaisons","Dune","The Godfather: Part III","Saving Private Ryan","Flight of the Navigator","Hocus Pocus","Honey, I Blew Up the Kid","Honey, I Shrunk the Kids","The Negotiator","Roger & Me","Doctor Zhivago","Blue Velvet","The Jungle Book (1967; movieId 2078)","Lady and the Tramp","The Little Mermaid","The Mighty Ducks","101 Dalmatians (1961; movieId 2085)","Peter Pan","The Rocketeer","Sleeping Beauty","Splash","Tron","L.A. Story","The Jerk","Indiana Jones and the Temple of Doom","The Addams Family","Ever After: A Cinderella Story","Adventures in Babysitting","Weird Science","Charlotte's Web","The Secret of NIMH","The Dark Crystal","Sixteen Candles","Pretty in Pink","The Gods Must Be Crazy","Rosemary's Baby","The NeverEnding Story","Blade","Beetlejuice","Strangers on a Train","Willow","The Untouchables","Rounders","Cube","Broadcast News","Working Girl","Say Anything...","Toys","A Few Good Men","Rush Hour","Ronin","The Thing","The Player","Edward Scissorhands","Antz","The Producers","My Cousin Vinny","Pleasantville","Life Is Beautiful","American History X","The Waterboy","Elizabeth","Meet Joe Black","The Big Chill","Enemy of the State","A Bug's Life","Waking Ned Devine","King Kong (1933; movieId 2366)","Desperately Seeking Susan","Fletch","The Money Pit","A View to a Kill","Police Academy","Babe: Pig in the City","A Simple Plan","Star Trek: Insurrection","The Prince of Egypt","Rushmore","Shakespeare in Love","First Blood","The Jewel of the Nile","Romancing the Stone","Cocoon","Rocky II","Rocky III","Rocky IV","The Karate Kid","The Karate Kid, Part II","Christmas Vacation","You've Got Mail","The Thin Red Line","The Faculty","Patch Adams","The Fly","Crocodile Dundee","Crocodile Dundee II","¡Three Amigos!","She's All That","Payback","Blast from the Past","October Sky","Office Space","Logan's Run","Planet of the Apes (1968; movieId 2529)","Analyze This","Cruel Intentions","Lock, Stock & Two Smoking Barrels","The Matrix","10 Things I Hate About You","Go","Never Been Kissed","Pushing Tin","Election","eXistenZ","Entrapment","Dick Tracy","The Mummy","Star Wars: Episode I - The Phantom Menace","Superman","Superman II","Superman III","The Rocky Horror Picture Show","Notting Hill","Austin Powers: The Spy Who Shagged Me","Tarzan","Run Lola Run","Big Daddy","Arachnophobia","South Park: Bigger, Longer and Uncut","Wild Wild West","American Pie","Arlington Road","The Blair Witch Project","Eyes Wide Shut","Ghostbusters","Ghostbusters II","Inspector Gadget","Deep Blue Sea","Mystery Men","Runaway Bride","Little Shop of Horrors","The Iron Giant","The Sixth Sense","The Thomas Crown Affair","Bowfinger","Monty Python's And Now for Something Completely Different","Airplane!","National Lampoon's Vacation","Big","A Christmas Story","Mickey Blue Eyes","The 13th Warrior","Stigmata","American Beauty","Deliverance","Excalibur","Three Kings","Boys Don't Cry","Risky Business","Total Recall","Ferris Bueller's Day Off","The Dirty Dozen","Goldfinger","From Russia with Love","Dr. No","A Fistful of Dollars","Home Alone 2: Lost in New York","Fight Club","Time Bandits","RoboCop","RoboCop 2","Who Framed Roger Rabbit?","For Your Eyes Only","Licence to Kill","Live and Let Die","Thunderball","Being John Malkovich","Princess Mononoke","The Bone Collector","The Insider","Spaceballs","Robin Hood","Little Big Man","Trading Places","Dogma","The Adventures of Buckaroo Banzai Across the 8th Dimension","Moonstruck","Sleepy Hollow","The World Is Not Enough","Scrooged","The Natural","A River Runs Through It","Fatal Attraction","Midnight Run","Awakenings","Backdraft","The Fisher King","Toy Story 2","The Green Mile","The Cider House Rules","Magnolia","Easy Rider","Man on the Moon","Galaxy Quest","The Talented Mr. Ripley","Girl, Interrupted","Fast Times at Ridgemont High","Sister Act","Scent of a Woman","Wayne's World","Wayne's World 2","A League of Their Own","Patriot Games","The Bodyguard","White Men Can't Jump","Buffy the Vampire Slayer","Forever Young","Scream 3","The Boondock Saints","The Beach","Boiler Room","Pitch Black","The Whole Nine Yards","Wonder Boys","Mission to Mars","Hoosiers","Bull Durham","Dog Day Afternoon","American Graffiti","JFK","The Muppet Movie","Erin Brockovich","Final Destination","Thelma & Louise","Animal House","Do the Right Thing","Teenage Mutant Ninja Turtles","Good Morning, Vietnam","Grumpy Old Men","Modern Times","Close Encounters of the Third Kind","Jacob's Ladder","High Fidelity","Hook","Misery","Network","Frequency","Predator","28 Days","American Psycho","Keeping the Faith","Caddyshack","U-571","The Virgin Suicides","Gladiator","Pee-wee's Big Adventure","Road Trip","Mission: Impossible II","Shanghai Noon","Moonraker","Blazing Saddles","For a Few Dollars More","Predator 2","The Running Man","Mad Max","The Road Warrior","Mad Max Beyond Thunderdome","Gone in 60 Seconds","Big Trouble in Little China","Titan A.E.","Chicken Run","Me, Myself & Irene","The Patriot","The Perfect Storm","Scary Movie","X-Men","What Lies Beneath","What About Bob?","Coyote Ugly","Hollow Man","Space Cowboys","The Cell","The Naked Gun: From the Files of Police Squad!","The Naked Gun 2 1/2: The Smell of Fear","Bring It On","Almost Famous","Dancer in the Dark","Best in Show","Remember the Titans","Meet the Parents","Requiem for a Dream","Billy Elliot","Bedazzled","Pay It Forward","Charlie's Angels","Little Nicky","Diamonds Are Forever","The 6th Day","How the Grinch Stole Christmas","Unbreakable","Crouching Tiger, Hidden Dragon","Planes, Trains & Automobiles","Wall Street","Snatch","Chocolat","Dude, Where's My Car?","The Emperor's New Groove","What Women Want","Finding Forrester","Cast Away","The Family Man","Miss Congeniality","O Brother, Where Art Thou?","Traffic","The Wedding Planner","Beverly Hills Cop","The Evil Dead","The Lost Boys","Hannibal","The Mexican","Enemy at the Gates","Memento","Spy Kids","Amores Perros","Blow","Bridget Jones's Diary","Joe Dirt","Scarface","The Mummy Returns","A Knight's Tale","Shrek","Moulin Rouge","Pearl Harbor","City Slickers","Evolution","Swordfish","Tootsie","Lara Croft: Tomb Raider","The Fast and the Furious","A.I. Artificial Intelligence","Scary Movie 2","Final Fantasy: The Spirits Within","Legally Blonde","The Score","Coming to America","Short Circuit","Bill & Ted's Excellent Adventure","Major League","Jurassic Park III","Ghost World","Planet of the Apes (2001; movieId 4643)","The Princess Diaries","Rush Hour 2","American Pie 2","The Others","Jay and Silent Bob Strike Back","Training Day","Zoolander","Serendipity","Mulholland Drive","Dirty Harry","From Hell","K-PAX","Donnie Darko","Monsters, Inc.","Shallow Hal","Harry Potter and the Sorcerer's Stone","Spy Game","Behind Enemy Lines","Ocean's Eleven","Amelie","Vanilla Sky","The Royal Tenenbaums","Bill & Ted's Bogus Journey","The Lord of the Rings: The Fellowship of the Ring","A Beautiful Mind","Black Hawk Down","Gosford Park","M*A*S*H","The Count of Monte Cristo","The Sandlot","Super Troopers","The Time Machine","Ice Age","Resident Evil","And Your Mother Too","Blade II","Panic Room","National Lampoon's Van Wilder","My Big Fat Greek Wedding","The Scorpion King","Spider-Man","About a Boy","Star Wars: Episode II - Attack of the Clones","Insomnia","The Bourne Identity","Lilo & Stitch","Minority Report","Mr. Deeds","Men in Black II","Road to Perdition","Austin Powers in Goldmember","Signs","xXx","The Transporter","Secretary","Spirited Away","Sweet Home Alabama","Red Dragon","Bowling for Columbine","Punch-Drunk Love","The Ring","8 Mile","Harry Potter and the Chamber of Secrets","Die Another Day","Solaris","Adaptation","Equilibrium","About Schmidt","The Lord of the Rings: The Two Towers","25th Hour","Gangs of New York","My Neighbor Totoro","Catch Me If You Can","Chicago","The Pianist","City of God","How to Lose a Guy in 10 Days","Daredevil","Old School","Bend It Like Beckham","Phone Booth","Cowboy Bebop: The Movie","Anger Management","Holes","Identity","X2: X-Men United","Laputa: Castle in the Sky","The Matrix Reloaded","Bruce Almighty","Finding Nemo","The Italian Job","28 Days Later","Charlie's Angels: Full Throttle","Hulk","Terminator 3: Rise of the Machines","Pirates of the Caribbean: The Curse of the Black Pearl","The League of Extraordinary Gentlemen","Freaky Friday","Matchstick Men","Lost in Translation","Underworld","The Triplets of Belleville","All the President's Men","Monty Python's The Meaning of Life","School of Rock","Mystic River","Intolerable Cruelty","Kill Bill: Vol. 1","Scary Movie 3","The Matrix Revolutions","Elf","Love Actually","Master and Commander: The Far Side of the World","21 Grams","Bad Santa","WarGames","Battle Royale","Hero","Nausicaä of the Valley of the Wind","The Last Samurai","Big Fish","The Lord of the Rings: The Return of the King","Along Came Polly","The Butterfly Effect","50 First Dates","Good bye, Lenin!","Starsky & Hutch","The Girl Next Door","Eternal Sunshine of the Spotless Mind","Dogville","Hellboy","Dawn of the Dead","Kill Bill: Vol. 2","13 Going on 30","Man on Fire","Mean Girls","Van Helsing","Troy","Shrek 2","The Day After Tomorrow","Harry Potter and the Prisoner of Azkaban","The Chronicles of Riddick","Napoleon Dynamite","Super Size Me","Dodgeball: A True Underdog Story","The Terminal","The Notebook","Fahrenheit 9/11","Spider-Man 2","Anchorman: The Legend of Ron Burgundy","I, Robot","The Bourne Supremacy","The Village","Garden State","Collateral","Harold and Kumar Go to White Castle","The Motorcycle Diaries","Shaun of the Dead","I Heart Huckabees","Team America: World Police","Sideways","The Machinist","Saw","The Incredibles","Bridget Jones: The Edge of Reason","Finding Neverland","National Treasure","House of Flying Daggers","Ocean's Twelve","The Animatrix","Lemony Snicket's A Series of Unfortunate Events","Old Boy","A Scanner Darkly","Million Dollar Baby","Hotel Rwanda","Charlie and the Chocolate Factory","The Life Aquatic with Steve Zissou","The Aviator","Meet the Fockers","Downfall","Howl's Moving Castle","Hitch","Constantine","Sin City","The Hitchhiker's Guide to the Galaxy","Crash","Star Wars: Episode III - Revenge of the Sith","Madagascar","Mr. & Mrs. Smith","Batman Begins","War of the Worlds","Fantastic Four","Wedding Crashers","The Island","Serenity","Broken Flowers","The 40-Year-Old Virgin","The Brothers Grimm","Lord of War","Aeon Flux","Corpse Bride","A History of Violence","Capote","Wallace & Gromit in The Curse of the Were-Rabbit","Kiss Kiss Bang Bang","Brokeback Mountain","Good Night, and Good Luck.","Pride & Prejudice","Harry Potter and the Goblet of Fire","Walk the Line","The Chronicles of Narnia: The Lion, the Witch and the Wardrobe","King Kong (2005; movieId 41569)","Munich","Ice Age 2: The Meltdown","V for Vendetta","Thank You for Smoking","Inside Man","The Lives of Others","Lucky Number Slevin","Mission: Impossible III","The Da Vinci Code","X-Men: The Last Stand","Cars","Click","The Devil Wears Prada","Pirates of the Caribbean: Dead Man's Chest","Superman Returns","Little Miss Sunshine","Babel","Talladega Nights: The Ballad of Ricky Bobby","Night at the Museum","Stranger than Fiction","The Pursuit of Happyness","The Illusionist","Borat: Cultural Learnings of America for Make Benefit Glorious Nation of Kazakhstan","Pan's Labyrinth","The Departed","The Last King of Scotland","Children of Men","The Prestige","Casino Royale","Déjà Vu","The Holiday","Blood Diamond","Ratatouille","Hot Fuzz","Zodiac","300","Shooter","Grindhouse","Spider-Man 3","Knocked Up","28 Weeks Later","Shrek the Third","Pirates of the Caribbean: At World's End","Ocean's Thirteen","Fantastic Four: Rise of the Silver Surfer","Death Proof","1408","Live Free or Die Hard","Transformers","Harry Potter and the Order of the Phoenix","Stardust","The Simpsons Movie","The Bourne Ultimatum","Superbad","Planet Terror","3:10 to Yuma","Into the Wild","The Darjeeling Limited","Gone Baby Gone","American Gangster","No Country for Old Men","I Am Legend","Juno","Sweeney Todd: The Demon Barber of Fleet Street","National Treasure: Book of Secrets","There Will Be Blood","27 Dresses","Cloverfield","In Bruges","The Dark Knight","Forgetting Sarah Marshall","Iron Man","Taken","Indiana Jones and the Kingdom of the Crystal Skull","Kung Fu Panda","The Incredible Hulk","WALL·E","Wanted","Hancock","Watchmen","Step Brothers","Pineapple Express","Tropic Thunder","Burn After Reading","Zack and Miri Make a Porno","Slumdog Millionaire","Quantum of Solace","Role Models","Twilight","Gran Torino","The Wrestler","The Curious Case of Benjamin Button","Yes Man","Coraline","Dr. Horrible's Sing-Along Blog","The Girl with the Dragon Tattoo (2009; movieId 67255)","Inglourious Basterds","Moon","X-Men Origins: Wolverine","Star Trek","Up","The Hangover","The Hurt Locker","Transformers: Revenge of the Fallen","Days of Summer","Harry Potter and the Half-Blood Prince","District 9","Zombieland","Up in the Air","2012","The Blind Side","Avatar","Sherlock Holmes","Shutter Island","Alice in Wonderland (2010; movieId 74789)","How to Train Your Dragon","Kick-Ass","Iron Man 2","Toy Story 3","Despicable Me","Inception","The Other Guys","Scott Pilgrim vs. the World","The Social Network","The Town","Easy A","Red","Megamind","Black Swan","Harry Potter and the Deathly Hallows: Part 1","The King's Speech","Tangled","The Fighter","True Grit","Limitless","The Adjustment Bureau","Source Code","Thor","Bridesmaids","Pirates of the Caribbean: On Stranger Tides","Midnight in Paris","X-Men: First Class","Super 8","Horrible Bosses","Harry Potter and the Deathly Hallows: Part 2","Drive","Captain America: The First Avenger","Crazy, Stupid, Love.","Friends with Benefits","Rise of the Planet of the Apes","The Help","Moneyball","The Avengers","The Hunger Games","The Dark Knight Rises","Sherlock Holmes: A Game of Shadows","Mission: Impossible - Ghost Protocol","The Girl with the Dragon Tattoo (2011; movieId 91658)","Intouchables","21 Jump Street","The Cabin in the Woods","Prometheus","Moonrise Kingdom","Brave","Ted","The Amazing Spider-Man","Skyfall","Pitch Perfect","Looper","The Perks of Being a Wallflower","Argo","Wreck-It Ralph","Silver Linings Playbook","Life of Pi","The Hobbit: An Unexpected Journey","Django Unchained","Oblivion","Iron Man 3","The Great Gatsby","Star Trek Into Darkness","Now You See Me","Man of Steel","We're the Millers","Gravity","Captain Phillips","Thor: The Dark World","The Hunger Games: Catching Fire","The Hobbit: The Desolation of Smaug","Frozen","The Wolf of Wall Street","The Secret Life of Walter Mitty","Her","Snowpiercer","The Lego Movie","The Grand Budapest Hotel","Interstellar","Captain America: The Winter Soldier","X-Men: Days of Future Past","Edge of Tomorrow","Birdman: Or","Whiplash","Gone Girl","Guardians of the Galaxy","John Wick","Big Hero 6","Ex Machina","The Imitation Game","The Hunger Games: Mockingjay - Part 1","Jurassic World","Kingsman: The Secret Service","Mad Max: Fury Road","Star Wars: Episode VII - The Force Awakens","Avengers: Age of Ultron","Ant-Man","Deadpool","Thor: Ragnarok","Guardians of the Galaxy 2","Captain America: Civil War","Doctor Strange","The Martian","Inside Out","The Revenant","The Big Short","Zootopia","Arrival","Rogue One: A Star Wars Story","Logan"],"mean":[3.519,3.519],"directions":[[-0.711,-0.703],[0.703,-0.711]],"singular_values":[22.37,7.882],"axis_ratio":2.838,"eigen_ratio":8.054,"r":0.779,"labelled":[32,105,171,248,292,414,469,569,592,739,1022,1111]},"genres":["Action","Adventure","Animation","Children","Comedy","Crime","Documentary","Drama","Fantasy","Film-Noir","Horror","IMAX","Musical","Mystery","Romance","Sci-Fi","Thriller","War","Western"],"genre_counts":[421,332,93,121,527,203,5,532,159,13,91,59,55,102,242,257,358,57,26],"loadings":[[-0.225,0.417,0.195],[0.125,0.456,0.136],[0.398,0.179,-0.329],[0.431,0.166,-0.308],[0.301,-0.227,0.209],[-0.231,-0.078,-0.323],[0.001,-0.033,0.036],[-0.114,-0.318,-0.101],[0.278,0.189,-0.083],[-0.1,-0.044,-0.276],[-0.122,0.069,-0.163],[0.014,0.293,0.072],[0.304,0.027,-0.276],[-0.207,-0.017,-0.429],[0.155,-0.307,0.151],[-0.141,0.383,0.156],[-0.385,0.152,-0.314],[-0.053,-0.071,0.165],[-0.015,-0.016,0.184]],"eigenvalues":[2.558,2.253,1.555,1.311,1.125,1.071,1.018,0.977,0.956,0.904,0.837,0.788,0.777,0.625,0.576,0.535,0.424,0.361,0.349],"variance_share":[0.135,0.119,0.082,0.069,0.059,0.056,0.054,0.051,0.05,0.048,0.044,0.041,0.041,0.033,0.03,0.028,0.022,0.019,0.018],"cond_C":7.33,"cond_Z":2.71,"family":[{"noise":0,"eigenvalues":[3.294,2.285,1.682,1.323,1.127,1.09,1.018,0.979,0.96,0.904,0.846,0.788,0.784,0.672,0.576,0.535,0.426,0.361,0.35,0.0],"smallest":-5.845826208148051e-16,"cond_C":null,"cond_Z":null},{"noise":0.005,"eigenvalues":[3.294,2.285,1.682,1.323,1.127,1.09,1.018,0.979,0.96,0.904,0.846,0.788,0.784,0.672,0.576,0.535,0.425,0.361,0.35,0.0],"smallest":5.830631359828756e-05,"cond_C":56498.029555466186,"cond_Z":237.69314158257532},{"noise":0.01,"eigenvalues":[3.294,2.285,1.682,1.323,1.127,1.09,1.018,0.979,0.96,0.904,0.846,0.788,0.784,0.671,0.576,0.535,0.425,0.361,0.35,0.0],"smallest":0.00023312674142725756,"cond_C":14129.6447696875,"cond_Z":118.86818232721058},{"noise":0.02,"eigenvalues":[3.293,2.285,1.682,1.324,1.128,1.09,1.018,0.979,0.96,0.904,0.846,0.788,0.784,0.671,0.576,0.535,0.425,0.361,0.35,0.001],"smallest":0.0009312783893815963,"cond_C":3536.291316150653,"cond_Z":59.46672444443954},{"noise":0.05,"eigenvalues":[3.288,2.285,1.682,1.324,1.128,1.09,1.019,0.979,0.96,0.904,0.846,0.788,0.784,0.671,0.576,0.535,0.425,0.361,0.35,0.006],"smallest":0.0057757888785062725,"cond_C":569.3457409255427,"cond_Z":23.860966889996295},{"noise":0.1,"eigenvalues":[3.272,2.284,1.681,1.325,1.128,1.089,1.019,0.979,0.96,0.904,0.846,0.789,0.785,0.67,0.576,0.535,0.425,0.362,0.35,0.023],"smallest":0.022533124149051634,"cond_C":145.20449222214603,"cond_Z":12.050082664535923},{"noise":0.2,"eigenvalues":[3.213,2.283,1.677,1.326,1.13,1.089,1.019,0.978,0.96,0.904,0.845,0.789,0.786,0.67,0.576,0.535,0.425,0.362,0.35,0.082],"smallest":0.08232514173581032,"cond_C":39.033913503712036,"cond_Z":6.247712661743711},{"noise":0.5,"eigenvalues":[2.978,2.277,1.657,1.329,1.134,1.087,1.019,0.978,0.962,0.904,0.845,0.794,0.788,0.674,0.576,0.535,0.426,0.366,0.351,0.319],"smallest":0.3193659780740894,"cond_C":9.32593895765339,"cond_Z":3.0538400347191414}],"map":{"titles":["Forrest Gump","The Shawshank Redemption","Pulp Fiction","The Silence of the Lambs","The Matrix","Star Wars: Episode IV - A New Hope","Jurassic Park","Braveheart","Terminator 2: Judgment Day","Schindler's List","Fight Club","Toy Story","Star Wars: Episode V - The Empire Strikes Back","American Beauty","The Usual Suspects","Seven","Independence Day","Apollo 13","Raiders of the Lost Ark","The Lord of the Rings: The Fellowship of the Ring","Star Wars: Episode VI - Return of the Jedi","The Godfather","The Fugitive","Batman","Saving Private Ryan","The Lord of the Rings: The Two Towers","The Lord of the Rings: The Return of the King","Aladdin","Fargo","The Sixth Sense","True Lies","Twelve Monkeys","The Lion King","Back to the Future","Speed","Shrek","Gladiator","Men in Black","Dances with Wolves","Mission: Impossible","Ace Ventura: Pet Detective","Memento","The Mask","Pirates of the Caribbean: The Curse of the Black Pearl","The Dark Knight","Beauty and the Beast","Alien","Die Hard","Die Hard: With a Vengeance","Mrs. Doubtfire"],"x":[5.679,8.029,9.823,6.233,7.149,8.036,1.59,3.999,4.434,5.908,7.543,2.523,7.747,6.283,6.303,4.453,-3.838,0.572,6.198,5.058,5.697,7.728,2.404,0.474,4.596,4.167,4.483,1.43,4.906,3.009,-1.216,4.037,2.404,4.062,-1.762,2.007,2.309,-1.205,1.193,-2.0,-3.335,5.809,-3.425,1.348,3.752,0.375,3.745,2.545,-0.541,-2.079],"y":[3.075,1.516,-3.462,-0.339,2.198,1.943,3.177,1.39,0.836,0.24,-1.619,1.02,1.955,-1.732,-0.628,0.057,4.373,0.387,2.117,0.971,3.173,-2.397,2.584,0.517,0.798,1.481,1.408,1.883,-3.709,-1.052,2.23,-0.454,3.102,1.816,2.364,2.659,1.133,2.228,1.088,2.785,-1.436,-0.244,-1.351,3.065,2.914,1.821,-1.718,0.603,1.321,1.046],"class":["drama","drama","drama","drama","action","action","action","action","action","drama","action","action","action","drama","drama","other","action","action","action","action","action","drama","other","action","action","action","action","action","drama","drama","action","action","action","action","action","action","action","action","action","action","other","other","action","action","action","other","action","action","action","drama"],"year":[1994,1994,1994,1991,1999,1977,1993,1995,1991,1993,1999,1995,1980,1999,1995,1995,1996,1995,1981,2001,1983,1972,1993,1989,1998,2002,2003,1992,1996,1999,1994,1995,1994,1985,1994,2001,2000,1997,1990,1996,1994,2000,1994,2003,2008,1991,1979,1988,1995,1993],"mean":[4.164,4.429,4.197,4.161,4.192,4.231,3.75,4.032,3.971,4.225,4.273,3.921,4.216,4.056,4.238,3.975,3.446,3.846,4.208,4.106,4.138,4.289,3.992,3.429,4.146,4.021,4.119,3.792,4.116,3.894,3.497,3.983,3.942,4.038,3.529,3.868,3.938,3.488,3.835,3.537,3.04,4.123,3.185,3.779,4.238,3.771,3.969,3.862,3.556,3.389],"count":[329,317,307,279,278,251,238,237,224,220,218,215,211,204,204,203,202,201,200,198,196,192,190,189,188,188,185,183,181,179,178,177,172,171,171,170,170,165,164,162,161,159,157,149,149,146,146,145,144,144],"corr_axis1_mean":0.83}};
+</script>
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  window.onerror = function (m, s, l) { $("errors").textContent += m + " (" + l + ")\n"; };
+  const FONT = getComputedStyle(document.body).fontFamily;
+  const FZ = 1.5;                                                         // the text in the pictures, relative to the page's
+  const F = (n, w) => (w ? w + " " : "") + (n * FZ).toFixed(1) + "px " + FONT;
+  const ease = t => t * t * (3 - 2 * t);
+  const BLUE = "#2a78d6", ORANGE = "#eb6834", PURPLE = "#6a3fb5", INK = "#1A1A1A", MUTED = "#555", GRID = "#ecebe6";
+  const minus = s => String(s).replace(/-/g, "−");
+  const fix = (x, d) => minus((Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d));
+  const int = x => Math.round(x).toLocaleString("en-US");
+  const sig = (x, k) => { if (x === 0) return "0"; const d = Math.max(0, k - 1 - Math.floor(Math.log10(Math.abs(x)))); return minus(x.toFixed(d)); };
+  const SUP = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻"};
+  function sci(x) {
+    let e = Math.floor(Math.log10(Math.abs(x))), m = Math.round(Math.abs(x) / Math.pow(10, e));
+    if (m === 10) { m = 1; e += 1; }
+    return (x < 0 ? "−" : "") + m + " × 10" + String(e).split("").map(c => SUP[c]).join("");
+  }
+  const ratioText = x => !isFinite(x) ? "infinite" : x >= 1e6 ? "about " + sci(x) : x >= 100 ? int(x) : x >= 10 ? x.toFixed(0) : x.toFixed(1);
+
+  // ================================================================ the slides
+  const slides = Array.from(document.querySelectorAll(".slide")), stage = document.querySelector(".stage");
+  let k = 0;
+  function fit() {
+    const s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = "scale(" + s + ")";
+    stage.style.left = Math.max(0, (window.innerWidth - 1280 * s) / 2) + "px";
+    stage.style.top = Math.max(0, (window.innerHeight - 720 * s) / 2) + "px";
+  }
+  function go(n, focus) {
+    k = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => { s.hidden = i !== k; });
+    $("counter").textContent = (k + 1) + " / " + slides.length;
+    try { history.replaceState(null, "", location.pathname + location.search + "#" + (k + 1)); } catch (e) { /* a data: or sandboxed document */ }
+    document.documentElement.setAttribute("data-slide", String(k + 1));
+    if (focus) { const h = slides[k].querySelector("h1, h2"); h.setAttribute("tabindex", "-1"); h.focus({preventScroll: true}); }
+  }
+  const part = () => slides[k].dataset.part;
+  function fromHash() { const n = parseInt(location.hash.replace("#", ""), 10); go(isNaN(n) ? 0 : n - 1, false); }
+  document.addEventListener("keydown", e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === "ArrowDown") { e.preventDefault(); go(k + 1, true); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "ArrowUp") { e.preventDefault(); go(k - 1, true); }
+    else if (e.key === "Home") { e.preventDefault(); go(0, true); }
+    else if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
+    else if (e.key === "f" || e.key === "F") { fullScreen(); }
+  });
+  function fullScreen() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }
+  $("prev").addEventListener("click", () => go(k - 1, true));
+  $("next").addEventListener("click", () => go(k + 1, true));
+  $("full").addEventListener("click", fullScreen);
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", fromHash);
+  fit();
+
+  // ================================================================ drawing helpers
+  function makeFrame(l, t, w, h, x0, x1, y0, y1) {
+    const sx = w / (x1 - x0), sy = h / (y1 - y0);
+    return {l, t, w, h, x0, x1, y0, y1, sx, sy, X: x => l + (x - x0) * sx, Y: y => t + h - (y - y0) * sy};
+  }
+  function equalFrame(l, t, w, h, xr, yr) {      // the same scale on both axes: the shorter range is widened
+    const s = Math.min(w / (xr[1] - xr[0]), h / (yr[1] - yr[0]));
+    const cx = (xr[0] + xr[1]) / 2, cy = (yr[0] + yr[1]) / 2, hx = w / s / 2, hy = h / s / 2;
+    return makeFrame(l, t, w, h, cx - hx, cx + hx, cy - hy, cy + hy);
+  }
+  function ticks(a, b, step) { const out = []; for (let k = Math.ceil(a / step - 1e-9); k * step <= b + 1e-9; k++) out.push(k * step); return out; }
+  function decimals(step) { return step >= 1 ? 0 : Math.ceil(-Math.log10(step) - 1e-9); }
+  function drawGrid(ctx, f, xstep, ystep, o) {
+    o = o || {};
+    ctx.save();
+    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+    const xs = ticks(f.x0, f.x1, xstep), ys = ticks(f.y0, f.y1, ystep);
+    for (const v of xs) { const X = Math.round(f.X(v)) + 0.5; ctx.beginPath(); ctx.moveTo(X, f.t); ctx.lineTo(X, f.t + f.h); ctx.stroke(); }
+    for (const v of ys) { const Y = Math.round(f.Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(f.l, Y); ctx.lineTo(f.l + f.w, Y); ctx.stroke(); }
+    if (o.zero) {
+      ctx.strokeStyle = "#c8c7c0";
+      if (f.x0 < 0 && f.x1 > 0) { const X = Math.round(f.X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(X, f.t); ctx.lineTo(X, f.t + f.h); ctx.stroke(); }
+      if (f.y0 < 0 && f.y1 > 0) { const Y = Math.round(f.Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(f.l, Y); ctx.lineTo(f.l + f.w, Y); ctx.stroke(); }
+    }
+    ctx.strokeStyle = "#cfcec8";
+    ctx.beginPath(); ctx.moveTo(f.l + 0.5, f.t); ctx.lineTo(f.l + 0.5, f.t + f.h + 0.5); ctx.lineTo(f.l + f.w, f.t + f.h + 0.5); ctx.stroke();
+    ctx.fillStyle = MUTED; ctx.font = F(13);
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const dx = decimals(xstep), dy = decimals(ystep);
+    for (const v of xs) ctx.fillText(fix(v, dx), f.X(v), f.t + f.h + 6);
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (const v of ys) ctx.fillText(fix(v, dy), f.l - 8, f.Y(v));
+    ctx.font = F(14); ctx.fillStyle = MUTED;
+    if (o.xlabel) { ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(o.xlabel, f.l + f.w / 2, f.t + f.h + 36); }
+    if (o.ylabel) { ctx.save(); ctx.translate(f.l - (o.ylabelGap || 66), f.t + f.h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(o.ylabel, 0, 0); ctx.restore(); }
+    ctx.restore();
+  }
+  function clipTo(ctx, f) { ctx.beginPath(); ctx.rect(f.l, f.t, f.w, f.h); ctx.clip(); }
+  function dots(ctx, pts, r, fill) {
+    ctx.beginPath();
+    for (const [x, y] of pts) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, 2 * Math.PI); }
+    ctx.fillStyle = fill; ctx.fill();
+  }
+  function ringDot(ctx, x, y, r, fill, ring) {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = ring || 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+  }
+  function arrow(ctx, x0, y0, x1, y1, colour, width, both) {
+    const a = Math.atan2(y1 - y0, x1 - x0), hl = 11 + width * 1.5;
+    ctx.save(); ctx.strokeStyle = colour; ctx.fillStyle = colour; ctx.lineWidth = width; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const head = (x, y, ang) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - hl * Math.cos(ang - 0.38), y - hl * Math.sin(ang - 0.38)); ctx.lineTo(x - hl * Math.cos(ang + 0.38), y - hl * Math.sin(ang + 0.38)); ctx.closePath(); ctx.fill(); };
+    if (Math.hypot(x1 - x0, y1 - y0) > hl * 1.2) { head(x1, y1, a); if (both) head(x0, y0, a + Math.PI); }
+    ctx.restore();
+  }
+  function haloText(ctx, text, x, y, colour) {
+    ctx.lineJoin = "round"; ctx.lineWidth = 5; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.strokeText(text, x, y);
+    ctx.fillStyle = colour; ctx.fillText(text, x, y);
+  }
+  function pointer(canvas, e) {
+    const r = canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height];
+  }
+  function nearest(pts, p, within) {
+    let best = -1, bd = within * within;
+    pts.forEach(([x, y], i) => { const d = (x - p[0]) * (x - p[0]) + (y - p[1]) * (y - p[1]); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
+  function tip(ctx, x, y, lines, W, H) {      // a box with a bold first line, near (x, y), kept inside the canvas
+    ctx.save();
+    const pad = 12, lh = 30;
+    const widths = lines.map((s, k) => { ctx.font = k === 0 ? F(15, "600") : F(14); return ctx.measureText(s).width; });
+    const w = Math.max.apply(null, widths) + 2 * pad, hh = lines.length * lh + 2 * pad - 6;
+    let bx = x + 16, by = y - hh - 14;
+    if (bx + w > W - 4) bx = x - 16 - w;
+    if (bx < 4) bx = Math.max(4, Math.min(W - w - 4, x - w / 2));
+    if (by < 4) by = y + 16;
+    if (by + hh > H - 4) by = H - hh - 4;
+    ctx.fillStyle = "rgba(255,255,255,0.97)"; ctx.fillRect(bx, by, w, hh);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, hh - 1);
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    lines.forEach((s, k) => { ctx.font = k === 0 ? F(15, "600") : F(14); ctx.fillStyle = k === 0 ? INK : MUTED; ctx.fillText(s, bx + pad, by + pad + k * lh); });
+    ctx.restore();
+  }
+
+  // Labels placed one at a time, each at the candidate position that overlaps no label placed before it,
+  // stays inside the bounds and covers the fewest other points; far placements get a leader line.
+  const DIRS = [[1, 0], [1, -1], [-1, 0], [-1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]];
+  const DIST = [5, 12, 20, 30, 44, 58, 76];
+  function placeLabels(ctx, items, bounds, obstacles, pre) {
+    const placed = (pre || []).slice(), out = [];
+    ctx.save();
+    for (const it of items) {
+      ctx.font = it.font;
+      const w = ctx.measureText(it.text).width + 2, hgt = it.h || 22;
+      let best = null;
+      DIST.forEach((r, ri) => DIRS.forEach(([dx, dy], di) => {
+        const x0 = dx > 0 ? it.x + r + 2 : dx < 0 ? it.x - r - 2 - w : it.x - w / 2;
+        const y0 = dy > 0 ? it.y + r * 0.5 + 1 : dy < 0 ? it.y - r * 0.5 - 1 - hgt : it.y - hgt / 2;
+        const b = {x0: x0, y0: y0, x1: x0 + w, y1: y0 + hgt};
+        let cost = ri * 3 + di * 0.6;
+        if (b.x0 < bounds.x0 || b.x1 > bounds.x1 || b.y0 < bounds.y0 || b.y1 > bounds.y1) cost += 1e5;
+        for (const p of placed) if (b.x0 < p.x1 + 2 && b.x1 > p.x0 - 2 && b.y0 < p.y1 + 1 && b.y1 > p.y0 - 1) cost += 1e4;
+        for (const o of obstacles) if (o !== it.self && o[0] > b.x0 - 4 && o[0] < b.x1 + 4 && o[1] > b.y0 - 4 && o[1] < b.y1 + 4) cost += it.obstacleCost || 8;
+        if (!best || cost < best.cost) best = {cost: cost, b: b, r: r};
+      }));
+      if (it.optional && best.cost >= 1e4) continue;        // no room: an optional label is left out
+      placed.push(best.b);
+      out.push({it: it, b: best.b, lead: best.r > 20});
+    }
+    ctx.restore();
+    return out;
+  }
+  function drawLabels(ctx, placed) {
+    ctx.save();
+    for (const {it, b, lead} of placed) {
+      if (lead) {
+        const cx = Math.max(b.x0, Math.min(b.x1, it.x)), cy = Math.max(b.y0, Math.min(b.y1, it.y));
+        ctx.strokeStyle = "#999"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(it.x, it.y); ctx.lineTo(cx, cy); ctx.stroke();
+      }
+      ctx.font = it.font; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      haloText(ctx, it.text, b.x0 + 1, (b.y0 + b.y1) / 2 + 1, it.colour || INK);
+    }
+    ctx.restore();
+  }
+
+  // ================================================================ the clouds
+  function stats(xs, ys) {
+    const n = xs.length;
+    let mx = 0, my = 0;
+    for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+    mx /= n; my /= n;
+    let a = 0, b = 0, c = 0;
+    for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; a += dx * dx; b += dx * dy; c += dy * dy; }
+    a /= n; b /= n; c /= n;
+    const tr = (a + c) / 2, dd = Math.sqrt((a - c) * (a - c) / 4 + b * b);
+    let th = 0.5 * Math.atan2(2 * b, a - c) * 180 / Math.PI;
+    if (th < 0) th += 180;
+    return {n: n, mx: mx, my: my, a: a, b: b, c: c, l1: tr + dd, l2: tr - dd, theta: th, iso: dd < 1e-9 * tr};
+  }
+  const variance = (S, deg) => { const t = deg * Math.PI / 180, cs = Math.cos(t), sn = Math.sin(t); return S.a * cs * cs + 2 * S.b * cs * sn + S.c * sn * sn; };
+  function mulberry32(a) {
+    return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+  function subsample(n, k, seed) {
+    const r = mulberry32(seed), idx = Array.from({length: n}, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    return idx.slice(0, k);
+  }
+  const NPTS = DATA.cloud.x.length;
+  const REAL = {kind: "real", x: DATA.cloud.x, y: DATA.cloud.y, titles: DATA.cloud.titles, S: stats(DATA.cloud.x, DATA.cloud.y),
+                xr: [1.6, 4.8], yr: [1.6, 4.8], step: 0.5, xlabel: "mean rating from 305 users", ylabel: "from the other 305", sub: subsample(NPTS, 120, 14)};
+  const ZZ = (function () {     // 400 pairs of normal numbers, fixed seed, made exactly uncorrelated, mean 0, variance 1
+    const r = mulberry32(301), n = 400, a = [], b = [];
+    for (let i = 0; i < n; i++) { const u = 1 - r(), v = r(), rad = Math.sqrt(-2 * Math.log(u)); a.push(rad * Math.cos(2 * Math.PI * v)); b.push(rad * Math.sin(2 * Math.PI * v)); }
+    const centre = z => { const m = z.reduce((s, v) => s + v, 0) / n; return z.map(v => v - m); };
+    const scale = z => { const s = Math.sqrt(z.reduce((t, v) => t + v * v, 0) / n); return z.map(v => v / s); };
+    const z1 = scale(centre(a)), z2c = centre(b);
+    const d = z2c.reduce((t, v, i) => t + v * z1[i], 0) / n;
+    return [z1, scale(z2c.map((v, i) => v - d * z1[i]))];
+  })();
+  const SUB400 = subsample(400, 120, 15);
+  let synthCache = null;
+  function synth(rho) {
+    if (synthCache && synthCache.rho === rho) return synthCache;
+    const c = Math.sqrt(Math.max(0, 1 - rho * rho));
+    const x = ZZ[0].slice(), y = ZZ[0].map((v, i) => rho * v + c * ZZ[1][i]);
+    synthCache = {kind: "synth", rho: rho, x: x, y: y, titles: null, S: stats(x, y), xr: [-4.3, 4.3], yr: [-4.3, 4.3], step: 1, xlabel: "x", ylabel: "y", sub: SUB400};
+    return synthCache;
+  }
+  const WC = 680, HC = 650;                                     // the cloud canvases
+  const FRAME_CLOUD = C => equalFrame(104, 14, 556, 556, C.xr, C.yr);
+
+  // the axes of the real cloud, from DATA: axis 1 with a positive first entry, axis 2 a quarter turn from it
+  const U1 = (function () { let a = DATA.cloud.directions[0][0], b = DATA.cloud.directions[0][1]; const n = Math.hypot(a, b); a /= n; b /= n; if (a < 0) { a = -a; b = -b; } return [a, b]; })();
+  const U2 = [-U1[1], U1[0]];
+  const SV = DATA.cloud.singular_values, SD = SV.map(s => s / Math.sqrt(NPTS));
+
+  // ================================================================ part 1
+  const P1 = {src: "real", rho: 0.6, angle: 20, turning: false, snap: null, seen: new Uint8Array(361), found: false, hover: -1};
+  const cloud1 = () => P1.src === "real" ? REAL : synth(P1.rho);
+  const ctx1 = $("c1").getContext("2d"), ctx1g = $("c1g").getContext("2d"), ctx1v = $("c1v").getContext("2d");
+  function mark(a) {
+    a = ((a % 180) + 180) % 180;
+    const k = Math.round(a * 2);
+    P1.seen[k] = 1; if (k === 0) P1.seen[360] = 1; if (k === 360) P1.seen[0] = 1;
+  }
+  function markSeen(a0, a1) {             // the angles between a0 and a1, the short way round (modulo 180°)
+    let d = a1 - a0;
+    if (d > 90) d -= 180; if (d < -90) d += 180;
+    if (Math.abs(d) > 30) { mark(a1); return; }
+    const steps = Math.ceil(Math.abs(d) * 2) + 1;
+    for (let j = 0; j <= steps; j++) mark(a0 + d * j / steps);
+  }
+  const wrap = a => a > 180 ? a - 180 : a < 0 ? a + 180 : a;
+  function setAngle1(a) { a = wrap(a); markSeen(P1.angle, a); P1.angle = a; }
+  function resetCurve() { P1.seen.fill(0); P1.found = false; P1.snap = null; mark(P1.angle); }
+  function setSource(v) { P1.src = v; P1.hover = -1; $("s1-src").value = v; $("s1-rho").disabled = v !== "synth"; $("l1-rho").className = v === "synth" ? "slider" : "slider off"; resetCurve(); }
+  $("s1-src").addEventListener("change", e => setSource(e.target.value));
+  $("s1-rho").addEventListener("input", e => { P1.rho = parseFloat(e.target.value); resetCurve(); });
+  $("s1-angle").addEventListener("input", e => { P1.snap = null; P1.turning = false; setAngle1(parseFloat(e.target.value)); });
+  $("b1-turn").addEventListener("click", () => { P1.turning = !P1.turning; P1.snap = null; });
+  $("b1-find").addEventListener("click", () => {
+    const S = cloud1().S;
+    P1.turning = false;
+    if (S.iso) { P1.found = true; return; }
+    const d = ((S.theta - P1.angle + 90) % 180 + 180) % 180 - 90;
+    P1.snap = {from: P1.angle, d: d, t: 0};
+  });
+  $("c1").addEventListener("pointermove", e => {
+    const C = cloud1();
+    if (C.kind !== "real") { P1.hover = -1; return; }
+    const f = FRAME_CLOUD(C), p = pointer($("c1"), e);
+    P1.hover = nearest(C.x.map((x, i) => [f.X(x), f.Y(C.y[i])]), p, 11);
+  });
+  $("c1").addEventListener("pointerleave", () => { P1.hover = -1; });
+  function tick1(dt) {
+    if (P1.turning) setAngle1(P1.angle + dt * 18);
+    if (P1.snap) {
+      P1.snap.t = Math.min(1, P1.snap.t + dt / 0.9);
+      setAngle1(P1.snap.from + P1.snap.d * ease(P1.snap.t));
+      if (P1.snap.t >= 1) { P1.angle = cloud1().S.theta; P1.snap = null; P1.found = true; }
+    }
+  }
+  let labelsReal1 = null, labelsReal2 = null;
+  function realLabelItems(f, font) {
+    return DATA.cloud.labelled.map(i => ({x: f.X(REAL.x[i]), y: f.Y(REAL.y[i]), text: REAL.titles[i], font: font || F(12), colour: MUTED, h: 20, optional: true}));
+  }
+  function drawCloud(ctx, C, f, alpha) {
+    const r = C.kind === "real" ? 2.8 : 3.6;
+    dots(ctx, C.x.map((x, i) => [f.X(x), f.Y(C.y[i])]), r, "rgba(42,120,214," + alpha + ")");
+  }
+  function drawHover(ctx, C, f, i, W, H) {
+    if (i < 0 || !C.titles) return;
+    const x = f.X(C.x[i]), y = f.Y(C.y[i]);
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, 8, 0, 2 * Math.PI); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+    tip(ctx, x, y, [C.titles[i], "mean ratings " + fix(C.x[i], 2) + " and " + fix(C.y[i], 2)], W, H);
+  }
+  function draw1() {
+    const C = cloud1(), S = C.S, f = FRAME_CLOUD(C), ctx = ctx1, W = WC, H = HC;
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, f, C.step, C.step, {xlabel: C.xlabel, ylabel: C.ylabel, zero: C.kind === "synth", ylabelGap: 70});
+    const th = P1.angle * Math.PI / 180, ux = Math.cos(th), uy = Math.sin(th);
+    const foot = i => { const p = (C.x[i] - S.mx) * ux + (C.y[i] - S.my) * uy; return [f.X(S.mx + p * ux), f.Y(S.my + p * uy)]; };
+    ctx.save(); clipTo(ctx, f);
+    ctx.beginPath();
+    for (const i of C.sub) { const q = foot(i); ctx.moveTo(f.X(C.x[i]), f.Y(C.y[i])); ctx.lineTo(q[0], q[1]); }
+    ctx.strokeStyle = "rgba(235,104,52,0.6)"; ctx.lineWidth = 1.2; ctx.stroke();
+    drawCloud(ctx, C, f, 0.5);
+    const L = 20;
+    ctx.beginPath(); ctx.moveTo(f.X(S.mx - L * ux), f.Y(S.my - L * uy)); ctx.lineTo(f.X(S.mx + L * ux), f.Y(S.my + L * uy));
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke();
+    const nx = Math.sin(th) * 6, ny = Math.cos(th) * 6;
+    ctx.beginPath();
+    for (let i = 0; i < C.x.length; i++) { const q = foot(i); ctx.moveTo(q[0] - nx, q[1] - ny); ctx.lineTo(q[0] + nx, q[1] + ny); }
+    ctx.strokeStyle = "rgba(235,104,52,0.45)"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.restore();
+    ringDot(ctx, f.X(S.mx), f.Y(S.my), 6, INK, 2);
+    if (C.kind === "real") {
+      if (!labelsReal1) labelsReal1 = placeLabels(ctx, realLabelItems(f), {x0: f.l + 2, y0: f.t + 2, x1: f.l + f.w - 2, y1: f.t + f.h - 2}, [], []);
+      drawLabels(ctx, labelsReal1);
+    }
+    ctx.save(); ctx.font = F(15, "600"); ctx.textAlign = "left"; ctx.textBaseline = "top";
+    haloText(ctx, "line at " + fix(P1.angle, 1) + "°", f.l + 14, f.t + 12, INK); ctx.restore();
+    drawHover(ctx, C, f, P1.hover, W, H);
+  }
+  function drawGauge() {
+    const S = cloud1().S, v = variance(S, P1.angle), ctx = ctx1g, W = 270, H = 140;
+    ctx.clearRect(0, 0, W, H);
+    const x0 = 18, bw = 36, top = 16, bot = 128, hh = bot - top, fill = hh * Math.max(0, Math.min(1, v / S.l1));
+    ctx.fillStyle = "#F7F7F5"; ctx.fillRect(x0, top, bw, hh);
+    ctx.fillStyle = BLUE; ctx.fillRect(x0, bot - fill, bw, fill);
+    ctx.strokeStyle = "#bdbcb5"; ctx.lineWidth = 1; ctx.strokeRect(x0 + 0.5, top + 0.5, bw - 1, hh - 1);
+    ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(x0 - 6, top + 0.5); ctx.lineTo(x0 + bw + 8, top + 0.5); ctx.stroke(); ctx.restore();
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = F(12); ctx.fillStyle = MUTED;
+    ctx.fillText("largest: " + fix(S.l1, 3), x0 + bw + 12, top);
+    ctx.fillText("0", x0 + bw + 12, bot - 6);
+    const yv = Math.max(top + 30, Math.min(bot - 28, bot - fill));
+    ctx.font = F(14, "600"); ctx.fillStyle = INK;
+    ctx.fillText("now " + fix(v, 3) + " (" + Math.round(100 * v / S.l1) + "%)", x0 + bw + 12, yv);
+    ctx.beginPath(); ctx.moveTo(x0 + bw, bot - fill + 0.5); ctx.lineTo(x0 + bw + 8, yv); ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.stroke();
+  }
+  function drawCurve() {
+    const C = cloud1(), S = C.S, ctx = ctx1v, W = 270, H = 150;
+    ctx.clearRect(0, 0, W, H);
+    const f = makeFrame(52, 10, 206, 92, 0, 180, 0, S.l1 * 1.12);
+    ctx.save();
+    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+    for (const a of [45, 90, 135, 180]) { const X = Math.round(f.X(a)) + 0.5; ctx.beginPath(); ctx.moveTo(X, f.t); ctx.lineTo(X, f.t + f.h); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(f.l, Math.round(f.Y(S.l1)) + 0.5); ctx.lineTo(f.l + f.w, Math.round(f.Y(S.l1)) + 0.5); ctx.stroke();
+    ctx.strokeStyle = "#cfcec8"; ctx.beginPath(); ctx.moveTo(f.l + 0.5, f.t); ctx.lineTo(f.l + 0.5, f.t + f.h + 0.5); ctx.lineTo(f.l + f.w, f.t + f.h + 0.5); ctx.stroke();
+    ctx.fillStyle = MUTED; ctx.font = F(11); ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (const a of [0, 45, 90, 135, 180]) ctx.fillText(a + "°", f.X(a), f.t + f.h + 4);
+    ctx.fillText("angle of the line", f.l + f.w / 2, f.t + f.h + 26);
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText("0", f.l - 5, f.Y(0)); ctx.fillText(fix(S.l1, 3), f.l - 5, f.Y(S.l1));
+    ctx.restore();
+    ctx.save(); ctx.beginPath();
+    let pen = false;
+    for (let k = 0; k <= 360; k++) {
+      if (!P1.seen[k]) { pen = false; continue; }
+      const X = f.X(k / 2), Y = f.Y(variance(S, k / 2));
+      if (pen) ctx.lineTo(X, Y); else { ctx.moveTo(X, Y); pen = true; }
+    }
+    ctx.strokeStyle = BLUE; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.stroke();
+    const X = f.X(P1.angle);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X, f.t); ctx.lineTo(X, f.t + f.h); ctx.stroke(); ctx.setLineDash([]);
+    ringDot(ctx, X, f.Y(variance(S, P1.angle)), 5, INK, 1.5);
+    if (P1.found && !S.iso) {
+      ctx.font = F(12, "600"); ctx.textBaseline = "bottom";
+      const xt = f.X(S.theta), right = xt < f.l + f.w - 100;
+      ctx.textAlign = right ? "left" : "right";
+      haloText(ctx, "axis 1: " + fix(S.theta, 1) + "°", xt + (right ? 6 : -6), f.t + f.h - 6, INK);
+    }
+    ctx.restore();
+  }
+  function sync1() {
+    const C = cloud1(), S = C.S, th = P1.angle * Math.PI / 180;
+    $("s1-angle").value = P1.angle;
+    $("v1-angle").textContent = fix(P1.angle, 1) + "°";
+    $("v1-rho").textContent = fix(P1.rho, 2);
+    $("b1-turn").textContent = P1.turning ? "Stop" : "Turn";
+    $("r1-u").textContent = "(" + fix(Math.cos(th), 2) + ", " + fix(Math.sin(th), 2) + ")";
+    $("r1-var").textContent = fix(variance(S, P1.angle), 3);
+    let found = "";
+    if (P1.found) {
+      if (S.iso) found = "Every direction gives the same variance, " + fix(S.l1, 3) + ": no direction is the longest.";
+      else { const t = S.theta * Math.PI / 180; found = "First principal axis: u = (" + fix(Math.cos(t), 2) + ", " + fix(Math.sin(t), 2) + ") at " + fix(S.theta, 1) + "°; variance " + fix(S.l1, 3) + ", the largest of all directions."; }
+    } else found = C.kind === "real" ? "Black dot: the mean. Orange: the perpendiculars from 120 points, and the feet of all. Hover a dot for the movie."
+      : "400 points, normal, correlation " + fix(P1.rho, 2) + " (fixed seed; mean 0 and variance 1 in each coordinate).";
+    $("r1-found").textContent = found;
+  }
+
+  // ================================================================ part 2
+  const ctx2 = $("c2").getContext("2d");
+  let hover2 = -1;
+  $("c2").addEventListener("pointermove", e => { const f = FRAME_CLOUD(REAL), p = pointer($("c2"), e); hover2 = nearest(REAL.x.map((x, i) => [f.X(x), f.Y(REAL.y[i])]), p, 11); });
+  $("c2").addEventListener("pointerleave", () => { hover2 = -1; });
+  function ellipsePath(ctx, f, cx, cy, a, b, u, v) {
+    ctx.beginPath();
+    for (let k = 0; k <= 120; k++) {
+      const t = k / 120 * 2 * Math.PI, ca = a * Math.cos(t), sb = b * Math.sin(t);
+      const X = f.X(cx + ca * u[0] + sb * v[0]), Y = f.Y(cy + ca * u[1] + sb * v[1]);
+      if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+  }
+  function draw2() {
+    const C = REAL, S = C.S, f = FRAME_CLOUD(C), ctx = ctx2, W = WC, H = HC;
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, f, 0.5, 0.5, {xlabel: C.xlabel, ylabel: C.ylabel, ylabelGap: 70});
+    drawCloud(ctx, C, f, 0.4);
+    const a = 2 * SD[0], b = 2 * SD[1], mx = S.mx, my = S.my;
+    ctx.save(); ellipsePath(ctx, f, mx, my, a, b, U1, U2); ctx.setLineDash([8, 6]); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    arrow(ctx, f.X(mx - a * U1[0]), f.Y(my - a * U1[1]), f.X(mx + a * U1[0]), f.Y(my + a * U1[1]), INK, 3.5, true);
+    arrow(ctx, f.X(mx - b * U2[0]), f.Y(my - b * U2[1]), f.X(mx + b * U2[0]), f.Y(my + b * U2[1]), ORANGE, 3.5, true);
+    ringDot(ctx, f.X(mx), f.Y(my), 6, INK, 2);
+    if (!labelsReal2) {
+      const ends = [{x: f.X(mx - a * U1[0]), y: f.Y(my - a * U1[1]), text: "axis 1: length " + fix(SV[0], 1), font: F(15, "600"), colour: INK, h: 26, obstacleCost: 0.5},
+                    {x: f.X(mx - b * U2[0]), y: f.Y(my - b * U2[1]), text: "axis 2: length " + fix(SV[1], 1), font: F(15, "600"), colour: ORANGE, h: 26, obstacleCost: 0.5}];
+      const lineBoxes = [], box = (X, Y, r) => ({x0: X - r, y0: Y - r, x1: X + r, y1: Y + r});
+      for (let k = 0; k <= 60; k++) {          // keep labels off the two axes, their heads and the ellipse
+        const t = -1 + k / 30;
+        for (const [u, len] of [[U1, a], [U2, b]]) lineBoxes.push(box(f.X(mx + t * len * u[0]), f.Y(my + t * len * u[1]), 4));
+        const w = k / 60 * 2 * Math.PI, ca = a * Math.cos(w), sb = b * Math.sin(w);
+        lineBoxes.push(box(f.X(mx + ca * U1[0] + sb * U2[0]), f.Y(my + ca * U1[1] + sb * U2[1]), 3));
+      }
+      for (const [u, len] of [[U1, a], [U2, b]]) for (const sgn of [-1, 1]) lineBoxes.push(box(f.X(mx + sgn * len * u[0]), f.Y(my + sgn * len * u[1]), 14));
+      const bounds = {x0: f.l + 2, y0: f.t + 2, x1: f.l + f.w - 2, y1: f.t + f.h - 2};
+      const first = placeLabels(ctx, ends, bounds, [], lineBoxes);
+      labelsReal2 = first.concat(placeLabels(ctx, realLabelItems(f), bounds, [], lineBoxes.concat(first.map(p => p.b))));
+    }
+    drawLabels(ctx, labelsReal2);
+    drawHover(ctx, C, f, hover2, W, H);
+  }
+
+  // ================================================================ part 3
+  const P3 = {s: 1};
+  const ctx3a = $("c3a").getContext("2d"), ctx3b = $("c3b").getContext("2d");
+  const PROJ = (function () {
+    const p1 = [], p2 = [];
+    for (let i = 0; i < NPTS; i++) { const dx = REAL.x[i] - REAL.S.mx, dy = REAL.y[i] - REAL.S.my; p1.push(dx * U1[0] + dy * U1[1]); p2.push(dx * U2[0] + dy * U2[1]); }
+    return {p1: p1, p2: p2};
+  })();
+  function columns3(s) {                  // the centred columns x and y of the squeezed cloud, in the original frame
+    let xx = 0, yy = 0, xy = 0;
+    for (let i = 0; i < NPTS; i++) {
+      const q2 = s * PROJ.p2[i], cx = PROJ.p1[i] * U1[0] + q2 * U2[0], cy = PROJ.p1[i] * U1[1] + q2 * U2[1];
+      xx += cx * cx; yy += cy * cy; xy += cx * cy;
+    }
+    const r = s === 0 ? 1 : Math.max(-1, Math.min(1, xy / Math.sqrt(xx * yy)));
+    return {nx: Math.sqrt(xx), ny: Math.sqrt(yy), r: r, ang: s === 0 ? 0 : Math.acos(r) * 180 / Math.PI};
+  }
+  function setSqueeze(s) { P3.s = s; $("s3").value = Math.round(s * 1000); }
+  $("s3").addEventListener("input", e => { P3.s = parseInt(e.target.value, 10) / 1000; });
+  $("b3-near").addEventListener("click", () => setSqueeze(0.002));
+  $("b3-flat").addEventListener("click", () => setSqueeze(0));
+  $("b3-back").addEventListener("click", () => setSqueeze(1));
+  const F3 = (function () {
+    const lo = Math.min.apply(null, PROJ.p1), hi = Math.max.apply(null, PROJ.p1);
+    return equalFrame(62, 12, 322, 322, [lo - 0.15, hi + 0.15], [-1, 1]);
+  })();
+  const rText = k => k.r === 1 ? "1" : k.r > 0.999 ? fix(k.r, 6) : fix(k.r, 3);
+  const angText = k => (k.ang >= 1 ? fix(k.ang, 1) : k.ang === 0 ? "0" : sig(k.ang, 2)) + "°";
+  function draw3a() {
+    const ctx = ctx3a, W = 400, H = 400, f = F3, s = P3.s;
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, f, 1, 1, {zero: true, xlabel: "along axis 1", ylabel: "along axis 2", ylabelGap: 44});
+    const a = 2 * SD[0], b = 2 * s * SD[1];
+    dots(ctx, PROJ.p1.map((p, i) => [f.X(p), f.Y(s * PROJ.p2[i])]), 2.2, "rgba(42,120,214,0.45)");
+    ctx.save(); ellipsePath(ctx, f, 0, 0, a, b, [1, 0], [0, 1]); ctx.setLineDash([7, 5]); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+    arrow(ctx, f.X(-a), f.Y(0), f.X(a), f.Y(0), INK, 3, true);
+    if (b * f.sy > 2) arrow(ctx, f.X(0), f.Y(-b), f.X(0), f.Y(b), ORANGE, 3, true);
+    ctx.save(); ctx.font = F(13, "600"); ctx.textBaseline = "top"; ctx.textAlign = "right";
+    haloText(ctx, "axis 1: length " + fix(SV[0], 1), f.X(a), Math.max(f.Y(-b), f.Y(0) + 16) + 8, INK);
+    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    haloText(ctx, "axis 2: length " + (s === 0 ? "0" : sig(s * SV[1], 3)), f.X(0) - 10, Math.min(f.Y(b), f.Y(0) - 16) - 8, ORANGE);
+    ctx.restore();
+  }
+  function draw3b(k) {
+    const ctx = ctx3b, W = 400, H = 400;
+    ctx.clearRect(0, 0, W, H);
+    const O = [46, 330], sc = 290 / Math.max(k.nx, k.ny), th = k.ang * Math.PI / 180;
+    const xt = [O[0] + k.nx * sc, O[1]], yt = [O[0] + k.ny * sc * Math.cos(th), O[1] - k.ny * sc * Math.sin(th)];
+    ctx.save();
+    ctx.strokeStyle = GRID; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(O[0], O[1], 290, -Math.PI / 2, 0); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+    if (th > 0) { ctx.beginPath(); ctx.arc(O[0], O[1], 76, -th, 0); ctx.stroke(); }
+    ctx.restore();
+    arrow(ctx, O[0], O[1], xt[0], xt[1], BLUE, 7, false);         // wider, so that it shows under column y when they coincide
+    arrow(ctx, O[0], O[1], yt[0], yt[1], ORANGE, 3, false);
+    ringDot(ctx, O[0], O[1], 5, INK, 1.5);
+    ctx.save();
+    ctx.font = F(14, "600"); ctx.textAlign = "right";
+    ctx.textBaseline = "top"; haloText(ctx, "column x", xt[0], xt[1] + 14, BLUE);
+    ctx.font = F(12.5); haloText(ctx, "length " + fix(k.nx, 1), xt[0], xt[1] + 38, MUTED);
+    ctx.font = F(14, "600"); ctx.textBaseline = "bottom";
+    const ly = Math.min(yt[1] - 10, O[1] - 60);
+    haloText(ctx, "column y", yt[0], ly - 22, ORANGE);
+    ctx.font = F(12.5); haloText(ctx, "length " + fix(k.ny, 1), yt[0], ly, MUTED);
+    ctx.font = F(15, "600"); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    const ra = th > 0.25 ? 0.5 * th : 0;
+    haloText(ctx, angText(k), O[0] + 88 * Math.cos(ra), O[1] - 88 * Math.sin(ra) - (th > 0.25 ? 0 : 18), INK);
+    ctx.font = F(14); ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = INK;
+    ctx.fillText("cos(" + angText(k) + ") = r = " + rText(k), 14, 12);
+    ctx.fillStyle = MUTED; ctx.font = F(12.5); ctx.fillText("the plane spanned by the two columns", 14, 38);
+    ctx.restore();
+  }
+  function sync3(k) {
+    const s = P3.s, ratio = SV[0] / (s * SV[1]);
+    $("v3").textContent = String(+s.toFixed(3));
+    $("r3-len").textContent = s === 0 ? "0" : sig(s * SV[1], 3);
+    const rb = $("r3-ratio");
+    rb.textContent = s === 0 ? "infinite: the matrix has rank 1" : ratioText(ratio);
+    rb.className = s === 0 || ratio > 1000 ? "big warn" : "big";
+    rb.style.fontSize = s === 0 ? "26px" : "";
+    $("r3-r").textContent = rText(k);
+    $("r3-ang").textContent = angText(k);
+    const note = $("r3-note");
+    note.textContent = s === 0 ? "Column y = " + fix(U1[1] / U1[0], 3) + " × column x: the columns are parallel; the rank is 1."
+      : ratio > 1000 ? "The columns are nearly parallel: the condition number is above 1,000." : "";
+    note.className = "warn";
+  }
+
+  // ================================================================ part 4
+  const P4 = {family: false, level: 0, hover: -1};
+  const ctx4a = $("c4a").getContext("2d"), ctx4b = $("c4b").getContext("2d");
+  const LOAD = DATA.loadings.map(r => [r[0], r[1]]);
+  const W4 = 680, H4 = 640;
+  const F4 = (function () {
+    const xs = LOAD.map(p => p[0]), ys = LOAD.map(p => p[1]);
+    return equalFrame(104, 14, 556, 560, [Math.min.apply(null, xs) - 0.06, Math.max.apply(null, xs) + 0.19], [Math.min.apply(null, ys) - 0.05, Math.max.apply(null, ys) + 0.05]);
+  })();
+  const LOADPTS = LOAD.map(p => [F4.X(p[0]), F4.Y(p[1])]);
+  let labels4 = null;
+  $("c4a").addEventListener("pointermove", e => { P4.hover = nearest(LOADPTS, pointer($("c4a"), e), 14); });
+  $("c4a").addEventListener("pointerleave", () => { P4.hover = -1; });
+  function setFamily(on, level) {
+    P4.family = on; if (level !== undefined) P4.level = level;
+    $("b4-add").disabled = on; $("b4-remove").disabled = !on;
+    $("s4-noise").disabled = !on; $("l4-noise").className = on ? "slider inline" : "slider inline off";
+    $("s4-noise").value = P4.level;
+  }
+  $("b4-add").addEventListener("click", () => setFamily(true));
+  $("b4-remove").addEventListener("click", () => setFamily(false, 0));
+  $("s4-noise").addEventListener("input", e => { P4.level = parseInt(e.target.value, 10); });
+  const EVSUM = DATA.eigenvalues.reduce((s, v) => s + v, 0);
+  const pct = k => Math.round(100 * DATA.eigenvalues[k] / EVSUM);     // from the eigenvalues: variance_share is rounded to 3 places
+  function draw4a() {
+    const ctx = ctx4a, W = W4, H = H4, f = F4;
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, f, 0.1, 0.1, {zero: true, xlabel: "component 1 (" + pct(0) + "%): dark, tense ↔ family, musical",
+                                ylabel: "component 2 (" + pct(1) + "%): drama, romance ↔ action, sci-fi", ylabelGap: 74});
+    LOADPTS.forEach(([x, y]) => ringDot(ctx, x, y, 7, BLUE, 1.5));
+    if (!labels4) {
+      const items = DATA.genres.map((g, i) => ({x: LOADPTS[i][0], y: LOADPTS[i][1], text: g, font: F(14.5), colour: INK, h: 25, self: LOADPTS[i], obstacleCost: 30}));
+      labels4 = placeLabels(ctx, items, {x0: f.l + 2, y0: f.t + 2, x1: f.l + f.w - 2, y1: f.t + f.h - 2}, LOADPTS, []);
+    }
+    drawLabels(ctx, labels4);
+    if (P4.hover >= 0) {
+      const i = P4.hover, [x, y] = LOADPTS[i];
+      ctx.save(); ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+      tip(ctx, x, y, [DATA.genres[i] + ": " + int(DATA.genre_counts[i]) + " movies", "weights " + fix(LOAD[i][0], 3) + " and " + fix(LOAD[i][1], 3)], W, H);
+    }
+  }
+  function draw4b() {
+    const ctx = ctx4b, W = 560, H = 160;
+    ctx.clearRect(0, 0, W, H);
+    const fam = P4.family ? DATA.family[P4.level] : null;
+    const ev = fam ? fam.eigenvalues.slice(0, 19).concat([Math.abs(fam.smallest)]) : DATA.eigenvalues;
+    const f = makeFrame(48, 30, 496, 86, 0.4, 20.6, 0, 3.5);
+    ctx.save();
+    ctx.strokeStyle = GRID; ctx.lineWidth = 1; ctx.fillStyle = MUTED; ctx.font = F(12); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (const v of [1, 2, 3]) { const Y = Math.round(f.Y(v)) + 0.5; ctx.beginPath(); ctx.moveTo(f.l, Y); ctx.lineTo(f.l + f.w, Y); ctx.stroke(); ctx.fillText(String(v), f.l - 8, Y); }
+    ctx.fillText("0", f.l - 8, f.Y(0));
+    ctx.strokeStyle = "#bdbcb5"; ctx.beginPath(); ctx.moveTo(f.l, f.Y(0) + 0.5); ctx.lineTo(f.l + f.w, f.Y(0) + 0.5); ctx.stroke();
+    ev.forEach((v, j) => {
+      const X = f.X(j + 1), top = f.Y(v);
+      ctx.fillStyle = j === 19 ? ORANGE : BLUE;
+      ctx.fillRect(X - 5, top, 10, f.Y(0) - top);
+    });
+    ctx.fillStyle = MUTED; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (const j of (fam ? [1, 5, 10, 15, 20] : [1, 5, 10, 15, 19])) ctx.fillText(String(j), f.X(j), f.Y(0) + 5);
+    ctx.fillText("component", f.l + f.w / 2, f.Y(0) + 26);
+    if (fam) {
+      const X = f.X(20), top = f.Y(Math.abs(fam.smallest));
+      ctx.fillStyle = ORANGE; ctx.fillRect(X - 7, f.Y(0) - 2, 14, 4);
+      const txt = "20th: " + (fam.noise === 0 ? sci(fam.smallest) : sig(fam.smallest, 2));
+      ctx.font = F(13, "600"); ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      const ty = f.Y(0) - 40;
+      haloText(ctx, txt, X + 8, ty, ORANGE);
+      ctx.strokeStyle = ORANGE; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(X, ty + 4); ctx.lineTo(X, Math.min(top, f.Y(0) - 4) - 3); ctx.stroke();
+    }
+    ctx.font = F(13, "600"); ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = INK;
+    ctx.fillText(fam ? "eigenvalues of 20 columns: the 19 genres and Family" : "eigenvalues of the 19 genre columns", f.l, 4);
+    ctx.restore();
+  }
+  function sync4() {
+    $("v4-noise").textContent = P4.family ? String(DATA.family[P4.level].noise) : "0";
+    const big = $("r4-big"), c = $("r4-c");
+    if (!P4.family) {
+      $("r4-a").textContent = "condition number of the correlation matrix";
+      big.textContent = fix(DATA.cond_C, 1); big.className = "big";
+      $("r4-b").textContent = "of the standardized data Z: " + fix(DATA.cond_Z, 1);
+      c.textContent = "The 19 eigenvalues sum to 19; largest " + fix(DATA.eigenvalues[0], 2) + ", smallest " + fix(DATA.eigenvalues[18], 2) + ": every direction has some spread."; c.className = "";
+      return;
+    }
+    const fam = DATA.family[P4.level];
+    $("r4-a").textContent = "the twentieth eigenvalue (orange); the 20 sum to 20";
+    if (fam.noise === 0) {
+      big.textContent = sci(fam.smallest); big.className = "big warn";
+      $("r4-b").textContent = "zero up to round-off: Family is the sum of two other columns; the rank is 19 of 20";
+      c.textContent = "The exact condition numbers of both matrices are infinite; a finite ratio from this residual would be round-off.";
+    } else {
+      big.textContent = sig(fam.smallest, 2); big.className = fam.cond_C > 1000 ? "big warn" : "big";
+      $("r4-b").textContent = "small, not zero: Family is nearly the sum of two other columns; the rank is 20";
+      c.textContent = "largest over smallest: " + ratioText(fam.cond_C) + "; for the standardized data, " + ratioText(fam.cond_Z) + ". The slider scales one fixed noise vector.";
+    }
+    c.className = fam.noise === 0 || fam.cond_C > 1000 ? "warn" : "";
+  }
+
+  // ================================================================ part 5
+  const M = DATA.map, NM = M.x.length;
+  const P5 = {by: "class", hover: -1};
+  const ctx5 = $("c5").getContext("2d");
+  const W5 = 1180, H5 = 600;
+  const CLASS = {action: [BLUE, "Action, Adventure or Sci-Fi"], drama: [ORANGE, "Drama or Crime, no action"], other: [PURPLE, "the rest: comedy, animation, ..."]};
+  const DECADES = [[1970, "#a9c9ef"], [1980, "#6aa2e4"], [1990, "#2a78d6"], [2000, "#14457f"]];
+  const decadeColour = y => { let c = DECADES[0][1]; for (const [d, col] of DECADES) if (y >= d) c = col; return c; };
+  const shortTitle = t => {
+    t = t.replace(/\s*\(.*\)\s*$/, "");
+    if (t.indexOf(" - ") >= 0) return t.slice(t.lastIndexOf(" - ") + 3);
+    if (t.length > 24 && t.indexOf(": ") >= 0) return t.slice(0, t.indexOf(": "));
+    return t;
+  };
+  const F5 = (function () {
+    const xs = M.x, ys = M.y;
+    return equalFrame(100, 14, 1064, 526, [Math.min.apply(null, xs) - 0.5, Math.max.apply(null, xs) + 0.5], [Math.min.apply(null, ys) - 0.5, Math.max.apply(null, ys) + 0.5]);
+  })();
+  const MAPPTS = M.x.map((x, i) => [F5.X(x), F5.Y(M.y[i])]);
+  function extremes(k) {                       // the farthest point in each of 12 directions, then the farthest from the centre
+    const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+    const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length); };
+    const mx = mean(M.x), my = mean(M.y), sx = sd(M.x), sy = sd(M.y), chosen = [];
+    for (let a = 0; a < 360; a += 30) {
+      const c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180);
+      let best = 0, bv = -Infinity;
+      for (let i = 0; i < NM; i++) { const v = c * (M.x[i] - mx) / sx + s * (M.y[i] - my) / sy; if (v > bv) { bv = v; best = i; } }
+      if (chosen.indexOf(best) < 0) chosen.push(best);
+    }
+    const order = M.x.map((x, i) => i).sort((i, j) => Math.hypot((M.x[j] - mx) / sx, (M.y[j] - my) / sy) - Math.hypot((M.x[i] - mx) / sx, (M.y[i] - my) / sy));
+    for (const i of order) { if (chosen.length >= k) break; if (chosen.indexOf(i) < 0) chosen.push(i); }
+    return chosen;
+  }
+  const ends = (arr, hi, k) => arr.map((v, i) => i).sort((i, j) => hi ? arr[j] - arr[i] : arr[i] - arr[j]).slice(0, k);
+  function labelled5() {                       // the movies the text names (three at each end of each axis), then other extremes
+    const out = [];
+    for (const [arr, hi] of [[M.x, true], [M.x, false], [M.y, true], [M.y, false]]) for (const i of ends(arr, hi, 3)) if (out.indexOf(i) < 0) out.push(i);
+    for (const i of extremes(15)) { if (out.length >= 15) break; if (out.indexOf(i) < 0) out.push(i); }
+    return out;
+  }
+  const LEGEND5 = {x0: F5.l + 10, y0: F5.t + F5.h - 136, x1: F5.l + 420, y1: F5.t + F5.h - 8};
+  let labels5 = null;
+  $("c5").addEventListener("pointermove", e => { P5.hover = nearest(MAPPTS, pointer($("c5"), e), 14); });
+  $("c5").addEventListener("pointerleave", () => { P5.hover = -1; });
+  function setColour(by) { P5.by = by; $("b5-class").setAttribute("aria-pressed", by === "class" ? "true" : "false"); $("b5-decade").setAttribute("aria-pressed", by === "decade" ? "true" : "false"); }
+  $("b5-class").addEventListener("click", () => setColour("class"));
+  $("b5-decade").addEventListener("click", () => setColour("decade"));
+  const colour5 = i => P5.by === "class" ? CLASS[M.class[i]][0] : decadeColour(M.year[i]);
+  function draw5() {
+    const ctx = ctx5, W = W5, H = H5, f = F5;
+    ctx.clearRect(0, 0, W, H);
+    drawGrid(ctx, f, 2, 2, {zero: true, xlabel: "first axis of the ratings cloud (moves with the mean rating: correlation " + fix(M.corr_axis1_mean, 2) + ")",
+                            ylabel: "second axis (blockbusters up, cult and art films down)", ylabelGap: 54});
+    if (!labels5) {
+      const items = labelled5().map(i => ({x: MAPPTS[i][0], y: MAPPTS[i][1], text: shortTitle(M.titles[i]), font: F(14), colour: INK, h: 25, self: MAPPTS[i], obstacleCost: 12}));
+      labels5 = placeLabels(ctx, items, {x0: f.l + 2, y0: f.t + 2, x1: f.l + f.w - 2, y1: f.t + f.h - 2}, MAPPTS, [LEGEND5]);
+    }
+    MAPPTS.forEach(([x, y], i) => {
+      ringDot(ctx, x, y, 8, colour5(i), 1.5);
+      if (P5.by === "decade") { ctx.beginPath(); ctx.arc(x, y, 8.6, 0, 2 * Math.PI); ctx.strokeStyle = "rgba(26,26,26,0.35)"; ctx.lineWidth = 0.8; ctx.stroke(); }
+    });
+    drawLabels(ctx, labels5);
+    // the legend
+    ctx.save();
+    const entries = P5.by === "class" ? ["action", "drama", "other"].map(k => CLASS[k]) : DECADES.map(([d, c]) => [c, d + "s"]);
+    const lh = 30, top = LEGEND5.y1 - entries.length * lh - 8;
+    ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.fillRect(LEGEND5.x0, top - 4, LEGEND5.x1 - LEGEND5.x0, LEGEND5.y1 - top + 4);
+    ctx.font = F(14); ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    entries.forEach(([c, text], k) => {
+      const y = top + 10 + k * lh;
+      ringDot(ctx, LEGEND5.x0 + 18, y, 8, c, 1.5);
+      if (P5.by === "decade") { ctx.beginPath(); ctx.arc(LEGEND5.x0 + 18, y, 8.6, 0, 2 * Math.PI); ctx.strokeStyle = "rgba(26,26,26,0.35)"; ctx.lineWidth = 0.8; ctx.stroke(); }
+      ctx.fillStyle = INK; ctx.fillText(text, LEGEND5.x0 + 36, y);
+    });
+    ctx.restore();
+    if (P5.hover >= 0) {
+      const i = P5.hover, [x, y] = MAPPTS[i];
+      ctx.save(); ctx.beginPath(); ctx.arc(x, y, 11, 0, 2 * Math.PI); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+      tip(ctx, x, y, [M.titles[i] + " (" + M.year[i] + ")", "mean rating " + fix(M.mean[i], 2) + " · " + int(M.count[i]) + " ratings", CLASS[M["class"][i]][1]], W, H);
+    }
+  }
+
+  // ================================================================ numbers in the text, from DATA
+  (function () {
+    const n = NPTS, ev = SV.map(s => s * s / n);
+    const byAxis = (arr, hi, k) => ends(arr, hi, k).map(i => shortTitle(M.titles[i]));
+    const list = a => a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+    const K = {
+      n: int(n), u1: "(" + fix(U1[0], 2) + ", " + fix(U1[1], 2) + ")",
+      sv1: fix(SV[0], 1), sv2: fix(SV[1], 1), sv1f: fix(SV[0], 2), sv2f: fix(SV[1], 2),
+      ratio: fix(DATA.cloud.axis_ratio, 1), eratio: fix(DATA.cloud.eigen_ratio, 1),
+      ev1: fix(ev[0], 3), ev2: fix(ev[1], 3), sd1: fix(SD[0], 2), sd2: fix(SD[1], 2), sd1x2: fix(2 * SD[0], 2), sd2x2: fix(2 * SD[1], 2),
+      condC: fix(DATA.cond_C, 1), condZ: fix(DATA.cond_Z, 1), corrmean: fix(M.corr_axis1_mean, 2),
+      ax1hi: list(byAxis(M.x, true, 3)), ax1lo: list(byAxis(M.x, false, 3)), ax2hi: list(byAxis(M.y, true, 3)), ax2lo: list(byAxis(M.y, false, 3))
+    };
+    document.querySelectorAll("[data-k]").forEach(el => { const v = K[el.getAttribute("data-k")]; if (v !== undefined) el.textContent = v; });
+  })();
+
+  // ================================================================ the loop
+  function drawActive(dt) {
+    const p = part();
+    if (p === "1") { tick1(dt); sync1(); draw1(); drawGauge(); drawCurve(); }
+    if (p === "2") draw2();
+    if (p === "3") { const kk = columns3(P3.s); sync3(kk); draw3a(); draw3b(kk); }
+    if (p === "4") { sync4(); draw4a(); draw4b(); }
+    if (p === "5") draw5();
+  }
+  let last = null;
+  function frame(ts) {
+    if (last === null) last = ts;
+    const dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+    drawActive(dt);
+    requestAnimationFrame(frame);
+  }
+  setSource("real"); setFamily(false, 0); setColour("class");
+  fromHash();
+  const q = new URLSearchParams(location.search), T = q.get("test");
+  if (T === "turn") { go(1); P1.angle = 20; P1.seen.fill(0); for (let a = 0; a <= 90; a += 0.5) mark(a); mark(20); }
+  if (T === "axis") { go(1); for (let a = 0; a <= 180; a += 0.5) mark(a); P1.angle = REAL.S.theta; P1.found = true; }
+  if (T === "synth") { go(1); P1.rho = -0.5; $("s1-rho").value = -0.5; setSource("synth"); for (let a = 0; a <= 180; a += 0.5) mark(a); P1.angle = synth(-0.5).S.theta; P1.found = true; }
+  if (T === "ellipse") go(3);
+  if (T === "flat") { go(5); setSqueeze(0.05); }
+  if (T === "flat0") { go(5); setSqueeze(0); }
+  if (T === "flat1") go(5);
+  if (T === "family") { go(7); setFamily(true, 0); }
+  if (T === "noise") { go(7); setFamily(true, Math.max(0, DATA.family.findIndex(fm => fm.noise === 0.05))); }
+  if (T === "map") go(9);
+  if (T === "decade") { go(9); setColour("decade"); }
+  drawActive(0);
+  requestAnimationFrame(frame);
+  document.documentElement.setAttribute("data-ready", "yes");
+})();
+</script>
+</body>
+</html>
