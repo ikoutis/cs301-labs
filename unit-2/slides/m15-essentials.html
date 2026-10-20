@@ -1,0 +1,1655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — Unit II essentials (meeting 15, part 1)</title>
+<!--
+  CS 301, Unit II, meeting 15, part 1: the must-knows of Unit II, a review of meetings 10 to 14 before the
+  preview exam. Built from the instructor's draft of 2026-10-19 (sixteen slides in seven parts, each part a
+  short justification slide and then its essentials), in the format of the meeting 14 slide pages: a deck of
+  1280 x 720 slides that scale to the window, one picture a slide, with the points beside it in large type.
+
+  Every picture is drawn step by step, as the meeting 14 pages drew their products: the space bar, a click on
+  the picture or the button "Next step" runs the next step of the picture; "Play all" runs the steps one after
+  another; R or "Reset" starts the picture again. When the steps of a picture are done, the space bar turns the
+  slide. The arrow keys, PageUp and PageDown turn the slides at any time; Home and End go to the ends; F
+  toggles full screen; the address can name a slide (m15-essentials.html#6).
+
+  The examples are small and made up, so that every number on a slide can be checked by hand; the real ones
+  are on the pages and in the decks of meetings 10 to 14. The one real example is the day 2019-07-04 of
+  meeting 11, with the scores its four season neurons gave. Notation is the course's: n points with m
+  coordinates (features), K neurons.
+
+  Slides: 1 the title; 2 data and neurons as matrices (the real world, a spreadsheet, a matrix; an
+  expression, four expressions, W x + b); then seven groups, each opened by a card with the group's title and
+  why the course does it: Data x data (3 comparing observations and features; 4 the two products; 5
+  preprocessing changes the comparison), Data x neurons (6 applying several rules to the same data; 7 data x
+  neurons), Array expressions (8 translating a formula into array operations; 9 axes, broadcasting and the two
+  multiplications), Computational cost (10 estimating work before computing; 11 arithmetic work and storage),
+  Hardware (12 explaining a measured running time; 13 where the time goes), Linear systems (14 the random-walk
+  probabilities; 15 the equations as A p = b; 16 uniqueness, sensitivity and the residual), Sparse computation
+  (17 storing a matrix with many zeros; 18 sparse products and sparse solves). With the seven cards, 25 slides.
+
+  Checks for headless Chrome: ?slide=N&step=K opens slide N with its picture at step K, finished
+  (m15-essentials.html?slide=3&step=2); &t=0 starts the step's animation from its beginning instead, so that
+  a short virtual-time budget captures a picture in motion. The script sets data-ready="yes" on the html
+  element when it has run.
+
+  Hand-written, not built: this file is the source. Self-contained on purpose: no CDN, no fonts, no network.
+-->
+<style>
+  :root {
+    --red: #CC0033;
+    --ink: #1A1A1A;
+    --muted: #555;
+    --faint: #DDD;
+    --paper: #F7F7F5;
+    --l1: #2a78d6;      /* blue: the first of two things compared */
+    --l2: #eb6834;      /* orange: the second */
+    --l3: #6a3fb5;      /* purple: a third category */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #2b2b2b; color: var(--ink);
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; background: #fff; overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 28px 48px 52px; border-top: 8px solid var(--red); font-size: 27px; line-height: 1.4;
+    display: flex; flex-direction: column; }
+  .slide[hidden] { display: none; }
+  h1 { font-size: 56px; line-height: 1.15; margin: 36px 0 18px; font-weight: 700; }
+  h2 { font-size: 36px; line-height: 1.15; margin: 0 0 12px; font-weight: 700; flex: 0 0 auto; }
+  h2 .part { float: right; font-size: 18px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--red); margin-top: 10px; }
+  .eyebrow { font-size: 20px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); margin: 100px 0 0; }
+  .subtitle { font-size: 30px; color: var(--muted); max-width: 34em; margin: 0; }
+  /* the card that opens a group: its title, what it is, and why we do it */
+  .card .eyebrow { margin-top: 64px; }
+  .card h1 { margin-bottom: 14px; }
+  .card .subtitle { max-width: 36em; }
+  .why { margin-top: 34px; max-width: 38em; }
+  .why .label { margin: 0 0 8px; color: var(--red); }
+  .why ul.pts { font-size: 26px; line-height: 1.35; }
+  .why ul.pts li { margin-bottom: 10px; }
+  a { color: #0b57a4; }
+  code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  sup { font-size: .7em; line-height: 0; }
+  sub { font-size: .7em; line-height: 0; }
+
+  /* a slide with a picture: the picture at the left, the points, the controls and the readout at the right */
+  .row { display: flex; gap: 26px; flex: 1 1 auto; min-height: 0; align-items: flex-start; }
+  .pic { flex: 0 0 auto; }
+  .pic canvas { display: block; border: 1px solid var(--faint); border-radius: 3px; background: #fff; cursor: pointer; }
+  .side { flex: 1 1 0; min-width: 0; font-size: 22px; line-height: 1.32; }
+  ul.pts { margin: 0 0 8px; padding-left: 1.05em; }
+  ul.pts li { margin-bottom: 7px; }
+  ul.pts li::marker { color: var(--red); }
+  ul.pts.tight { font-size: 20.5px; line-height: 1.28; }
+  ul.pts.tight li { margin-bottom: 5px; }
+  .target { font-size: 21px; line-height: 1.32; margin: 2px 0 10px; padding: 8px 12px; border-left: 5px solid var(--red); background: var(--paper); }
+  .target span { display: block; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--red); margin-bottom: 2px; }
+  .note { font-size: 18px; color: var(--muted); margin: 0 0 8px; line-height: 1.3; }
+  .label { font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+  button { font: inherit; font-size: 19px; font-weight: 600; padding: 6px 14px; border: 1px solid #b8b8b2;
+    background: #fff; color: var(--ink); border-radius: 4px; cursor: pointer; }
+  button:hover { border-color: var(--ink); }
+  button.primary { border-color: #d4b000; background: #ffdf5c; color: var(--ink); }
+  button.primary:hover { background: #ffd21f; border-color: #b39400; }
+  button[disabled] { opacity: .4; cursor: default; }
+  button[disabled]:hover { border-color: #b8b8b2; }
+  button.primary[disabled] { background: #f4efd2; border-color: #e3dcb4; opacity: .7; }
+  /* the picture's controls, set off from the points above by a rule */
+  .ctl { margin-top: 12px; padding-top: 10px; border-top: 2px solid #c8c8c2; }
+  .ctl > .label { margin-top: 0; }
+  .readout { background: var(--paper); border-radius: 4px; padding: 10px 14px; margin-top: 4px; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+  .readout p { margin: 0 0 5px; }
+  .readout p:last-child { margin-bottom: 0; }
+  .readout .label { margin-top: 0; }
+  .readout .sum { font-size: 22px; font-weight: 600; line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .readout .sum:empty { display: none; }
+  .readout .big { font-size: 34px; font-weight: 600; line-height: 1.15; }
+  .b { color: var(--l1); } .o { color: var(--l2); } .p { color: var(--l3); }
+  .small { font-size: 18px; color: var(--muted); font-weight: 400; }
+  .side strong { font-weight: 600; }
+  table.cost { border-collapse: collapse; font-size: 19px; margin: 0 0 8px; width: 100%; }
+  table.cost th, table.cost td { border-bottom: 1px solid var(--faint); padding: 3px 10px 3px 0; text-align: left; vertical-align: top; }
+  table.cost thead th { border-bottom: 2px solid var(--ink); font-weight: 600; }
+  table.cost tr.off td { color: #c8c8c2; }
+  table.cost td code { background: none; padding: 0; }
+
+  .foot { position: absolute; left: 48px; right: 170px; bottom: 14px; font-size: 16px; color: var(--muted); display: flex; justify-content: space-between; }
+  #errors { position: absolute; left: 48px; bottom: 36px; color: var(--red); font-family: monospace; font-size: 14px; white-space: pre-wrap; margin: 0; }
+  .nav { position: fixed; right: 18px; bottom: 14px; display: flex; gap: 8px; z-index: 5; }
+  .nav button { font-size: 16px; padding: 6px 12px; border: 1px solid #888; color: #222; }
+  .nav button:focus-visible { outline: 3px solid #ffd600; }
+  .slide h1:focus, .slide h2:focus { outline: none; }
+  a:focus-visible, button:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="stage" role="group" aria-label="Unit II essentials: the slides">
+
+<!-- ================================================================ 1: the title -->
+<section class="slide title" id="s1" aria-roledescription="slide">
+  <p class="eyebrow">CS 301 · Unit II · Meeting 15 · Part 1</p>
+  <h1>Unit II Essentials</h1>
+  <p class="subtitle">Meetings 10–14: matrix products, array operations, computational cost, hardware, linear systems and sparse matrices.</p>
+</section>
+
+<!-- ================================================================ 2: data and neurons, as matrices -->
+<section class="slide" id="s2" data-part="intro" aria-roledescription="slide" hidden>
+  <h2>Data and neurons, as matrices <span class="part">The two ideas</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-intro" aria-label="Above: a card for one day at Newark airport, an arrow to a spreadsheet of days with their highs and lows, and an arrow to a matrix X into which the numbers lift out of the spreadsheet. Below: one rule written as an algebraic expression, four rules in the colours of the seasons, and their coefficients flying into a matrix W times a vector x plus b."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li><strong>Data</strong>: collect measurements in a table, then select features for X. Each row is a point; each column is a feature.</li>
+        <li><strong>Neurons</strong>: each row of W contains one neuron's weights. W x + b computes their scores for one point.</li>
+        <li>We use matrix products to compare data and compute neuron scores, then examine their cost.</li>
+      </ul>
+      <div class="ctl" data-for="intro"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 3: Data × data -->
+<section class="slide title card" id="s3" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 1 of 7 · Meeting 14</p>
+  <h1>Data × data</h1>
+  <p class="subtitle">Use X X<sup>T</sup> to compare rows and X<sup>T</sup> X to compare columns.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To find similarities between observations and relationships between features.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 4: comparing observations and features -->
+<section class="slide" id="s4" data-part="compare" aria-roledescription="slide" hidden>
+  <h2>Comparing observations and features <span class="part">Data × data</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-compare" aria-label="A table of four people by three movies, 1 where the person rated the movie. Two columns are outlined with the question who rated both; then two rows, with the question which movies both rated."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>We can compare movies by who rated them, or people by the movies they rated.</li>
+        <li>Matrix products compute many of these comparisons together.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Explain what a comparison measures, and how the representation of the data affects it.</p>
+      <div class="ctl" data-for="compare"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 5: data x data, the two products -->
+<section class="slide" id="s5" data-part="two" aria-roledescription="slide" hidden>
+  <h2>Data × data: the two products <span class="part">Data × data</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-two" aria-label="The matrix B of four people by three movies; to its right the people-by-people product B B transposed, its rows level with the rows of B; below it the movies-by-movies product B transposed B, its columns under the columns of B. Each product fills cell by cell, and the two rows or columns in use are outlined in blue and orange."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>X: n observations as rows, m features as columns.</li>
+        <li>X X<sup>T</sup> is n × n: entry (i, j) is the dot product of observations i and j.</li>
+        <li>X<sup>T</sup> X is m × m: entry (a, b) is the dot product of features a and b.</li>
+        <li>A dot product multiplies corresponding entries and adds the results.</li>
+        <li>On the diagonal: an observation, or a feature, with itself.</li>
+      </ul>
+      <div class="ctl" data-for="two"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 6: preprocessing changes the comparison -->
+<section class="slide" id="s6" data-part="prep" aria-roledescription="slide" hidden>
+  <h2>Preprocessing changes the comparison <span class="part">Data × data</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-prep" aria-label="First, three arrows from one origin: q, A and B, with their dot products with q; A and B shrink to length one and the cosines appear. Then two feature columns of five numbers, centred, then standardized, then multiplied entry by entry and averaged into one entry of a two-by-two correlation matrix."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>A raw dot product depends on the lengths of the vectors as well as on their directions.</li>
+        <li><strong>Cosine similarity</strong>: for nonzero vectors, divide the dot product by the product of their lengths.</li>
+        <li><strong>Correlation</strong>: centre and standardize each feature column; then C = Z<sup>T</sup> Z / n.</li>
+        <li>A missing rating is not a zero-star rating.</li>
+      </ul>
+      <p class="note">B records whether a rating exists. For C, standard deviations use divisor n and must be nonzero.</p>
+      <div class="ctl" data-for="prep"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 7: Data × neurons -->
+<section class="slide title card" id="s7" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 2 of 7 · Meeting 11</p>
+  <h1>Data × neurons</h1>
+  <p class="subtitle">Compute a score for each data point and each neuron.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To apply a learned model to many observations at once.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 8: applying several rules to the same data -->
+<section class="slide" id="s8" data-part="layerwhy" aria-roledescription="slide" hidden>
+  <h2>Applying several rules to the same data <span class="part">Data × neurons</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-layerwhy" aria-label="A card with one day, its high and its low, joined by eight lines to four neurons in the colours of the seasons; the two numbers travel along the lines and each neuron shows its score as a bar; then a stack of cards appears behind the day."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>We want a score for each possible class or response.</li>
+        <li>Each neuron applies its own weights and bias to the same input features.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Express the computation of a layer as a matrix product, and interpret its output.</p>
+      <div class="ctl" data-for="layerwhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 9: data x neurons -->
+<section class="slide" id="s9" data-part="layer" aria-roledescription="slide" hidden>
+  <h2>Data × neurons: one score for each point and neuron <span class="part">Data × neurons</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-layer" aria-label="X, three points by two coordinates, at the left; W, four neurons by two weights, below it, each row in its neuron's colour; the rows of W fly up into the columns of W transposed above the score matrix S, three by four. One row of X and one column of W transposed are outlined and give one score; then the bias of that neuron drops into every cell of its column; then one row of S becomes four softmax bars."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>One point, one neuron: s = w<sup>T</sup>x + b.</li>
+        <li>X: n × m, one point a row. W: K × m, one neuron a row.</li>
+        <li><code>S = X @ W.T + b</code> is n × K: S[i, j] is the score of neuron j for point i.</li>
+        <li>Softmax gives probabilities per row; argmax returns the largest entry's index.</li>
+        <li>X and W both have m columns: one weight per input feature.</li>
+      </ul>
+      <div class="ctl" data-for="layer"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 10: Array expressions -->
+<section class="slide title card" id="s10" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 3 of 7 · Meetings 10 and 11</p>
+  <h1>Array expressions</h1>
+  <p class="subtitle">Write a formula as operations on whole arrays: axes, broadcasting, and the two multiplications.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To translate mathematical formulas into correct, efficient code.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 11: translating a formula into array operations -->
+<section class="slide" id="s11" data-part="axeswhy" aria-roledescription="slide" hidden>
+  <h2>Translating a formula into array operations <span class="part">Array expressions</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-axeswhy" aria-label="A four by three matrix with feature names across the top and point labels down the side. Arrows sweep down the columns and leave one number per feature below; then arrows sweep across the rows and leave one number per point at the right."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>A wrong axis, or a wrong transpose, changes the computation.</li>
+        <li>The result's shape helps us check whether we computed a value per point or per feature.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Read an array expression and explain what every result represents.</p>
+      <div class="ctl" data-for="axeswhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 12: axes, broadcasting and the two multiplications -->
+<section class="slide" id="s12" data-part="axes" aria-roledescription="slide" hidden>
+  <h2>Axes, broadcasting and the two multiplications <span class="part">Array expressions</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-axes" aria-label="The same four by three matrix. Its rows collapse into a row of three means; the three means are then used on every row, shown as an outline that visits each row in turn while the differences appear in a second matrix; a column of four row means appears beside the matrix; at the bottom, star multiplies matching cells and the at sign multiplies a row by a column."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li><code>X[:, j]</code> selects feature j; <code>X[i, :]</code> selects point i.</li>
+        <li><code>X.mean(axis=0)</code>: one mean per feature, shape (3,).</li>
+        <li><code>X.mean(axis=1, keepdims=True)</code>: one mean per point, shape (4, 1).</li>
+        <li><code>(X - X.mean(axis=0)) / X.std(axis=0)</code> standardizes the feature columns.</li>
+        <li><code>*</code> multiplies entry by entry; <code>@</code> computes a matrix product.</li>
+      </ul>
+      <div class="ctl" data-for="axes"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 13: Computational cost -->
+<section class="slide title card" id="s13" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 4 of 7 · Meeting 12</p>
+  <h1>Computational cost</h1>
+  <p class="subtitle">Estimate arithmetic work and storage from the matrix dimensions.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To judge whether a computation is feasible before running it.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 14: estimating work before computing -->
+<section class="slide" id="s14" data-part="costwhy" aria-roledescription="slide" hidden>
+  <h2>Estimating work before computing <span class="part">Computational cost</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-costwhy" aria-label="To one scale: the word matrix U as a tall thin dark rectangle of 50,000 rows and 300 columns; its small product U transposed U as a dot circled in orange; and its large product U U transposed as a blue square that grows past the right edge of the picture."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>For 50,000 word vectors, U U<sup>T</sup> has 2.5 billion entries.</li>
+        <li>Estimate the work and memory before computing the product.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Estimate the arithmetic and the storage from the dimensions.</p>
+      <div class="ctl" data-for="costwhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 15: arithmetic work and storage -->
+<section class="slide" id="s15" data-part="cost" aria-roledescription="slide" hidden>
+  <h2>Arithmetic work and storage <span class="part">Computational cost</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-cost" aria-label="First a row and a column of six numbers whose products are added: one dot product. Then, for each of three products, two rectangles with their dimensions and the output rectangle, with one entry of the output traced back to a row of the first operand and a column of the second. Last, an outlined large square for the 50,000 by 50,000 product and a magnified inset for the 300 by 300 one, with their storage."></canvas></div>
+    <div class="side">
+      <table class="cost" id="cost-table">
+        <thead><tr><th>product</th><th>work</th><th>entries</th></tr></thead>
+        <tbody>
+          <tr class="off"><td>X X<sup>T</sup></td><td>O(n²m)</td><td>n²</td></tr>
+          <tr class="off"><td>X<sup>T</sup> X</td><td>O(nm²)</td><td>m²</td></tr>
+          <tr class="off"><td>X W<sup>T</sup></td><td>O(nKm)</td><td>nK</td></tr>
+        </tbody>
+      </table>
+      <ul class="pts tight">
+        <li>A dot product of length m: about 2m arithmetic operations.</li>
+        <li>Count the output entries, then the work for each entry.</li>
+        <li>Storage = entries × bytes per entry.</li>
+        <li>Doubling every dimension: ×8 work, ×4 output storage.</li>
+      </ul>
+      <div class="ctl" data-for="cost"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 16: Hardware -->
+<section class="slide title card" id="s16" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 5 of 7 · Meetings 11 and 12</p>
+  <h1>Hardware</h1>
+  <p class="subtitle">Explain how the processor, memory access and implementation affect running time.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To understand why code is slow and how to make it faster.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 17: explaining a measured running time -->
+<section class="slide" id="s17" data-part="hwwhy" aria-roledescription="slide" hidden>
+  <h2>Explaining a measured running time <span class="part">Hardware</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-hwwhy" aria-label="The expression S equals X at W dot T plus b above two processors: a CPU with a few cores, a cache beside them and the main memory below; a GPU with thousands of cores and its own memory. A link joins the two memories; dots travel along it to the GPU, the GPU computes, and dots travel back."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>Programs with the same arithmetic count can take different amounts of time.</li>
+        <li>Python overhead, memory access and data transfers affect running time.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Explain a timing result, and decide when a GPU is useful.</p>
+      <div class="ctl" data-for="hwwhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 18: where the time goes -->
+<section class="slide" id="s18" data-part="hw" aria-roledescription="slide" hidden>
+  <h2>Where the time goes <span class="part">Hardware</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-hw" aria-label="Four panels revealed one at a time: many small calls from Python against one library call that holds a compiled loop; eight neighbouring numbers read from one cache line against one number read from each of four lines; a block of a matrix read once and used for four dot products; and a GPU timeline of upload, computation and download with a marker where the computation is complete."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li><strong>Python overhead</strong>: vectorize, and the loop runs in compiled code.</li>
+        <li><strong>Locality</strong>: nearby data, and reused data, can be served from the cache.</li>
+        <li><strong>Throughput, bandwidth</strong>: arithmetic or data movement limits the rate.</li>
+        <li><strong>GPU</strong>: speedups depend on workload size, setup and data-transfer costs.</li>
+        <li>Measure a completed computation; say whether the copies are included.</li>
+      </ul>
+      <div class="ctl" data-for="hw"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 19: Linear systems -->
+<section class="slide title card" id="s19" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 6 of 7 · Meeting 13</p>
+  <h1>Linear systems</h1>
+  <p class="subtitle">Express linear relationships between unknown quantities as A p = b.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To find unknown quantities from known relationships between them.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 20: finding unknowns from relationships -->
+<section class="slide" id="s20" data-part="walkwhy" aria-roledescription="slide" hidden>
+  <h2>Finding random-walk probabilities <span class="part">Linear systems</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-walkwhy" aria-label="A path of four nodes: red, u, v, blue, with the probability of reaching red first written under the ends, 1 and 0, and question marks under u and v. A walker at u splits into two halves that step to its two neighbours; then the same at v."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>We want the probability of reaching the red endpoint first from each node.</li>
+        <li>The random walk gives one equation at each interior node.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Build a linear system, and judge what its numerical solution tells us.</p>
+      <div class="ctl" data-for="walkwhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 21: the model becomes A p = b -->
+<section class="slide" id="s21" data-part="walk" aria-roledescription="slide" hidden>
+  <h2>Writing the random-walk equations as A p = b <span class="part">Linear systems</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-walk" aria-label="The same path above a two by two system written as cells. Node u, its neighbours and the first row light up together; then node v and the second row; one elimination step rewrites the second row; back substitution writes two thirds and one third on the graph, and the nodes take the colours of their probabilities."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>Each interior probability is the average of its neighbours' probabilities.</li>
+        <li>p<sub>u</sub> = (1 + p<sub>v</sub>) / 2 and p<sub>v</sub> = p<sub>u</sub> / 2: the known ends go to the right-hand side.</li>
+        <li>Elimination keeps the solution; back substitution finds the unknowns.</li>
+        <li><code>np.linalg.solve(A, b)</code> gives p<sub>u</sub> = 2/3 and p<sub>v</sub> = 1/3.</li>
+      </ul>
+      <div class="ctl" data-for="walk"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 22: uniqueness, sensitivity and the residual -->
+<section class="slide" id="s22" data-part="lines" aria-roledescription="slide" hidden>
+  <h2>Uniqueness, sensitivity and the residual <span class="part">Linear systems</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-lines" aria-label="Two lines in the plane: crossing at one point; then the same line twice; then two parallel lines; then two nearly parallel lines whose crossing slides far when one of them shifts a little. Last, two lines that look like one, the true solution and a candidate point marked, and an inset that magnifies the candidate to show the two lines a thousandth apart."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>A square system of full rank has one solution.</li>
+        <li>A rank-deficient square system has no solution or infinitely many.</li>
+        <li>A large <strong>condition number</strong>: possible sensitivity to small relative changes.</li>
+        <li>The <strong>residual</strong> r = b − A x̂ measures how closely x̂ satisfies the equations.</li>
+        <li>A small residual can occur even when the solution error is large.</li>
+      </ul>
+      <div class="ctl" data-for="lines"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 23: Sparse computation -->
+<section class="slide title card" id="s23" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 7 of 7 · Meeting 13</p>
+  <h1>Sparse computation</h1>
+  <p class="subtitle">Represent a matrix by its nonzero values and their locations.</p>
+  <div class="why">
+    <p class="label">Why we do this</p>
+    <ul class="pts">
+      <li>To reduce memory and computation when most matrix entries are zero.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================================================================ 24: using the zeros in a matrix -->
+<section class="slide" id="s24" data-part="sparsewhy" aria-roledescription="slide" hidden>
+  <h2>Storing a matrix with many zeros <span class="part">Sparse computation</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-sparsewhy" aria-label="A three by three grid graph of nine nodes beside its nine by nine matrix, 4 on the diagonal and minus one for each edge, the zeros left blank. The centre node, its four neighbours and its row light up; then a corner node, its two neighbours and its row."></canvas></div>
+    <div class="side">
+      <ul class="pts">
+        <li>Each node in this grid is connected to at most four neighbours.</li>
+        <li>The matrix needs entries for those neighbours and the diagonal.</li>
+      </ul>
+      <p class="target"><span>Learning target</span>Explain when sparse storage and sparse algorithms reduce memory and work.</p>
+      <div class="ctl" data-for="sparsewhy"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 25: sparse products and sparse solves -->
+<section class="slide" id="s25" data-part="sparse" aria-roledescription="slide" hidden>
+  <h2>Sparse products and sparse solves <span class="part">Sparse computation</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-sparse" aria-label="One row of the grid matrix above a vector v: only its five nonzero entries meet their entries of v, and the five products are added. Below, a star of six nodes and its six by six pattern of nonzeros: eliminating the centre first joins every pair of leaves and adds twenty nonzeros; eliminating the leaves first adds none."></canvas></div>
+    <div class="side">
+      <ul class="pts tight">
+        <li>Sparse formats store the nonzero values and their positions.</li>
+        <li>A CSR product <code>A @ v</code>: O(nnz + N) work for N rows.</li>
+        <li>Elimination can create nonzeros: <strong>fill-in</strong>.</li>
+        <li>The order of elimination affects the fill-in, the storage and the arithmetic.</li>
+        <li>An iterative solver's total cost depends on the cost and number of updates.</li>
+      </ul>
+      <div class="ctl" data-for="sparse"></div>
+    </div>
+  </div>
+</section>
+
+<div class="foot"><span>CS 301 · Meeting 15 · Part 1 · Unit II essentials · the arrow keys turn the slides, the space bar runs the next step</span><span id="counter" aria-live="polite"></span></div>
+<p id="errors" aria-hidden="true"></p>
+</div>
+<div class="nav">
+  <button type="button" id="prev" aria-label="Previous slide">&#9664;</button>
+  <button type="button" id="next" aria-label="Next slide">&#9654;</button>
+  <button type="button" id="full" aria-label="Full screen">&#x26F6;</button>
+</div>
+<noscript><style>.slide[hidden]{display:flex;position:relative;inset:auto} .stage{position:static;width:auto;height:auto}</style></noscript>
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  window.onerror = function (m, s, l) { $("errors").textContent += m + " (" + l + ")\n"; };
+  const FONT = getComputedStyle(document.body).fontFamily;
+  const F = (n, w) => (w ? w + " " : "") + n + "px " + FONT;
+  const MONO = 'ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace';
+  const FM = (n, w) => (w ? w + " " : "") + n + "px " + MONO;
+  const INK = "#1A1A1A", MUTED = "#555", FAINT = "#d4d3cc", RED = "#CC0033";
+  const BLUE = "#2a78d6", ORANGE = "#eb6834", PURPLE = "#6a3fb5", GREEN = "#2a8a3a";
+  const BLUE_L = "#d3e4f6", ORANGE_L = "#fde0c5", GREEN_L = "#d3ecd0", GREY_L = "#eeeeea";
+  const SEASON = [["winter", "#1f5fa8", "#cfe1f2"], ["spring", "#2a8a3a", "#d3ecd0"], ["summer", "#c6531a", "#fde0c5"], ["fall", "#5b4b9a", "#e2dff0"]];
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const num = (v, d) => (d === undefined ? String(v) : v.toFixed(d)).replace("-", "−");
+  const fmtInt = x => Math.round(x).toLocaleString("en-US");
+  const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const rgb = c => "rgb(" + c.map(Math.round).join(",") + ")";
+  const RAMP = ["#ffffff", "#d3e4f6", "#86b5ea", "#2a78d6", "#123f7d"].map(hex);
+  function ramp(t) { t = clamp(t, 0, 1); const x = t * (RAMP.length - 1), k = Math.min(RAMP.length - 2, Math.floor(x)); return mix(RAMP[k], RAMP[k + 1], x - k); }
+
+  // ================================================================ drawing helpers
+  function label(g, s, x, y, size, weight, colour, align) {
+    g.font = F(size, weight); g.fillStyle = colour || INK; g.textAlign = align || "left"; g.fillText(s, x, y);
+  }
+  // text in which every "ᵀ" (a superscript T) is drawn as a small raised T
+  function labelT(g, s, x, y, size, weight, colour, align) {
+    g.font = F(size, weight); g.fillStyle = colour || INK;
+    const font = g.font, small = F(size * 0.68, weight), pieces = s.split("ᵀ");
+    let w = 0;
+    pieces.forEach((p, k) => { g.font = font; w += g.measureText(p).width; if (k < pieces.length - 1) { g.font = small; w += g.measureText("T").width + 1; } });
+    let cx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
+    g.textAlign = "left";
+    pieces.forEach((p, k) => {
+      g.font = font; g.fillText(p, cx, y); cx += g.measureText(p).width;
+      if (k < pieces.length - 1) { g.font = small; g.fillText("T", cx + 0.5, y - size * 0.36); cx += g.measureText("T").width + 1; }
+    });
+  }
+  function arrow(g, x1, y1, x2, y2, colour, lw, head) {
+    g.strokeStyle = colour; g.fillStyle = colour; g.lineWidth = lw || 2.5;
+    const a = Math.atan2(y2 - y1, x2 - x1), h = head || 11;
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2 - (h * 0.6) * Math.cos(a), y2 - (h * 0.6) * Math.sin(a)); g.stroke();
+    g.beginPath(); g.moveTo(x2, y2);
+    g.lineTo(x2 - h * Math.cos(a - 0.42), y2 - h * Math.sin(a - 0.42)); g.lineTo(x2 - h * Math.cos(a + 0.42), y2 - h * Math.sin(a + 0.42));
+    g.closePath(); g.fill();
+  }
+  function box(g, x, y, w, h, colour, lw) { g.strokeStyle = colour; g.lineWidth = lw || 4; g.strokeRect(x, y, w, h); }
+  function rect(g, x, y, w, h, fill, stroke, lw) {
+    if (fill) { g.fillStyle = fill; g.fillRect(x, y, w, h); }
+    if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw || 1.5; g.strokeRect(x, y, w, h); }
+  }
+  function dot(g, x, y, r, fill, stroke, lw) {
+    g.beginPath(); g.arc(x, y, r, 0, 2 * Math.PI);
+    if (fill) { g.fillStyle = fill; g.fill(); }
+    if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw || 2; g.stroke(); }
+  }
+  function line(g, x1, y1, x2, y2, colour, lw, dash) {
+    g.strokeStyle = colour; g.lineWidth = lw || 1.5; if (dash) g.setLineDash(dash);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); if (dash) g.setLineDash([]);
+  }
+  // a matrix as cells: o.fills(i, j), o.text(i, j), o.hide(i, j), o.fmt(v, i, j), o.font, o.stroke
+  function grid(g, M, x0, y0, cw, ch, o) {
+    o = o || {};
+    for (let i = 0; i < M.length; i++) for (let j = 0; j < M[i].length; j++) {
+      const x = x0 + j * cw, y = y0 + i * ch;
+      g.fillStyle = o.fills ? o.fills(i, j) : "#fff"; g.fillRect(x, y, cw, ch);
+      g.strokeStyle = o.stroke || FAINT; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+      if (o.hide && o.hide(i, j)) continue;
+      const v = M[i][j];
+      g.fillStyle = o.text ? o.text(i, j) : INK; g.font = o.font || F(22, "600"); g.textAlign = "center";
+      g.fillText(o.fmt ? o.fmt(v, i, j) : num(v), x + cw / 2, y + ch / 2 + 1);
+    }
+  }
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const b = s => '<span class="b">' + s + "</span>", o = s => '<span class="o">' + s + "</span>";
+
+  // ================================================================ the slides
+  const slides = Array.from(document.querySelectorAll(".slide")), stage = document.querySelector(".stage");
+  let k = 0;
+  function fit() {
+    const s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = "scale(" + s + ")";
+    stage.style.left = Math.max(0, (window.innerWidth - 1280 * s) / 2) + "px";
+    stage.style.top = Math.max(0, (window.innerHeight - 720 * s) / 2) + "px";
+  }
+  function go(n, focus) {
+    k = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => { s.hidden = i !== k; });
+    $("counter").textContent = (k + 1) + " / " + slides.length;
+    try { history.replaceState(null, "", location.pathname + location.search + "#" + (k + 1)); } catch (e) { /* a sandboxed document */ }
+    document.documentElement.setAttribute("data-slide", String(k + 1));
+    if (focus) { const h = slides[k].querySelector("h1, h2"); h.setAttribute("tabindex", "-1"); h.focus({preventScroll: true}); }
+    const p = currentPart(); if (p) render(p);
+  }
+  function fromHash() { const n = parseInt(location.hash.replace("#", ""), 10); go(isNaN(n) ? 0 : n - 1, false); }
+  function fullScreen() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }
+
+  // ================================================================ the parts: one picture a slide, drawn step by step
+  // A part draws its picture as a function of (step, t): everything of the steps before is shown complete, and the
+  // step's own things appear over t seconds. So a picture can be set to any step at once, finished (t large).
+  const PARTS = {}, liveCache = {};
+  function definePart(name, spec) {
+    const c = $("c-" + name), ctx = c.getContext("2d");
+    c.width = spec.w * 2; c.height = spec.h * 2; c.style.width = spec.w + "px"; c.style.height = spec.h + "px";
+    const part = {name: name, c: c, ctx: ctx, W: spec.w, H: spec.h, steps: spec.steps, labels: spec.labels, draw: spec.draw,
+                  dur: spec.dur || 1.2, step: 0, t: 0, t0: performance.now(), playing: false, drawn: false};
+    PARTS[name] = part;
+    const ctl = document.querySelector('.ctl[data-for="' + name + '"]');
+    ctl.innerHTML = '<p class="label">The picture, step by step</p>' +
+      '<div class="buttons"><button type="button" class="primary" id="b-' + name + '-next">Next step</button>' +
+      '<button type="button" id="b-' + name + '-play">Play all</button><button type="button" id="b-' + name + '-reset">Reset</button></div>' +
+      '<div class="readout" aria-live="polite"><p class="label" id="n-' + name + '"></p><p id="r-' + name + '"></p><p class="sum" id="rl-' + name + '"></p></div>';
+    $("b-" + name + "-next").addEventListener("click", () => advance(part));
+    $("b-" + name + "-play").addEventListener("click", () => { if (part.step >= part.steps) reset(part); part.playing = true; advance(part); });
+    $("b-" + name + "-reset").addEventListener("click", () => reset(part));
+    c.addEventListener("click", () => advance(part));
+    update(part);
+    return part;
+  }
+  function advance(part) {
+    if (part.step >= part.steps) return false;
+    part.step++; part.t = 0; part.t0 = performance.now(); update(part); render(part); return true;
+  }
+  function reset(part) { part.step = 0; part.t = 0; part.t0 = performance.now(); part.playing = false; liveCache[part.name] = null; $("rl-" + part.name).innerHTML = ""; update(part); render(part); }
+  function update(part) {
+    $("n-" + part.name).textContent = part.step === 0 ? "Start · " + part.steps + " steps" : "Step " + part.step + " of " + part.steps;
+    $("r-" + part.name).innerHTML = part.labels[part.step];
+    $("b-" + part.name + "-next").disabled = part.step >= part.steps;
+    if (part.step === 0) { liveCache[part.name] = null; $("rl-" + part.name).innerHTML = ""; }
+  }
+  function live(name, html) { if (liveCache[name] !== html) { liveCache[name] = html; $("rl-" + name).innerHTML = html; } }
+  function render(part) {
+    const g = part.ctx;
+    g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, part.W, part.H);
+    g.textBaseline = "middle"; g.globalAlpha = 1; g.setLineDash([]);
+    part.draw(g, part.step, part.t);
+    part.drawn = true;
+  }
+  const currentPart = () => PARTS[slides[k].dataset.part] || null;
+
+  document.addEventListener("keydown", e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === "ArrowDown") { e.preventDefault(); go(k + 1, true); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "ArrowUp") { e.preventDefault(); go(k - 1, true); }
+    else if (e.key === " " || e.key === "Enter") { e.preventDefault(); const p = currentPart(); if (!(p && advance(p))) go(k + 1, true); }
+    else if (e.key === "r" || e.key === "R") { const p = currentPart(); if (p) reset(p); }
+    else if (e.key === "Home") { e.preventDefault(); go(0, true); }
+    else if (e.key === "End") { e.preventDefault(); go(slides.length - 1, true); }
+    else if (e.key === "f" || e.key === "F") { fullScreen(); }
+  });
+  $("prev").addEventListener("click", () => go(k - 1, true));
+  $("next").addEventListener("click", () => go(k + 1, true));
+  $("full").addEventListener("click", fullScreen);
+  window.addEventListener("resize", fit);
+  window.addEventListener("hashchange", fromHash);
+  fit();
+
+  // ================================================================ 2: data and neurons, as matrices
+  {
+    const ROWS = [["2019-07-03", 87.1, 77.0], ["2019-07-04", 89.1, 73.9], ["2019-07-05", 82.9, 73.9], ["2019-07-06", 91.9, 77.0]];
+    const SUB = ["₁", "₂", "₃", "₄"];
+    const EXPR = j => [SEASON[j][0] + ":  s" + SUB[j] + " = ", "w" + SUB[j] + "₁", "x₁", " + ", "w" + SUB[j] + "₂", "x₂", " + ", "b" + SUB[j]];
+    definePart("intro", {w: 760, h: 560, steps: 4, dur: 1.5,
+      labels: ["<strong>Weather observations</strong>: daily high and low temperatures at Newark airport. Each day supplies two measurements.",
+               "<strong>A spreadsheet</strong>: one row a day, one column a measurement. A CSV file, read by pandas (meeting 10).",
+               "<strong>A matrix X</strong>: select the high and low temperatures as features. There are n rows for days and m = 2 feature columns; dates are excluded from this predictor.",
+               "<strong>A neuron's score</strong> is a weighted sum plus a bias. The trained weather neurons use standardized high and low temperatures as inputs (meeting 11).",
+               "<strong>W stores the four weight vectors</strong> as rows; b stores their biases. The scores are s = W x + b for one day, or S = X W<sup>T</sup> + b for a batch."],
+      draw(g, s, t) {
+        const u = ease(t / 0.8);
+        // ---- data: the world, the spreadsheet, the matrix
+        label(g, "Data", 40, 34, 20, "600", RED);
+        const cx = 40, cy = 76, cw0 = 190, ch0 = 112, sx = 296, sy = 58, dw = 116, nw = 64, rh = 34, mx = 604, mcw = 60, my = sy + rh;
+        for (let n = 3; n >= 1; n--) rect(g, cx + n * 8, cy - n * 8, cw0, ch0, "#fff", "#c8c8c2", 1.5);
+        rect(g, cx, cy, cw0, ch0, "#fff", INK, 2);
+        label(g, "Newark airport", cx + 14, cy + 24, 17, "600"); label(g, "2019-07-04", cx + 14, cy + 48, 17, "", MUTED);
+        label(g, "high 89 °F", cx + 14, cy + 76, 19); label(g, "low 74 °F", cx + 14, cy + 100, 19);
+        label(g, "weather measurements", cx, 262, 18, "", MUTED);
+        if (s >= 1) {
+          const v = s === 1 ? u : 1;
+          g.globalAlpha = v;
+          arrow(g, cx + cw0 + 14, cy + ch0 / 2, sx - 12, cy + ch0 / 2, INK, 2.5);
+          const cols = [["date", dw], ["high", nw], ["low", nw]];
+          let x = sx; cols.forEach(([h, w]) => { rect(g, x, sy, w, rh, GREY_L, "#c8c8c2", 1); label(g, h, x + w / 2, sy + rh / 2 + 1, 16, "600", INK, "center"); x += w; });
+          const shown = s === 1 ? Math.min(4, Math.floor((t - 0.3) / 0.22)) : 4;
+          for (let i = 0; i < 4; i++) {
+            const y = sy + rh + i * rh; let xx = sx;
+            cols.forEach(([h, w], c) => {
+              rect(g, xx, y, w, rh, "#fff", "#c8c8c2", 1);
+              if (i < shown) label(g, c === 0 ? ROWS[i][0] : ROWS[i][c].toFixed(1), xx + w / 2, y + rh / 2 + 1, 16, c === 0 ? "" : "600", c === 0 ? MUTED : (s >= 2 ? "#c8c8c2" : INK), "center");
+              xx += w;
+            });
+          }
+          label(g, "⋮", sx + dw / 2, sy + 5 * rh + 12, 16, "", MUTED, "center");
+          label(g, "a spreadsheet: one row a day", sx, 262, 18, "", MUTED);
+          g.globalAlpha = 1;
+        }
+        if (s >= 2) {
+          const v = s === 2 ? u : 1;
+          arrow(g, sx + dw + 2 * nw + 14, cy + ch0 / 2, mx - 22, cy + ch0 / 2, INK, 2.5);
+          for (let i = 0; i < 4; i++) for (let c = 0; c < 2; c++) {
+            const x0 = sx + dw + c * nw + nw / 2, y0 = sy + rh + i * rh + rh / 2, x1 = mx + c * mcw + mcw / 2, y1 = my + i * rh + rh / 2;
+            label(g, ROWS[i][c + 1].toFixed(1), lerp(x0, x1, v), lerp(y0, y1, v) + 1, 17, "600", INK, "center");
+          }
+          g.globalAlpha = v;
+          g.strokeStyle = INK; g.lineWidth = 2.5;
+          g.beginPath(); g.moveTo(mx - 2, my - 4); g.lineTo(mx - 10, my - 4); g.lineTo(mx - 10, my + 4 * rh + 4); g.lineTo(mx - 2, my + 4 * rh + 4); g.stroke();
+          g.beginPath(); g.moveTo(mx + 2 * mcw + 2, my - 4); g.lineTo(mx + 2 * mcw + 10, my - 4); g.lineTo(mx + 2 * mcw + 10, my + 4 * rh + 4); g.lineTo(mx + 2 * mcw + 2, my + 4 * rh + 4); g.stroke();
+          label(g, "X", mx + mcw, my - 22, 20, "600", INK, "center");
+          label(g, "a matrix X: n × m", mx - 10, 262, 18, "", MUTED);
+          if (v >= 1) label(g, "one row a point, one column a coordinate", 296, 290, 17, "600", INK);
+          g.globalAlpha = 1;
+        }
+        // ---- rules: one expression, four expressions, one matrix
+        const ry = 322;
+        label(g, "Neurons: the rules", 40, ry, 20, "600", RED);
+        if (s >= 3) {
+          const v = s === 3 ? u : 1;
+          g.globalAlpha = v;
+          label(g, "one rule:  score = w₁·x₁ + w₂·x₂ + b", 40, ry + 40, 21, "600", INK);
+          label(g, "winter, standardized inputs: w = (−1.36, −1.97), b = −0.65", 40, ry + 68, 15, "", MUTED);
+          g.globalAlpha = 1;
+          const ey = ry + 104, eh = 30;
+          const fly = s === 4 ? u : 0, WX = 430, WY = 330, wc = 64, wh = 40;
+          if (s === 4) {
+            // W, x and b first, so that the coefficients land on top of the cells of W
+            g.globalAlpha = fly;
+            label(g, "s =", WX - 14, WY + 2 * wh, 22, "600", INK, "right");
+            grid(g, [[0, 0], [0, 0], [0, 0], [0, 0]], WX, WY, wc, wh, {hide: () => true, fills: i => SEASON[i][2]});
+            label(g, "W", WX + wc, WY - 18, 18, "600", INK, "center");
+            label(g, "×", WX + 2 * wc + 16, WY + 2 * wh, 22, "600", MUTED, "center");
+            grid(g, [["x₁"], ["x₂"]], WX + 2 * wc + 32, WY + wh, 54, wh, {hide: () => true});
+            label(g, "x", WX + 2 * wc + 32 + 27, WY - 18, 18, "600", INK, "center");
+            label(g, "+", WX + 2 * wc + 32 + 54 + 16, WY + 2 * wh, 22, "600", MUTED, "center");
+            grid(g, SUB.map(z => ["b" + z]), WX + 2 * wc + 32 + 54 + 32, WY, 54, wh, {hide: () => true, fills: i => SEASON[i][2]});
+            label(g, "b", WX + 2 * wc + 32 + 54 + 32 + 27, WY - 18, 18, "600", INK, "center");
+            if (fly >= 1) { label(g, "one row a neuron: s = W x + b", WX - 34, WY + 4 * wh + 30, 17, "600", INK); labelT(g, "all the days at once: S = X Wᵀ + b", WX - 34, WY + 4 * wh + 56, 17, "600", INK); }
+            g.globalAlpha = 1;
+          }
+          // where each piece of a line goes: the weights into W, every x into the one column x, each b into b
+          const XX = WX + 2 * wc + 32, BX = XX + 54 + 32;
+          const target = (j, k) => k === 1 ? [WX + wc / 2, WY + j * wh + wh / 2] : k === 4 ? [WX + wc + wc / 2, WY + j * wh + wh / 2]
+                                 : k === 2 ? [XX + 27, WY + wh + wh / 2] : k === 5 ? [XX + 27, WY + 2 * wh + wh / 2]
+                                 : k === 7 ? [BX + 27, WY + j * wh + wh / 2] : null;
+          SEASON.forEach((sn, j) => {
+            const y = ey + j * eh, parts = EXPR(j);
+            g.font = F(19, "600"); g.textAlign = "left";
+            let x = 40;
+            parts.forEach((p, k) => {
+              const w = g.measureText(p).width, isW = k === 1 || k === 4, tg = target(j, k);
+              // the line stays, faded while its pieces are copied into W, x and b
+              g.globalAlpha = s === 4 ? 1 - 0.45 * fly : 1;
+              label(g, p, x, y, 19, "600", isW ? SEASON[j][1] : INK);
+              g.globalAlpha = 1;
+              if (tg && fly > 0) label(g, p, lerp(x + w / 2, tg[0], fly), lerp(y, tg[1], fly), 19, "600", isW ? SEASON[j][1] : INK, "center");
+              x += w;
+            });
+          });
+          if (s === 3) label(g, "four rules, one for each season", 40, ey + 4 * eh + 6, 16, "", MUTED);
+        }
+      }});
+  }
+
+  // ================================================================ 4: comparing observations and features
+  const B = [[1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1]], PEOPLE = ["P1", "P2", "P3", "P4"], MOVIES = ["Movie A", "Movie B", "Movie C"];
+  definePart("compare", {w: 700, h: 520, steps: 2, dur: 1.6,
+    labels: ["The table: 4 people, 3 movies. A cell is 1 where the person rated the movie, 0 where not.",
+             "Two columns read together, A and B: who rated both? " + b("P1") + " and " + b("P4") + ": <strong>2 people</strong>.",
+             "Two rows read together, P1 and P2: which movies did both rate? " + o("Movie A") + ": <strong>1 movie</strong>."],
+    draw(g, s, t) {
+      const x0 = 230, y0 = 120, cw = 120, ch = 62, u = ease(t / 0.5);
+      label(g, "B: 4 people × 3 movies", x0, 52, 22, "600");
+      label(g, "1 = rated, 0 = not rated", x0, 496, 18, "", MUTED);
+      grid(g, B, x0, y0, cw, ch, {font: F(26, "600"), stroke: "#bdbcb5"});
+      MOVIES.forEach((m, j) => label(g, m, x0 + j * cw + cw / 2, y0 - 18, 18, "", MUTED, "center"));
+      PEOPLE.forEach((p, i) => label(g, p, x0 - 14, y0 + i * ch + ch / 2 + 1, 21, "", INK, "right"));
+      const qy = y0 + 4 * ch + 52;
+      if (s === 1) {
+        g.globalAlpha = u;
+        box(g, x0 - 3, y0 - 3, cw + 6, 4 * ch + 6, BLUE, 4);
+        box(g, x0 + cw - 3, y0 - 3, cw + 6, 4 * ch + 6, ORANGE, 4);
+        label(g, "Who rated both A and B?", x0, qy, 24, "600");
+        g.globalAlpha = 1;
+        [0, 3].forEach((i, n) => { if (t > 0.6 + 0.35 * n) label(g, "✓ both", x0 + 3 * cw + 18, y0 + i * ch + ch / 2 + 1, 21, "600", GREEN); });
+        if (t > 1.4) label(g, "P1 and P4: 2 people", x0, qy + 38, 22, "", MUTED);
+      }
+      if (s === 2) {
+        g.globalAlpha = u;
+        box(g, x0 - 3, y0 - 3, 3 * cw + 6, ch + 6, BLUE, 4);
+        box(g, x0 - 3, y0 + ch - 3, 3 * cw + 6, ch + 6, ORANGE, 4);
+        label(g, "Which movies did both P1 and P2 rate?", x0, qy, 24, "600");
+        g.globalAlpha = 1;
+        if (t > 0.6) label(g, "✓ both", x0 + cw / 2, y0 + 4 * ch + 20, 21, "600", GREEN, "center");
+        if (t > 1.2) label(g, "Movie A: 1 movie", x0, qy + 38, 22, "", MUTED);
+      }
+    }});
+
+  // ================================================================ 5: data x data, the two products
+  {
+    const BtB = [[3, 2, 2], [2, 3, 2], [2, 2, 3]], BBt = [[2, 1, 1, 2], [1, 2, 1, 2], [1, 1, 2, 2], [2, 2, 2, 3]], MOV = ["A", "B", "C"];
+    const cw = 60, ch = 46, x0 = 120, y0 = 84, x1 = x0 + 3 * cw + 80, y2 = y0 + 4 * ch + 96;
+    const K = {cols: {M: BtB, n: 3, len: 4, ox: x0, oy: y2, names: MOV, step: 0.24, title: "Bᵀ B: movies by movies", html: "B<sup>T</sup> B"},
+               rows: {M: BBt, n: 4, len: 3, ox: x1, oy: y0, names: PEOPLE, step: 0.17, title: "B Bᵀ: people by people", html: "B B<sup>T</sup>"}};
+    function state(s, t) {
+      if (s === 0) return {fill: {cols: 0, rows: 0}, cur: null};
+      if (s === 1) { const n = Math.min(9, Math.floor(t / K.cols.step)); return {fill: {cols: n, rows: 0}, cur: n < 9 ? ["cols", Math.floor(n / 3), n % 3, n] : ["cols", 0, 1, null]}; }
+      const n = Math.min(16, Math.floor(t / K.rows.step)); return {fill: {cols: 9, rows: n}, cur: n < 16 ? ["rows", Math.floor(n / 4), n % 4, n] : ["rows", 0, 1, null]};
+    }
+    const terms = (kind, i, j) => kind === "rows" ? B[i].map((v, c) => [v, B[j][c]]) : B.map(r => [r[i], r[j]]);
+    definePart("two", {w: 760, h: 560, steps: 2, dur: 3.0,
+      labels: ["B, 4 people × 3 movies, and the places of its two products. Next: B<sup>T</sup> B, then B B<sup>T</sup>, cell by cell.",
+               "<strong>B<sup>T</sup> B</strong>, 3 × 3, movies by movies: cell (A, B) is column A · column B.",
+               "<strong>B B<sup>T</sup></strong>, 4 × 4, people by people: cell (P1, P2) is row P1 · row P2."],
+      draw(g, s, t) {
+        const st = state(s, t);
+        labelT(g, "B: 4 people × 3 movies", x0, 40, 21, "600");
+        labelT(g, K.rows.title, x1, 40, 21, "600");
+        labelT(g, K.cols.title, x0, y2 - 44, 21, "600");
+        grid(g, B, x0, y0, cw, ch, {font: F(24, "600"), stroke: "#bdbcb5"});
+        MOV.forEach((m, j) => { label(g, m, x0 + j * cw + cw / 2, y0 - 16, 17, "", MUTED, "center"); label(g, m, x0 + j * cw + cw / 2, y2 - 16, 17, "", MUTED, "center"); });
+        PEOPLE.forEach((p, i) => { label(g, p, x0 - 12, y0 + i * ch + ch / 2 + 1, 18, "", INK, "right"); label(g, p, x1 + i * cw + cw / 2, y0 - 16, 17, "", MUTED, "center"); label(g, p, x1 - 12, y0 + i * ch + ch / 2 + 1, 18, "", INK, "right"); });
+        MOV.forEach((m, i) => label(g, m, x0 - 12, y2 + i * ch + ch / 2 + 1, 18, "", INK, "right"));
+        for (const kind of ["cols", "rows"]) {
+          const P = K[kind], f = st.fill[kind];
+          grid(g, P.M, P.ox, P.oy, cw, ch, {fills: (i, j) => i * P.n + j < f ? rgb(ramp(P.M[i][j] / 3)) : "#fff", hide: (i, j) => i * P.n + j >= f,
+                                             text: (i, j) => P.M[i][j] / 3 > 0.68 ? "#fff" : INK, font: F(22, "600")});
+          const y = P.oy + P.n * ch + 24;
+          label(g, P.n + " × " + P.n + " = " + P.n * P.n + " cells; each sums " + P.len + " products", P.ox, y, 17, "", MUTED);
+          label(g, P.n + " × " + P.n + " × " + P.len + " = " + P.n * P.n * P.len + " multiplications", P.ox, y + 26, 18, "600", INK);
+        }
+        if (st.cur) {
+          const [kind, i, j, n] = st.cur, P = K[kind];
+          if (kind === "cols") { box(g, x0 + i * cw - 3, y0 - 3, cw + 6, 4 * ch + 6, BLUE, 4); box(g, x0 + j * cw - 3 + (i === j ? 6 : 0), y0 - 3 + (i === j ? 6 : 0), cw + 6 - (i === j ? 12 : 0), 4 * ch + 6 - (i === j ? 12 : 0), ORANGE, 4); }
+          else { box(g, x0 - 3, y0 + i * ch - 3, 3 * cw + 6, ch + 6, BLUE, 4); box(g, x0 - 3 + (i === j ? 6 : 0), y0 + j * ch - 3 + (i === j ? 6 : 0), 3 * cw + 6 - (i === j ? 12 : 0), ch + 6 - (i === j ? 12 : 0), ORANGE, 4); }
+          box(g, P.ox + j * cw + 2, P.oy + i * ch + 2, cw - 4, ch - 4, INK, 4);
+          const tm = terms(kind, i, j), nm = P.names;
+          live("two", P.html + " cell (" + nm[i] + ", " + nm[j] + "): " + b(nm[i]) + " · " + o(nm[j]) + " = " +
+            tm.map(([p, q]) => b(p) + "×" + o(q)).join(" + ") + " = <strong>" + P.M[i][j] + "</strong>" +
+            (n !== null ? '<br><span class="small">multiplications so far: ' + (n + 1) * P.len + " of " + P.n * P.n * P.len + "</span>"
+                        : '<br><span class="small">' + (kind === "cols" ? "two people rated both A and B" : "P1 and P2 rated one movie in common") + "</span>"));
+        }
+      }});
+  }
+
+  // ================================================================ 6: preprocessing changes the comparison
+  {
+    const O = [300, 390], SC = 60;
+    const X = [1, 2, 3, 4, 5], Y = [2, 1, 4, 3, 5], SD = Math.SQRT2;
+    const XC = X.map(v => v - 3), YC = Y.map(v => v - 3), ZX = XC.map(v => v / SD), ZY = YC.map(v => v / SD);
+    const PR = ZX.map((v, i) => v * ZY[i]), R = PR.reduce((a, c) => a + c, 0) / 5;
+    const cw = 64, ch = 46, gy = 152, gx = [50, 230, 410], cx = 600, cy = 220;
+    function arrows(g, s, u) {
+      const px = (x, y) => [O[0] + x * SC, O[1] - y * SC];
+      line(g, O[0] - 40, O[1], O[0] + 290, O[1], "#bbb", 1); line(g, O[0], O[1] + 40, O[0], O[1] - 300, "#bbb", 1);
+      if (u > 0) { g.setLineDash([6, 6]); dot(g, O[0], O[1], SC, null, "#bbb", 1.5); g.setLineDash([]); label(g, "length 1", O[0] - SC - 8, O[1] - SC - 8, 16, "", MUTED, "right"); }
+      const A = [lerp(3, 0.6, u), lerp(4, 0.8, u)], Bv = [lerp(2, 1, u), 0], d = u > 0 && u < 1 ? 1 : (u >= 1 ? 1 : 0);
+      const pa = px(A[0], A[1]), pb = px(Bv[0], 0), pq = px(1, 0);
+      arrow(g, O[0], O[1], pa[0], pa[1], BLUE, 5, 15);
+      label(g, "A = (" + num(A[0], d) + ", " + num(A[1], d) + ")", pa[0] + 14, pa[1] - 6, 21, "600", BLUE);
+      arrow(g, O[0], O[1] + 7, pb[0], O[1] + 7, ORANGE, 5, 15);
+      label(g, "B = (" + num(Bv[0], d) + ", 0)", pb[0] + 14, O[1] + 30, 21, "600", ORANGE);
+      arrow(g, O[0], O[1] - 7, pq[0], O[1] - 7, INK, 5, 15);
+      label(g, "q = (1, 0)", O[0] - 12, O[1] - 36, 21, "600", INK, "right");
+      const y = 468;
+      if (s === 0) {
+        label(g, "q · A = 1×3 + 0×4 = 3", 60, y, 22, "600", BLUE); label(g, "q · B = 1×2 + 0×0 = 2", 400, y, 22, "600", ORANGE);
+        label(g, "A has the larger dot product with q: 3 versus 2.", 60, y + 40, 21, "", INK);
+      } else {
+        label(g, "|A| = 5:  cos(q, A) = 3 / 5 = 0.6", 60, y, 22, "600", BLUE); label(g, "|B| = 2:  cos(q, B) = 2 / 2 = 1", 400, y, 22, "600", ORANGE);
+        label(g, "B has the larger cosine: its direction matches q.", 60, y + 40, 21, "", INK);
+      }
+      label(g, "Comparing A and B with q by dot product and cosine", 60, 40, 21, "600");
+    }
+    function grids(g, s, t) {
+      const rowsIn = (step, lead) => s > step ? 5 : s === step ? Math.floor((t - lead) / 0.18) : 0;
+      labelT(g, "X", gx[0], 100, 21, "600"); labelT(g, "X − μ", gx[1], 100, 21, "600"); labelT(g, "Z = (X − μ) / σ", gx[2], 100, 21, "600");
+      labelT(g, "C = Zᵀ Z / n", cx, 170, 21, "600");
+      [gx[0], gx[1], gx[2]].forEach(x => { label(g, "x", x + cw / 2, 130, 18, "", MUTED, "center"); label(g, "y", x + cw + cw / 2, 130, 18, "", MUTED, "center"); });
+      const XM = X.map((v, i) => [v, Y[i]]), XCM = XC.map((v, i) => [v, YC[i]]), ZM = ZX.map((v, i) => [v, ZY[i]]);
+      grid(g, XM, gx[0], gy, cw, ch, {font: F(22, "600")});
+      label(g, "mean μ:  3     3", gx[0], gy + 5 * ch + 22, 18, "", MUTED);
+      const r1 = rowsIn(2, 0.5), r2 = rowsIn(3, 0);
+      grid(g, XCM, gx[1], gy, cw, ch, {font: F(22, "600"), hide: i => i >= r1});
+      if (r1 >= 5 || s > 2) label(g, "std σ:  1.41  1.41", gx[1], gy + 5 * ch + 22, 18, "", MUTED);
+      grid(g, ZM, gx[2], gy, cw, ch, {font: F(20, "600"), fmt: v => num(v, 2), hide: i => i >= r2});
+      arrow(g, gx[0] + 2 * cw + 6, gy + 2.5 * ch, gx[1] - 8, gy + 2.5 * ch, INK, 2.5); label(g, "− μ", gx[0] + 2 * cw + 26, gy + 2.5 * ch - 22, 18, "600", MUTED, "center");
+      if (s >= 3) { arrow(g, gx[1] + 2 * cw + 6, gy + 2.5 * ch, gx[2] - 8, gy + 2.5 * ch, INK, 2.5); label(g, "÷ σ", gx[1] + 2 * cw + 26, gy + 2.5 * ch - 22, 18, "600", MUTED, "center"); }
+      if (s === 4) {
+        const u = ease(t / 0.6);
+        g.globalAlpha = u;
+        box(g, gx[2] - 3, gy - 3, cw + 6, 5 * ch + 6, BLUE, 4); box(g, gx[2] + cw - 3, gy - 3, cw + 6, 5 * ch + 6, ORANGE, 4);
+        arrow(g, gx[2] + 2 * cw + 6, gy + 2.5 * ch, cx - 8, gy + 2.5 * ch, INK, 2.5);
+        g.globalAlpha = 1;
+        label(g, "x", cx + cw / 2, cy - 18, 18, "", MUTED, "center"); label(g, "y", cx + cw + cw / 2, cy - 18, 18, "", MUTED, "center");
+        label(g, "x", cx - 12, cy + ch / 2 + 1, 18, "", INK, "right"); label(g, "y", cx - 12, cy + ch + ch / 2 + 1, 18, "", INK, "right");
+        const show = t > 1.3;
+        grid(g, [[1, R], [R, 1]], cx, cy, cw, ch, {font: F(22, "600"), fmt: v => num(v, 1), hide: (i, j) => i !== j && !show,
+             fills: (i, j) => i !== j && show ? ORANGE_L : "#fff"});
+        if (show) box(g, cx + cw + 2, cy + 2, cw - 4, ch - 4, INK, 4);
+        const y = 430;
+        label(g, "column x · column y of Z = " + PR.map(v => num(v, 1)).join(" + ") + " = " + num(PR.reduce((a, c) => a + c, 0), 1), 50, y, 21, "600");
+        if (show) label(g, "C[x, y] = 4.0 / 5 = 0.8: the average product of the standardized values", 50, y + 36, 21, "", INK);
+      } else {
+        grid(g, [[1, 0], [0, 1]], cx, cy, cw, ch, {font: F(22, "600"), hide: () => true, stroke: "#e4e4df"});
+        label(g, "x", cx + cw / 2, cy - 18, 18, "", MUTED, "center"); label(g, "y", cx + cw + cw / 2, cy - 18, 18, "", MUTED, "center");
+      }
+    }
+    definePart("prep", {w: 760, h: 560, steps: 4, dur: 1.8,
+      labels: ["Three vectors from one origin, q and two candidates. By the <strong>dot product</strong> with q: A gives 3, B gives 2.",
+               "<strong>Divide by the lengths.</strong> cos(q, A) = 3 / (1 · 5) = 0.6; cos(q, B) = 2 / (1 · 2) = 1. B now ranks above A.",
+               "Two feature columns of five observations. <strong>Centre</strong> each column: subtract its mean (3 and 3).",
+               "<strong>Standardize</strong>: divide each centred column by its standard deviation (1.41 and 1.41). The columns of Z have mean 0 and standard deviation 1.",
+               "One entry of C = Z<sup>T</sup> Z / n: " + b("column x") + " · " + o("column y") + " over n. Here <strong>r = 0.8</strong>, the average product of the standardized values."],
+      draw(g, s, t) {
+        const aA = s < 2 ? 1 : (s === 2 ? 1 - ease(t / 0.45) : 0), aG = s < 2 ? 0 : (s === 2 ? ease((t - 0.3) / 0.45) : 1);
+        if (aA > 0) { g.globalAlpha = aA; arrows(g, s, s === 1 ? ease(t / 1.0) : 0); g.globalAlpha = 1; }
+        if (aG > 0) { g.globalAlpha = aG; grids(g, s, t); g.globalAlpha = 1; }
+      }});
+  }
+
+  // ================================================================ 8: applying several rules to the same data
+  {
+    const SCORES = [-5.43, 0.05, 4.18, 1.20];
+    definePart("layerwhy", {w: 760, h: 560, steps: 2, dur: 1.8,
+      labels: ["One day at Newark airport, 2019-07-04: its high and its low (meeting 11). Four neurons, one for each season, read the same two numbers.",
+               "Each neuron multiplies the two numbers by its own weights, adds its bias, and gives a <strong>score</strong>: winter −5.43, spring +0.05, summer +4.18, fall +1.20. The largest: <strong>summer</strong>.",
+               "Apply the four neurons to all 1,457 days from 2018 to 2021. A matrix product computes their weighted sums; adding the biases gives the scores."],
+      draw(g, s, t) {
+        const cx = 50, cy = 190, cwid = 230, chei = 150, nx = 470, nys = [110, 220, 330, 440], r = 36;
+        if (s === 2) {
+          const u = ease(t / 0.8);
+          for (let n = 4; n >= 1; n--) { const d = n * 12 * u; rect(g, cx + d, cy - d, cwid, chei, "#fff", "#bbb", 1.5); }
+          label(g, "1,457 days of 2018 to 2021", cx, cy + chei + 40, 20, "600", INK);
+          label(g, "four scores for each day", cx, cy + chei + 70, 18, "", MUTED);
+        }
+        rect(g, cx, cy, cwid, chei, "#fff", INK, 2);
+        label(g, "2019-07-04", cx + 18, cy + 32, 22, "600"); label(g, "high   89 °F", cx + 18, cy + 78, 22); label(g, "low    74 °F", cx + 18, cy + 118, 22);
+        const inY = [cy + 78, cy + 118], inX = cx + cwid;
+        nys.forEach(ny => inY.forEach(iy => line(g, inX, iy, nx - r, ny, "#c8c8c2", 2)));
+        if (s >= 1) {
+          const u = clamp(t / 0.9, 0, 1);
+          if (u < 1) nys.forEach(ny => inY.forEach(iy => dot(g, lerp(inX, nx - r, u), lerp(iy, ny, u), 6, INK)));
+        }
+        nys.forEach((ny, j) => { dot(g, nx, ny, r, SEASON[j][2], SEASON[j][1], 3); label(g, SEASON[j][0], nx, ny + 1, 19, "600", SEASON[j][1], "center"); });
+        label(g, "four neurons, one for each season", nx, 40, 18, "", MUTED, "center");
+        if (s >= 1) {
+          const u = ease((t - 0.9) / 0.7), bx = 580, sc = 13;
+          line(g, bx, 92, bx, 500, "#bbb", 1.5); label(g, "score", bx, 78, 17, "", MUTED, "center");
+          nys.forEach((ny, j) => {
+            const v = SCORES[j], w = Math.abs(v) * sc * u;
+            g.fillStyle = SEASON[j][1]; if (v >= 0) g.fillRect(bx, ny - 12, w, 24); else g.fillRect(bx - w, ny - 12, w, 24);
+            label(g, num(v, 2), v >= 0 ? bx + w + 10 : bx + 10, ny + 1, 21, "600", INK);
+          });
+          if (u >= 1) label(g, "largest: summer", bx + 12, 520, 21, "600", SEASON[2][1]);
+        }
+      }});
+  }
+
+  // ================================================================ 9: data x neurons
+  {
+    const LX = [[2, 1], [0, 3], [3, 0]], LW = [[1, -1], [0, 1], [-1, 0], [1, 1]], LB = [1, -1, 1, -2];
+    const LS = LX.map(x => LW.map((w, j) => x[0] * w[0] + x[1] * w[1] + LB[j]));
+    const ex = LS[0].map(Math.exp), se = ex.reduce((a, c) => a + c, 0), P1 = ex.map(v => v / se);
+    const cw = 56, ch = 40, xX = 100, yX = 170, xT = 250, yT = 64, xS = 250, yS = 170, xW = 100, yW = 372, yB = yS + 3 * ch + 12;
+    definePart("layer", {w: 760, h: 560, steps: 4, dur: 1.8,
+      labels: ["X: three points with two coordinates. W: four neurons, one a row, with two weights each; b: one bias for each neuron. S will hold 3 × 4 scores.",
+               "<strong>Transpose</strong>: each row of W becomes a column of W<sup>T</sup>, so that the columns of W<sup>T</sup> and of S belong to the neurons.",
+               "One score: " + b("row 1 of X") + " · " + o("column 1 of W<sup>T</sup>") + " + b<sub>1</sub> = 2×1 + 1×(−1) + 1 = <strong>2</strong>.",
+               "Add b<sub>1</sub> = 1 to each score in column 1 by <strong>broadcasting</strong>. Each of the 3 × 4 scores uses a dot product and its neuron's bias.",
+               "Apply <strong>softmax</strong> to row 1 of S to get four probabilities that sum to 1. <strong>Argmax</strong> identifies neuron 1 as having the largest score."],
+      draw(g, s, t) {
+        g.font = FM(21, "600"); g.fillStyle = INK; g.textAlign = "left"; g.fillText("S = X @ W.T + b", xX, 34);
+        label(g, "X: 3 points × 2", xX, yX - 38, 19, "600");
+        ["x₁", "x₂"].forEach((h, c) => label(g, h, xX + c * cw + cw / 2, yX - 14, 17, "", MUTED, "center"));
+        ["point 1", "point 2", "point 3"].forEach((p, i) => label(g, p, xX - 10, yX + i * ch + ch / 2 + 1, 17, "", INK, "right"));
+        grid(g, LX, xX, yX, cw, ch, {font: F(22, "600")});
+        label(g, "W: 4 neurons × 2", xW, yW - 20, 19, "600");
+        grid(g, LW, xW, yW, cw, ch, {font: F(22, "600"), fills: i => SEASON[i][2]});
+        LW.forEach((w, j) => label(g, "neuron " + (j + 1), xW - 10, yW + j * ch + ch / 2 + 1, 17, "", SEASON[j][1], "right"));
+        // W transposed: the place, and the rows of W flying into its columns
+        labelT(g, "Wᵀ: 2 × 4", xT + 4 * cw + 14, yT + ch, 19, "600");
+        label(g, "neurons", xT - 10, yT - 14, 15, "", MUTED, "right");
+        LW.forEach((w, j) => label(g, String(j + 1), xT + j * cw + cw / 2, yT - 14, 16, "600", SEASON[j][1], "center"));
+        g.setLineDash([5, 5]); box(g, xT, yT, 4 * cw, 2 * ch, "#c8c8c2", 1.5); g.setLineDash([]);
+        for (let j = 0; j < 4; j++) {
+          const u = s === 0 ? 0 : s === 1 ? ease((t - 0.12 * j) / 0.9) : 1;
+          if (u <= 0) continue;
+          for (let c = 0; c < 2; c++) {
+            const x = lerp(xW + c * cw, xT + j * cw, u), y = lerp(yW + j * ch, yT + c * ch, u);
+            rect(g, x, y, cw, ch, SEASON[j][2], "#bdbcb5", 1); label(g, num(LW[j][c]), x + cw / 2, y + ch / 2 + 1, 22, "600", INK, "center");
+          }
+        }
+        // S and b
+        if (s < 4) label(g, "S: 3 × 4", xS + 4 * cw + 14, yS + 20, 19, "600");
+        const col0 = s === 3 ? [0, 1, 2].map(i => ease((t - 0.2 * i) / 0.6) >= 1) : [s >= 4, s >= 4, s >= 4];
+        const all = s === 3 ? t > 1.5 : s >= 4;
+        grid(g, LS, xS, yS, cw, ch, {font: F(22, "600"), hide: (i, j) => !(all || (j === 0 && col0[i]) || (s === 2 && i === 0 && j === 0)),
+             fills: (i, j) => (all || (j === 0 && col0[i]) || (s === 2 && i === 0 && j === 0)) ? SEASON[j][2] : "#fff"});
+        label(g, "+ b", xS - 42, yB + ch / 2 + 1, 19, "600", INK, "right");
+        grid(g, [LB], xS, yB, cw, ch, {font: F(22, "600"), fills: (i, j) => SEASON[j][2]});
+        if (s === 2) {
+          box(g, xX - 3, yX - 3, 2 * cw + 6, ch + 6, BLUE, 4); box(g, xT - 3, yT - 3, cw + 6, 2 * ch + 6, ORANGE, 4);
+          box(g, xS + 2, yS + 2, cw - 4, ch - 4, INK, 4); box(g, xS + 2, yB + 2, cw - 4, ch - 4, INK, 3);
+          live("layer", b("2") + "×" + o("1") + " + " + b("1") + "×" + o("−1") + " + 1 = <strong>2</strong>");
+        }
+        if (s === 3) {
+          box(g, xS - 3, yS - 3, cw + 6, 3 * ch + 6, INK, 3);
+          for (let i = 0; i < 3; i++) {
+            const u = ease((t - 0.2 * i) / 0.6);
+            if (u > 0 && u < 1) { const x = xS + cw / 2, y = lerp(yB + ch / 2, yS + i * ch + ch / 2, u); dot(g, x, y, 16, "#fff", SEASON[0][1], 2); label(g, "+1", x, y + 1, 16, "600", SEASON[0][1], "center"); }
+          }
+          live("layer", all ? "12 cells: each a dot product of length 2, plus the bias of its column" : "column 1: 2−1 = <strong>2</strong>, −3+1 = <strong>−2</strong>, 3+1 = <strong>4</strong>");
+        }
+        if (s === 4) {
+          const u = ease(t / 0.9), bx = 556, by = yS + 8;
+          box(g, xS - 3, yS - 3, 4 * cw + 6, ch + 6, BLUE, 4);
+          label(g, "softmax of row 1", bx, yS - 14, 19, "600");
+          LS[0].forEach((v, j) => {
+            const y = by + j * 38, w = P1[j] * 120 * u;
+            label(g, num(v), bx - 8, y + 14, 18, "600", SEASON[j][1], "right");
+            g.fillStyle = SEASON[j][1]; g.fillRect(bx, y, w, 26);
+            label(g, num(P1[j], 2), bx + w + 8, y + 14, 18, "600", INK);
+          });
+          label(g, "score → probability; sum = 1", bx, by + 4 * 38 + 10, 17, "", MUTED);
+          if (u >= 1) label(g, "argmax: neuron 1", bx, by + 4 * 38 + 40, 20, "600", SEASON[0][1]);
+          live("layer", "e<sup>2</sup>, e<sup>0</sup>, e<sup>−1</sup>, e<sup>1</sup> over their sum: " + P1.map(v => num(v, 2)).join(", "));
+        }
+      }});
+  }
+
+  // ================================================================ 11: translating a formula into array operations
+  const AX = [[1, 2, 3], [4, 6, 5], [7, 5, 3], [4, 7, 1]], CM = [4, 5, 3], RM = [2, 5, 5, 4];
+  definePart("axeswhy", {w: 700, h: 520, steps: 2, dur: 1.4,
+    labels: ["A table X of 4 points with 3 features. Two reductions are possible, and they answer different questions.",
+             "<strong>Down the columns</strong>, <code>axis=0</code>: one number per feature, shape (3,). Here the mean of each feature: 4, 5, 3.",
+             "<strong>Across the rows</strong>, <code>axis=1</code>: one number per point, shape (4,). Here the mean of each point: 2, 5, 5, 4."],
+    draw(g, s, t) {
+      const cw = 90, ch = 60, x0 = 190, y0 = 110;
+      label(g, "X: 4 points × 3 features", x0, 46, 21, "600");
+      ["feature 1", "feature 2", "feature 3"].forEach((f, j) => label(g, f, x0 + j * cw + cw / 2, y0 - 18, 17, "", MUTED, "center"));
+      ["point 1", "point 2", "point 3", "point 4"].forEach((p, i) => label(g, p, x0 - 14, y0 + i * ch + ch / 2 + 1, 19, "", INK, "right"));
+      grid(g, AX, x0, y0, cw, ch, {font: F(26, "600")});
+      if (s === 1) {
+        const u = ease(t / 0.9);
+        for (let j = 0; j < 3; j++) {
+          const x = x0 + j * cw + cw - 16;
+          g.fillStyle = "rgba(42,120,214,0.16)"; g.fillRect(x0 + j * cw, y0, cw, 4 * ch * u);
+          arrow(g, x, y0 + 6, x, y0 + 4 * ch * u + 2, BLUE, 3, 12);
+        }
+        if (u >= 1) {
+          grid(g, [CM], x0, y0 + 4 * ch + 30, cw, 50, {font: F(24, "600"), fills: () => BLUE_L});
+          label(g, "one number per feature: shape (3,)", x0, y0 + 4 * ch + 110, 20, "600", BLUE);
+        }
+      }
+      if (s === 2) {
+        const u = ease(t / 0.9);
+        for (let i = 0; i < 4; i++) {
+          const y = y0 + i * ch + ch - 14;
+          g.fillStyle = "rgba(235,104,52,0.16)"; g.fillRect(x0, y0 + i * ch, 3 * cw * u, ch);
+          arrow(g, x0 + 6, y, x0 + 3 * cw * u + 2, y, ORANGE, 3, 12);
+        }
+        if (u >= 1) {
+          grid(g, RM.map(v => [v]), x0 + 3 * cw + 36, y0, 70, ch, {font: F(24, "600"), fills: () => ORANGE_L});
+          label(g, "one number per point:", x0 + 3 * cw + 36, y0 + 4 * ch + 30, 20, "600", ORANGE);
+          label(g, "shape (4,)", x0 + 3 * cw + 36, y0 + 4 * ch + 58, 20, "600", ORANGE);
+        }
+      }
+    }});
+
+  // ================================================================ 12: axes, broadcasting and the two multiplications
+  {
+    const cw = 66, ch = 46, x0 = 100, y0 = 80, xC = x0 + 3 * cw + 46, xD = 430, yM = y0 + 4 * ch + 36;
+    const AD = AX.map(r => r.map((v, j) => v - CM[j]));
+    const A2 = [[1, 2], [3, 4]], B2 = [[5, 6], [7, 8]], AB = [[5, 12], [21, 32]], AmB = [[19, 22], [43, 50]];
+    definePart("axes", {w: 760, h: 560, steps: 4, dur: 1.8,
+      labels: ["The same X, 4 × 3. Four operations on it, in turn.",
+               "<code>X.mean(axis=0)</code>: the rows collapse into one row of three means, shape (3,).",
+               "<code>X - X.mean(axis=0)</code>: the three means are subtracted from every row. <strong>Broadcasting</strong> reuses the three means without storing a separate copy for each row.",
+               "<code>X.mean(axis=1, keepdims=True)</code>: one mean per point, kept as a column, shape (4, 1).",
+               "<code>A * B</code> multiplies matching cells: 2 × 6 = 12. <code>A @ B</code> multiplies a row by a column: 1×6 + 2×8 = 22."],
+      draw(g, s, t) {
+        label(g, "X", x0, y0 - 38, 21, "600");
+        ["f1", "f2", "f3"].forEach((f, j) => label(g, f, x0 + j * cw + cw / 2, y0 - 14, 16, "", MUTED, "center"));
+        grid(g, AX, x0, y0, cw, ch, {font: F(22, "600")});
+        if (s >= 1) {
+          const u = s === 1 ? ease(t / 0.8) : 1;
+          if (u < 1) { g.fillStyle = "rgba(42,120,214,0.16)"; g.fillRect(x0, y0, 3 * cw, 4 * ch * u); }
+          g.globalAlpha = s === 1 ? ease((t - 0.7) / 0.4) : 1;
+          grid(g, [CM], x0, yM, cw, ch, {font: F(22, "600"), fills: () => BLUE_L});
+          label(g, "X.mean(axis=0)", x0, yM + ch + 22, 17, "600", BLUE); label(g, "shape (3,)", x0 + 3 * cw, yM + ch + 22, 17, "", MUTED, "right");
+          g.globalAlpha = 1;
+        }
+        if (s >= 2) {
+          const row = s === 2 ? Math.floor(t / 0.3) : 4;
+          labelT(g, "X − X.mean(axis=0)", xD, y0 - 38, 21, "600");
+          grid(g, AD, xD, y0, cw, ch, {font: F(22, "600"), hide: i => i >= row, fills: i => i < row ? GREY_L : "#fff"});
+          if (row < 4 && s === 2) {
+            box(g, x0 - 3, y0 + row * ch - 3, 3 * cw + 6, ch + 6, ORANGE, 3);
+            CM.forEach((v, j) => label(g, "−" + v, x0 + j * cw + cw - 6, y0 + row * ch + 12, 15, "600", ORANGE, "right"));
+            box(g, xD - 3, y0 + row * ch - 3, 3 * cw + 6, ch + 6, ORANGE, 3);
+            label(g, "row " + (row + 1) + " − the same 3 means", xD, yM + 8, 17, "600", ORANGE);
+          }
+          if (row >= 4) label(g, "the 3 means used on every row", xD, yM + 8, 17, "", MUTED);
+        }
+        if (s >= 3) {
+          const u = s === 3 ? ease(t / 0.8) : 1;
+          if (u < 1) { g.fillStyle = "rgba(235,104,52,0.16)"; g.fillRect(x0, y0, 3 * cw * u, 4 * ch); }
+          g.globalAlpha = s === 3 ? ease((t - 0.7) / 0.4) : 1;
+          grid(g, RM.map(v => [v]), xC, y0, cw, ch, {font: F(22, "600"), fills: () => ORANGE_L});
+          label(g, "axis=1,", xC, y0 + 4 * ch + 22, 16, "600", ORANGE); label(g, "keepdims", xC, y0 + 4 * ch + 44, 16, "600", ORANGE); label(g, "(4, 1)", xC, y0 + 4 * ch + 66, 16, "", MUTED);
+          g.globalAlpha = 1;
+        }
+        if (s >= 4) {
+          const u = s === 4 ? ease(t / 0.6) : 1, yb = 420, c2 = 40;
+          g.globalAlpha = u;
+          const small = (M, x, hi) => grid(g, M, x, yb, c2, c2, {font: F(19, "600"), fills: (i, j) => hi && hi(i, j) ? ORANGE_L : "#fff"});
+          label(g, "A * B: entry by entry", 60, yb - 24, 19, "600");
+          small(A2, 60, (i, j) => i === 0 && j === 1); label(g, "*", 160, yb + c2, 24, "600", MUTED, "center"); small(B2, 180, (i, j) => i === 0 && j === 1);
+          label(g, "=", 280, yb + c2, 24, "600", MUTED, "center"); small(AB, 300, (i, j) => i === 0 && j === 1);
+          label(g, "2 × 6 = 12", 60, yb + 2 * c2 + 26, 18, "600", ORANGE);
+          label(g, "A @ B: row · column", 420, yb - 24, 19, "600");
+          small(A2, 420, i => i === 0); label(g, "@", 520, yb + c2, 24, "600", MUTED, "center"); small(B2, 540, (i, j) => j === 1);
+          label(g, "=", 640, yb + c2, 24, "600", MUTED, "center"); small(AmB, 660, (i, j) => i === 0 && j === 1);
+          label(g, "1×6 + 2×8 = 22", 420, yb + 2 * c2 + 26, 18, "600", ORANGE);
+          g.globalAlpha = 1;
+        }
+      }});
+  }
+
+  // ================================================================ 14: estimating work before computing
+  {
+    const NW = 50000, ND = 300, side = 450, top = 60, ux = 70, S4 = side / NW, uw = Math.max(4, ND * S4), bigX = 330;
+    definePart("costwhy", {w: 760, h: 560, steps: 2, dur: 2.0,
+      labels: ["U, the word vectors of meeting 10: 50,000 words × 300 numbers, drawn to scale. Two products with its transpose are possible.",
+               "U<sup>T</sup> U has 90,000 entries: one dot product for each pair of the 300 feature columns.",
+               "U U<sup>T</sup> has <strong>2.5 billion entries</strong>: one dot product per pair of words. Each dot product uses 300 coordinates."],
+      draw(g, s, t) {
+        if (s >= 2) {
+          const sz = ease(t / 1.6) * side;
+          g.fillStyle = "rgba(42,120,214,0.88)"; g.fillRect(bigX, top, sz, sz);
+          if (sz > 300) {
+            g.fillStyle = "#fff"; labelT(g, "U Uᵀ: 50,000 × 50,000", bigX + 18, top + 34, 20, "600", "#fff");
+            label(g, "2.5 billion entries", bigX + 18, top + 70, 18, "", "#fff");
+            label(g, "2.5 billion dot products", bigX + 18, top + sz - 60, 20, "600", "#fff");
+            label(g, "300 coordinates per dot product", bigX + 18, top + sz - 28, 20, "600", "#fff");
+          }
+          if (bigX + sz > 760) label(g, "past the edge →", 748, top + sz / 2, 16, "600", "#fff", "right");
+        }
+        g.fillStyle = INK; g.fillRect(ux, top, uw, side);
+        label(g, "U", ux + 18, top + 18, 21, "600"); label(g, "50,000 × 300", ux + 18, top + 52, 17, "", MUTED); label(g, "15 million numbers", ux + 18, top + 82, 17, "", MUTED);
+        if (s >= 1) {
+          const u = s === 1 ? ease(t / 0.8) : 1;
+          g.globalAlpha = u;
+          g.fillStyle = BLUE; g.fillRect(170, 400, uw, uw); dot(g, 170 + uw / 2, 400 + uw / 2, 18, null, ORANGE, 3);
+          labelT(g, "Uᵀ U: 300 × 300", 200, 392, 19, "600"); label(g, "90,000 entries", 200, 422, 17, "", MUTED);
+          g.globalAlpha = 1;
+        }
+        label(g, "one scale: 50,000 rows are " + side + " pixels, so 300 are " + (ND * S4).toFixed(1), 70, 540, 15, "", MUTED);
+      }});
+  }
+
+  // ================================================================ 15: arithmetic work and storage
+  {
+    const ROWS = ["off", "off", "off"];
+    function setTable(s) { document.querySelectorAll("#cost-table tbody tr").forEach((tr, i) => { tr.className = s >= i + 1 && s <= 3 ? "" : (s > 3 ? "" : "off"); }); }
+    function prodPic(g, L, T, Out, ri, rj, lines, u) {
+      // L at the left of Out, T above it; a row of L and a column of T meet in one entry of Out
+      const shade = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+      rect(g, L.x, L.y, L.w, L.h, "#f2f2ee", INK, 1.5); rect(g, T.x, T.y, T.w, T.h, "#f2f2ee", INK, 1.5); rect(g, Out.x, Out.y, Out.w, Out.h, "#fff", INK, 1.5);
+      labelT(g, L.name, L.x + L.w / 2, L.y + L.h + 20, 19, "600", INK, "center"); labelT(g, T.name, T.x + T.w / 2, T.y - 18, 19, "600", INK, "center");
+      labelT(g, Out.name, Out.x + Out.w / 2, Out.y + Out.h + 20, 19, "600", INK, "center");
+      label(g, L.rows, L.x - 10, L.y + L.h / 2, 17, "", MUTED, "right"); label(g, L.cols, L.x + L.w / 2, L.y - 14, 17, "", MUTED, "center");
+      label(g, T.rows, T.x - 10, T.y + T.h / 2, 17, "", MUTED, "right"); label(g, T.cols, T.x + T.w + 10, T.y + T.h / 2, 17, "", MUTED, "left");
+      const bh = Math.min(16, L.h / 4), bw = Math.min(16, T.w / 4);
+      shade(L.x, L.y + ri * L.h - bh / 2, L.w, bh, "rgba(42,120,214,0.45)"); shade(T.x + rj * T.w - bw / 2, T.y, bw, T.h, "rgba(235,104,52,0.45)");
+      const ex = Out.x + rj * Out.w, ey = Out.y + ri * Out.h;
+      g.globalAlpha = u;
+      line(g, L.x + L.w, L.y + ri * L.h, ex, ey, BLUE, 2, [5, 4]); line(g, T.x + rj * T.w, T.y + T.h, ex, ey, ORANGE, 2, [5, 4]);
+      rect(g, ex - 9, ey - 9, 18, 18, INK, null);
+      lines.forEach((ln, n) => label(g, ln[0], 445, 150 + n * 44, ln[1] ? 24 : 17, ln[1] ? "600" : "", ln[1] ? INK : MUTED));
+      g.globalAlpha = 1;
+    }
+    definePart("cost", {w: 700, h: 560, steps: 4, dur: 1.6,
+      labels: ["One <strong>dot product</strong> of length m: m multiplications and m − 1 additions, about 2m operations. Every entry of a product is one of these.",
+               "<strong>X X<sup>T</sup></strong>: n × n entries, each a dot product of two rows of length m: about 2n²m operations, O(n²m).",
+               "<strong>X<sup>T</sup> X</strong>: m × m entries, each a dot product of two columns of length n: about 2nm² operations, O(nm²).",
+               "<strong>X W<sup>T</sup></strong>: n × K entries, each a dot product of length m: about 2nKm operations, O(nKm).",
+               "The word vectors, float32, 4 bytes an entry: U U<sup>T</sup> has 50,000² = 2.5 billion entries, <strong>10 GB</strong>; U<sup>T</sup> U has 300² = 90,000 entries, <strong>0.36 MB</strong>. Output storage only."],
+      draw(g, s, t) {
+        setTable(s);
+        const u = ease(t / 0.7);
+        if (s === 0) {
+          const cw = 60, ch = 44, x0 = 60, y0 = 150, m = 6;
+          label(g, "a · b, two vectors of length m = 6", x0, 60, 21, "600");
+          grid(g, [[1, 2, 3, 4, 5, 6].map(i => "a" + "₁₂₃₄₅₆"[i - 1])], x0, y0, cw, ch, {font: F(20, "600"), fills: () => BLUE_L});
+          label(g, "a", x0 - 14, y0 + ch / 2 + 1, 20, "600", BLUE, "right");
+          grid(g, [[1, 2, 3, 4, 5, 6].map(i => "b" + "₁₂₃₄₅₆"[i - 1])].map(r => r), x0, y0 + ch + 16, cw, ch, {font: F(20, "600"), fills: () => ORANGE_L});
+          label(g, "b", x0 - 14, y0 + ch + 16 + ch / 2 + 1, 20, "600", ORANGE, "right");
+          const n = Math.min(m, Math.floor(t / 0.25));
+          for (let i = 0; i < n; i++) { const x = x0 + i * cw + cw / 2; label(g, "×", x, y0 + 2 * ch + 44, 22, "600", INK, "center"); }
+          label(g, "a · b = a₁b₁ + a₂b₂ + a₃b₃ + a₄b₄ + a₅b₅ + a₆b₆", x0, y0 + 2 * ch + 96, 22, "600");
+          label(g, "6 multiplications, 5 additions: about 2m = 12 operations", x0, y0 + 2 * ch + 136, 20, "", MUTED);
+          label(g, "a row of X and a row of X; a column and a column; a row of X and a row of W", x0, y0 + 2 * ch + 176, 18, "", MUTED);
+        }
+        if (s === 1) prodPic(g, {x: 100, y: 190, w: 70, h: 210, name: "X", rows: "n", cols: "m"}, {x: 210, y: 80, w: 210, h: 70, name: "Xᵀ", rows: "m", cols: "n"},
+                             {x: 210, y: 190, w: 210, h: 210, name: "X Xᵀ: n × n"}, 0.3, 0.62,
+                             [["n² entries", 1], ["each: a dot product of length m", 0], ["about 2m operations", 0], ["O(n²m)", 1], ["symmetric: half could be skipped", 0]], u);
+        if (s === 2) prodPic(g, {x: 60, y: 300, w: 210, h: 70, name: "Xᵀ", rows: "m", cols: "n"}, {x: 320, y: 60, w: 70, h: 210, name: "X", rows: "n", cols: "m"},
+                             {x: 320, y: 300, w: 70, h: 70, name: "Xᵀ X: m × m"}, 0.3, 0.62,
+                             [["m² entries", 1], ["each: a dot product of length n", 0], ["about 2n operations", 0], ["O(nm²)", 1], ["far smaller when m ≪ n", 0]], u);
+        if (s === 3) prodPic(g, {x: 100, y: 190, w: 70, h: 210, name: "X", rows: "n", cols: "m"}, {x: 210, y: 80, w: 130, h: 70, name: "Wᵀ", rows: "m", cols: "K"},
+                             {x: 210, y: 190, w: 130, h: 210, name: "X Wᵀ: n × K"}, 0.3, 0.55,
+                             [["nK entries", 1], ["each: a dot product of length m", 0], ["about 2m operations", 0], ["O(nKm)", 1], ["the layer of meeting 11", 0]], u);
+        if (s === 4) {
+          g.globalAlpha = u;
+          rect(g, 50, 70, 400, 400, null, BLUE, 3);
+          labelT(g, "U Uᵀ: 50,000 × 50,000", 70, 100, 21, "600", BLUE); label(g, "2.5 billion entries × 4 bytes", 70, 134, 19, "", INK);
+          label(g, "10 GB", 70, 180, 36, "600", INK);
+          g.fillStyle = BLUE; g.fillRect(50, 470 - 3, 3, 3);
+          rect(g, 500, 250, 180, 180, "#fff", ORANGE, 3); g.fillStyle = BLUE; g.fillRect(500, 250, 180, 180);
+          line(g, 53, 467, 500, 250, ORANGE, 1.5, [4, 4]); line(g, 53, 470, 500, 430, ORANGE, 1.5, [4, 4]);
+          labelT(g, "Uᵀ U: 300 × 300", 500, 230, 19, "600", INK);
+          label(g, "90,000 entries", 510, 290, 18, "", "#fff"); label(g, "× 4 bytes", 510, 318, 18, "", "#fff"); label(g, "0.36 MB", 510, 370, 30, "600", "#fff");
+          label(g, "inset: magnified, not to scale", 500, 450, 15, "", MUTED);
+          label(g, "output storage only; decimal GB and MB", 50, 520, 17, "", MUTED);
+          g.globalAlpha = 1;
+        }
+      }});
+  }
+
+  // ================================================================ 17: explaining a measured running time
+  {
+    const CPU = "#1c5cab", CPU_L = "#cde2fb", GPU = "#b8430f", GPU_L = "#fbdccf";
+    definePart("hwwhy", {w: 760, h: 560, steps: 3, dur: 1.6,
+      labels: ["The matrix product can run on the CPU or GPU. The diagram shows CPU cores, <strong>cache</strong> and main memory, and a GPU with its own memory.",
+               "<code>.to(\"cuda\")</code>: X, W and b are <strong>copied</strong> to the GPU's memory, through the link between the two memories.",
+               "The GPU computes many entries of S in parallel.",
+               "<code>.cpu()</code>: S is copied back. A timing may or may not include the two copies; say which."],
+      draw(g, s, t) {
+        g.font = FM(24, "600"); g.fillStyle = INK; g.textAlign = "center"; g.fillText("S = X @ W.T + b", 380, 36);
+        // CPU
+        rect(g, 50, 80, 300, 360, "#fff", CPU, 2.5); label(g, "CPU", 70, 108, 22, "600", CPU);
+        for (let i = 0; i < 4; i++) rect(g, 70 + i * 58, 140, 48, 48, CPU_L, CPU, 1.5);
+        label(g, "a few cores", 70, 212, 17, "", MUTED);
+        rect(g, 70, 236, 110, 40, "#fff", CPU, 1.5); label(g, "cache", 125, 257, 17, "600", CPU, "center");
+        label(g, "small, fast, beside the cores", 190, 257, 15, "", MUTED);
+        rect(g, 70, 330, 260, 90, CPU_L, CPU, 1.5); label(g, "main memory", 80, 350, 18, "600", CPU);
+        label(g, "X, W, b" + (s >= 3 && t > 1.0 ? ", S" : ""), 80, 388, 20, "600", INK);
+        // GPU
+        rect(g, 410, 80, 300, 360, "#fff", GPU, 2.5); label(g, "GPU", 430, 108, 22, "600", GPU);
+        const busy = s === 2 ? ease(t / 0.6) : 0;
+        for (let i = 0; i < 10; i++) for (let j = 0; j < 20; j++) { g.fillStyle = busy > 0 && ((i * 20 + j) * 7919) % 100 < busy * 100 ? GPU : GPU_L; g.fillRect(430 + j * 13, 132 + i * 11, 10, 8); }
+        if (s === 2) { label(g, "computing entries of S in parallel", 430, 262, 15, "600", GPU); label(g, "each entry is a dot product", 430, 282, 15, "600", GPU); }
+        else { label(g, "thousands of small cores,", 430, 262, 15, "", MUTED); label(g, "many operations in parallel", 430, 282, 15, "", MUTED); }
+        rect(g, 430, 330, 260, 90, GPU_L, GPU, 1.5); label(g, "GPU memory", 440, 350, 18, "600", GPU);
+        label(g, s >= 1 && (s > 1 || t > 1.1) ? "X, W, b" + (s >= 2 && (s > 2 || t > 0.6) ? ", S" : "") : "", 440, 388, 20, "600", INK);
+        // the link
+        line(g, 330, 375, 430, 375, INK, 3);
+        if (s === 1 || s === 3) {
+          const u = clamp(t / 1.1, 0, 1), dir = s === 1 ? 1 : -1;
+          for (let n = 0; n < 4; n++) { const v = clamp(u * 1.4 - n * 0.12, 0, 1); if (v > 0 && v < 1) dot(g, dir > 0 ? lerp(330, 430, v) : lerp(430, 330, v), 375, 6, s === 1 ? CPU : GPU); }
+          label(g, s === 1 ? "copy X, W, b → through the link between the two memories" : "← copy S back through the link", 380, 470, 16, "600", s === 1 ? CPU : GPU, "center");
+        } else label(g, "the link between the two memories: slower than either memory", 380, 470, 15, "", MUTED, "center");
+        label(g, "1. to(\"cuda\")   2. compute   3. cpu()", 50, 520, 17, "", MUTED);
+      }});
+  }
+
+  // ================================================================ 18: where the time goes
+  {
+    definePart("hw", {w: 760, h: 560, steps: 4, dur: 2.0,
+      labels: ["Execution time depends on Python overhead, memory access, reuse and GPU transfers.",
+               "<strong>Python overhead</strong>: Python executes each loop iteration. A vectorized NumPy operation runs its loop in compiled code.",
+               "<strong>Locality</strong>: in this example, each cache line holds 8 numbers. Reading a row uses all 8; reading a column uses 1 from each line.",
+               "<strong>Reuse</strong>: a block of X read into the cache once serves several dot products; a product moves far fewer bytes per operation than an addition does.",
+               "<strong>A GPU</strong>: upload, compute, download. Time it after the computation has finished (synchronize); say whether the copies are included."],
+      draw(g, s, t) {
+        const P = [[20, 20], [390, 20], [20, 300], [390, 300]], w = 350, h = 240;
+        P.forEach(([x, y], n) => {
+          const on = s >= n + 1, u = s === n + 1 ? ease(t / 0.5) : 1;
+          rect(g, x, y, w, h, on ? "#fff" : "#fafaf8", on ? INK : "#e4e4df", 1.5);
+          if (!on) { label(g, ["Python overhead", "Locality", "Reuse", "A GPU"][n], x + 16, y + 26, 19, "600", "#c8c8c2"); return; }
+          g.globalAlpha = u;
+          if (n === 0) {
+            label(g, "Python overhead", x + 16, y + 26, 19, "600");
+            rect(g, x + 16, y + 60, 90, 44, "#fff", INK, 1.5); label(g, "Python", x + 61, y + 82, 17, "600", INK, "center");
+            rect(g, x + 240, y + 60, 94, 44, GREY_L, INK, 1.5); label(g, "C", x + 287, y + 82, 17, "600", INK, "center");
+            const calls = Math.min(12, Math.floor(t / 0.12));
+            for (let i = 0; i < calls; i++) arrow(g, x + 110, y + 64 + i * 3, x + 236, y + 64 + i * 3, "#888", 1, 6);
+            label(g, "Python executes the n·K·m loop iterations", x + 16, y + 128, 15, "", MUTED);
+            rect(g, x + 16, y + 160, 90, 44, "#fff", INK, 1.5); label(g, "NumPy", x + 61, y + 182, 17, "600", INK, "center");
+            rect(g, x + 240, y + 160, 94, 44, BLUE_L, BLUE, 1.5); label(g, "compiled", x + 287, y + 175, 14, "600", BLUE, "center"); label(g, "loop", x + 287, y + 192, 14, "600", BLUE, "center");
+            if (t > 1.5) arrow(g, x + 110, y + 182, x + 236, y + 182, BLUE, 5, 14);
+            label(g, "NumPy runs the loop in compiled code", x + 16, y + 226, 15, "", MUTED);
+          }
+          if (n === 1) {
+            label(g, "Locality: 8 numbers per line here", x + 16, y + 26, 19, "600");
+            const cs = 18, reads = Math.min(8, Math.floor(t / 0.12));
+            label(g, "reading a row", x + 16, y + 62, 15, "", MUTED);
+            for (let i = 0; i < 8; i++) rect(g, x + 16 + i * cs, y + 74, cs, cs, i < reads ? BLUE : "#f2f2ee", "#bbb", 0.8);
+            rect(g, x + 16, y + 74, 8 * cs, cs, null, INK, 2);
+            label(g, "8 of 8 used", x + 16 + 8 * cs + 12, y + 83, 15, "600", BLUE);
+            label(g, "reading a column", x + 16, y + 122, 15, "", MUTED);
+            for (let l = 0; l < 4; l++) {
+              const yy = y + 134 + l * (cs + 6);
+              for (let i = 0; i < 8; i++) rect(g, x + 16 + i * cs, yy, cs, cs, i === 0 && t > 1.2 + 0.15 * l ? ORANGE : "#f2f2ee", "#bbb", 0.8);
+              rect(g, x + 16, yy, 8 * cs, cs, null, INK, 2);
+            }
+            label(g, "1 of 8 used,", x + 16 + 8 * cs + 12, y + 150, 15, "600", ORANGE); label(g, "four lines fetched", x + 16 + 8 * cs + 12, y + 170, 15, "600", ORANGE);
+          }
+          if (n === 2) {
+            label(g, "Reuse: a block of X, read once", x + 16, y + 26, 19, "600");
+            const cs = 14;
+            for (let i = 0; i < 8; i++) for (let j = 0; j < 6; j++) rect(g, x + 16 + j * cs, y + 56 + i * cs, cs, cs, i < 2 ? BLUE_L : "#f2f2ee", "#ccc", 0.6);
+            rect(g, x + 16, y + 56, 6 * cs, 2 * cs, null, BLUE, 2.5); label(g, "X", x + 16 + 6 * cs + 8, y + 56 + 4 * cs, 16, "600", INK);
+            label(g, "a block, in the cache", x + 16, y + 56 + 8 * cs + 16, 15, "", MUTED);
+            const used = Math.min(4, Math.floor(t / 0.35));
+            for (let j = 0; j < 4; j++) {
+              const ox = x + 190 + j * 36, oy = y + 70;
+              rect(g, ox, oy, 28, 28, j < used ? ORANGE_L : "#f2f2ee", j < used ? ORANGE : "#ccc", 1.5);
+              if (j < used) arrow(g, x + 16 + 6 * cs, y + 56 + cs, ox, oy + 14, ORANGE, 1.5, 8);
+            }
+            label(g, "four entries of S", x + 190, y + 118, 15, "", MUTED);
+            label(g, "a + b: 12 bytes moved for 1 operation", x + 16, y + 206, 15, "600", INK);
+            label(g, "X @ W.T: many operations for each byte moved", x + 16, y + 228, 15, "600", INK);
+          }
+          if (n === 3) {
+            label(g, "A GPU: schematic, not measured", x + 16, y + 26, 19, "600");
+            const x0 = x + 16, y0 = y + 90, L = 318, segs = [["upload", 0.28, "#bbb"], ["compute", 0.44, "#b8430f"], ["download", 0.28, "#bbb"]];
+            const prog = clamp(t / 2.0, 0, 1);
+            let acc = 0;
+            segs.forEach(([name, f, c]) => {
+              const w0 = L * f, shown = clamp((prog * L - acc) / w0, 0, 1);
+              rect(g, x0 + acc, y0, w0, 30, "#f2f2ee", "#bbb", 1); if (shown > 0) rect(g, x0 + acc, y0, w0 * shown, 30, c, null);
+              label(g, name, x0 + acc + w0 / 2, y0 + 46, 15, "", MUTED, "center");
+              acc += w0;
+            });
+            line(g, x0, y0 + 70, x0 + L, y0 + 70, INK, 1.5); label(g, "time", x0 + L, y0 + 86, 14, "", MUTED, "right");
+            if (prog >= 0.72) { line(g, x0 + L * 0.72, y0 - 10, x0 + L * 0.72, y0 + 40, INK, 2, [4, 3]); label(g, "synchronize: computed", x0 + L * 0.72, y0 - 22, 14, "600", INK, "center"); }
+            if (prog >= 1) { line(g, x0 + L, y0 - 10, x0 + L, y0 + 40, RED, 2.5); label(g, "timer stops", x0 + L, y0 + 110, 15, "600", RED, "right"); }
+            label(g, "here, transfers take longer than computation", x + 16, y + 226, 14, "", MUTED);
+          }
+          g.globalAlpha = 1;
+        });
+      }});
+  }
+
+  // ================================================================ 20: finding unknowns from relationships
+  {
+    const NX = [110, 270, 430, 590], NY = 180, NR = 36;
+    const nodeNames = ["red", "u", "v", "blue"];
+    function path(g, vals, hi) {
+      for (let i = 0; i < 3; i++) line(g, NX[i] + NR, NY, NX[i + 1] - NR, NY, "#9a9a94", 4);
+      NX.forEach((x, i) => {
+        const fill = i === 0 ? RED : i === 3 ? BLUE : (vals && vals[i] !== null ? rgb(mix(hex(BLUE), hex(RED), vals[i])) : "#fff");
+        dot(g, x, NY, NR, fill, hi && hi.indexOf(i) >= 0 ? ORANGE : INK, hi && hi.indexOf(i) >= 0 ? 5 : 2.5);
+        label(g, nodeNames[i], x, NY - NR - 22, 20, "600", i === 0 ? RED : i === 3 ? BLUE : INK, "center");
+      });
+    }
+    definePart("walkwhy", {w: 700, h: 420, steps: 2, dur: 1.6,
+      labels: ["A walk on a path of four nodes. From a node, it steps to one of its neighbours, each equally likely, until it reaches red or blue. p: the probability that it reaches <strong>red first</strong>. At red, 1; at blue, 0; at u and v, unknown.",
+               "From u: with probability ½ the first step reaches red, with probability ½ it reaches v. So p<sub>u</sub> = ½ · 1 + ½ · p<sub>v</sub>.",
+               "From v: ½ to u, ½ to blue. So p<sub>v</sub> = ½ · p<sub>u</sub> + ½ · 0. Two equations, two unknowns."],
+      draw(g, s, t) {
+        path(g, null, s === 1 ? [1] : s === 2 ? [2] : null);
+        ["1", "?", "?", "0"].forEach((v, i) => label(g, v, NX[i], NY + NR + 30, 28, "600", i === 0 ? RED : i === 3 ? BLUE : INK, "center"));
+        label(g, "p: the probability of reaching red first", 110 - NR, 60, 20, "600");
+        if (s >= 1) {
+          const from = s === 1 ? 1 : 2, u = ease(t / 1.0);
+          [-1, 1].forEach(d => {
+            const x = lerp(NX[from], NX[from + d], u);
+            dot(g, x, NY, 12 * (u > 0.05 ? 1 : 0), ORANGE);
+            label(g, "½", (NX[from] + NX[from + d]) / 2, NY - 26, 22, "600", ORANGE, "center");
+          });
+          if (u >= 1) label(g, from === 1 ? "pᵤ = ½ · 1 + ½ · pᵥ" : "pᵥ = ½ · pᵤ + ½ · 0", NX[from], NY + NR + 86, 26, "600", INK, "center");
+        }
+      }});
+
+    // ================================================================ 21: the model becomes A p = b
+    const cw = 64, ch = 52, xA = 150, yA = 280, xP = 320, xB = 440;
+    definePart("walk", {w: 760, h: 560, steps: 4, dur: 1.6,
+      labels: ["The two equations of the walk, each node's probability as the average of its neighbours'. Multiply by 2 and move the known ends, 1 and 0, to the right-hand side.",
+               b("Node u") + ": 2p<sub>u</sub> − p<sub>v</sub> = 1. The first row of A holds the coefficients; the first entry of b holds what the red end contributes.",
+               o("Node v") + ": −p<sub>u</sub> + 2p<sub>v</sub> = 0. The second row; the blue end contributes 0.",
+               "<strong>Elimination</strong>: add ½ of row 1 to row 2. This eliminates p<sub>u</sub> from the second equation: 1.5 p<sub>v</sub> = 0.5.",
+               "<strong>Back substitution</strong>: p<sub>v</sub> = 1/3, then p<sub>u</sub> = (1 + 1/3) / 2 = 2/3. <code>np.linalg.solve</code> does the same in compiled code."],
+      draw(g, s, t) {
+        const u = ease(t / 0.7), done4 = s === 4 && t > 0.8;
+        g.save(); g.translate(30, -60); path(g, s === 4 ? [1, done4 ? 2 / 3 : null, done4 ? 1 / 3 : null, 0] : null, s === 1 ? [1, 0, 2] : s === 2 ? [2, 1, 3] : null);
+        const under = s === 4 ? ["1", done4 ? "2/3" : "?", done4 ? "1/3" : "?", "0"] : ["1", "?", "?", "0"];
+        under.forEach((v, i) => label(g, v, NX[i], NY + NR + 26, 24, "600", i === 0 ? RED : i === 3 ? BLUE : (v === "?" ? INK : ORANGE), "center"));
+        g.restore();
+        // the equations in words
+        label(g, "pᵤ = (1 + pᵥ) / 2", 60, 220, 22, "600", s === 1 ? BLUE : INK); label(g, "pᵥ = (pᵤ + 0) / 2", 400, 220, 22, "600", s === 2 ? ORANGE : INK);
+        // A p = b
+        const A = [[2, -1], [-1, 2]], bb = [[1], [0]];
+        label(g, "A", xA + cw, yA - 16, 18, "", MUTED, "center"); label(g, "p", xP + cw / 2, yA - 16, 18, "", MUTED, "center"); label(g, "b", xB + cw / 2, yA - 16, 18, "", MUTED, "center");
+        const rowOn = i => (s === 1 && i === 0) || (s === 2 && i === 1);
+        grid(g, A, xA, yA, cw, ch, {font: F(24, "600"), fills: i => rowOn(i) ? (i === 0 ? BLUE_L : ORANGE_L) : "#fff"});
+        grid(g, [["pᵤ"], ["pᵥ"]], xP, yA, cw, ch, {font: F(24, "600"), fmt: v => v});
+        grid(g, bb, xB, yA, cw, ch, {font: F(24, "600"), fills: i => rowOn(i) ? (i === 0 ? BLUE_L : ORANGE_L) : "#fff"});
+        label(g, "×", (xA + 2 * cw + xP) / 2, yA + ch, 24, "600", MUTED, "center"); label(g, "=", (xP + cw + xB) / 2, yA + ch, 24, "600", MUTED, "center");
+        if (s === 1) { g.globalAlpha = u; box(g, xA - 3, yA - 3, 2 * cw + 6, ch + 6, BLUE, 4); box(g, xB - 3, yA - 3, cw + 6, ch + 6, BLUE, 4); label(g, "2pᵤ − pᵥ = 1", 560, yA + ch / 2, 24, "600", BLUE); g.globalAlpha = 1; }
+        if (s === 2) { g.globalAlpha = u; box(g, xA - 3, yA + ch - 3, 2 * cw + 6, ch + 6, ORANGE, 4); box(g, xB - 3, yA + ch - 3, cw + 6, ch + 6, ORANGE, 4); label(g, "−pᵤ + 2pᵥ = 0", 560, yA + ch + ch / 2, 24, "600", ORANGE); g.globalAlpha = 1; }
+        if (s >= 3) {
+          const v = s === 3 ? u : 1, yE = yA + 2 * ch + 50;
+          label(g, "row 2 + ½ × row 1:", 60, yE - 30, 18, "600", s === 3 ? ORANGE : MUTED);
+          arrow(g, xA - 30, yA + ch + ch / 2, xA - 30, yE + ch + ch / 2 - 8, ORANGE, 2.5, 10);
+          g.globalAlpha = v;
+          grid(g, [[2, -1], [0, 1.5]], xA, yE, cw, ch, {font: F(24, "600"), fmt: (x, i) => i === 1 && x === 0 ? "0" : num(x), fills: i => i === 1 ? ORANGE_L : "#fff"});
+          grid(g, [["pᵤ"], ["pᵥ"]], xP, yE, cw, ch, {font: F(24, "600"), fmt: x => x});
+          grid(g, [[1], [0.5]], xB, yE, cw, ch, {font: F(24, "600"), fills: i => i === 1 ? ORANGE_L : "#fff"});
+          label(g, "×", (xA + 2 * cw + xP) / 2, yE + ch, 24, "600", MUTED, "center"); label(g, "=", (xP + cw + xB) / 2, yE + ch, 24, "600", MUTED, "center");
+          label(g, "1.5 pᵥ = 0.5", 548, yE + ch + ch / 2, 24, "600", ORANGE);
+          g.globalAlpha = 1;
+          if (s === 4) {
+            label(g, "pᵥ = 0.5 / 1.5 = 1/3", 548, yE - 10, 20, "600", INK);
+            if (done4) label(g, "pᵤ = (1 + 1/3) / 2 = 2/3", 548, yE + 24, 20, "600", INK);
+          }
+        }
+      }});
+  }
+
+  // ================================================================ 22: uniqueness, sensitivity and the residual
+  {
+    const PX = 60, PY = 60, PS = 400, X0 = -1.5, Y0 = -1.5, U = 80;   // the plane: 5 units in 400 pixels
+    const px = x => PX + (x - X0) * U, py = y => PY + PS - (y - Y0) * U;
+    function drawLine(g, a, b2, c, colour, lw, dash) {
+      // a x + b y = c, clipped to the plane
+      const pts = [];
+      const xs = [X0, X0 + 5], ys = [Y0, Y0 + 5];
+      if (Math.abs(b2) > 1e-9) xs.forEach(x => { const y = (c - a * x) / b2; if (y >= Y0 - 1e-9 && y <= Y0 + 5 + 1e-9) pts.push([x, y]); });
+      if (Math.abs(a) > 1e-9) ys.forEach(y => { const x = (c - b2 * y) / a; if (x > X0 + 1e-9 && x < X0 + 5 - 1e-9) pts.push([x, y]); });
+      if (pts.length < 2) return;
+      line(g, px(pts[0][0]), py(pts[0][1]), px(pts[1][0]), py(pts[1][1]), colour, lw || 4, dash);
+    }
+    const cross = (a1, b1, c1, a2, b2, c2) => { const d = a1 * b2 - a2 * b1; return Math.abs(d) < 1e-12 ? null : [(c1 * b2 - c2 * b1) / d, (a1 * c2 - a2 * c1) / d]; };
+    definePart("lines", {w: 760, h: 560, steps: 4, dur: 2.4,
+      labels: ["Two equations in two unknowns are two lines. Here x + y = 2 and x − y = 0: they cross once, at (1, 1). <strong>One solution</strong>: full rank.",
+               "The second line turns until it is the first line again: the second equation is a multiple of the first, rank 1. Every point of the line is a solution: <strong>infinitely many</strong>.",
+               "The same line shifted: x + y = 3 beside x + y = 2. Parallel, no crossing: <strong>no solution</strong>.",
+               "Nearly parallel: x + y = 2 and x + 1.1y = 2.1 cross at (1, 1). Shift the second by 0.1, to 2.2: the crossing slides to (0, 2). This sensitivity to the right-hand side reflects a <strong>large condition number</strong>.",
+               "x + y = 2 and x + 1.001y = 2.001 nearly overlap at this scale. The solution is (1, 1). The candidate x̂ = (0, 2) has residual b − Ax̂ = (0, −0.001), yet its error is √2 = 1.41. The inset magnifies the candidate."],
+      draw(g, s, t) {
+        rect(g, PX, PY, PS, PS, "#fff", "#c8c8c2", 1);
+        for (let v = -1; v <= 3; v++) { line(g, px(v), PY, px(v), PY + PS, "#ececea", 1); line(g, PX, py(v), PX + PS, py(v), "#ececea", 1); }
+        line(g, px(0), PY, px(0), PY + PS, "#bbb", 1.5); line(g, PX, py(0), PX + PS, py(0), "#bbb", 1.5);
+        label(g, "x", PX + PS - 10, py(0) + 16, 16, "", MUTED, "right"); label(g, "y", px(0) + 10, PY + 12, 16, "", MUTED);
+        const u = ease(t / 1.0);
+        let L1 = [1, 1, 2], L2, point = null, note = "";
+        if (s === 0) { L2 = [1, -1, 0]; point = [1, 1]; note = "one solution"; }
+        if (s === 1) { L2 = [1, lerp(-1, 1, u), lerp(0, 2, u)]; point = u < 1 ? cross(...L1, ...L2) : null; note = u < 1 ? "the second line turns…" : "the same line twice: infinitely many solutions"; }
+        if (s === 2) { L2 = [1, 1, lerp(2, 3, u)]; note = u < 1 ? "the second line shifts…" : "parallel: no solution"; }
+        if (s === 3) {
+          const u1 = ease(t / 0.8), u2 = ease((t - 1.3) / 1.0);
+          L2 = [1, lerp(1, 1.1, u1), lerp(3, 2.1, u1) + 0.1 * u2];
+          point = u1 >= 1 ? cross(...L1, ...L2) : null;
+          note = u1 < 1 ? "nearly parallel…" : u2 <= 0 ? "crossing at (1, 1)" : u2 < 1 ? "the second shifts by 0.1…" : "the crossing moved to (0, 2)";
+          if (u2 > 0) { dot(g, px(1), py(1), 7, null, INK, 2); }
+        }
+        if (s === 4) { L2 = [1, 1.001, 2.001]; point = [1, 1]; note = "the lines nearly overlap at this scale"; }
+        drawLine(g, ...L1, BLUE, 4); drawLine(g, ...L2, ORANGE, 4);
+        if (point) dot(g, px(point[0]), py(point[1]), 8, INK);
+        const tidy = v => Math.abs(v - Math.round(v)) < 0.005 ? num(Math.round(v)) : num(v, 1);
+        if (s === 3 && point) label(g, "(" + tidy(point[0]) + ", " + tidy(point[1]) + ")", px(point[0]) + 14, py(point[1]) - 14, 19, "600", INK);
+        if (s === 0) label(g, "(1, 1)", px(1) + 14, py(1) - 14, 19, "600", INK);
+        label(g, "x + y = 2", PX, PY + PS + 28, 19, "600", BLUE);
+        label(g, s === 0 ? "x − y = 0" : s === 1 ? (u < 1 ? "turning…" : "x + y = 2 again") : s === 2 ? "x + y = 3" : s === 3 ? "x + 1.1y = " + num(L2[2], 1) : "x + 1.001y = 2.001", PX + 150, PY + PS + 28, 19, "600", ORANGE);
+        label(g, note, PX, PY + PS + 62, 20, "600", INK);
+        if (s === 4) {
+          const v = ease(t / 0.8);
+          dot(g, px(0), py(2), 8, GREEN); label(g, "x̂ = (0, 2)", px(0) + 14, py(2) - 16, 19, "600", GREEN); label(g, "x = (1, 1)", px(1) + 14, py(1) + 18, 19, "600", INK);
+          line(g, px(0), py(2), px(1), py(1), INK, 1.5, [4, 4]); label(g, "error √2", px(0.5) + 12, py(1.5) + 2, 17, "600", INK);
+          // the inset: 0.004 units in 240 pixels, around (0, 2)
+          g.globalAlpha = v;
+          const IX = 500, IY = 90, IS = 240, IU = IS / 0.004;
+          const ix = x => IX + IS / 2 + x * IU, iy = y => IY + IS / 2 - (y - 2) * IU;
+          rect(g, IX, IY, IS, IS, "#fff", GREEN, 3);
+          g.save(); g.beginPath(); g.rect(IX, IY, IS, IS); g.clip();
+          const seg = (a, b2, c, colour) => { const xa = -0.003, xb = 0.003; line(g, ix(xa), iy((c - a * xa) / b2), ix(xb), iy((c - a * xb) / b2), colour, 4); };
+          seg(1, 1, 2, BLUE); seg(1, 1.001, 2.001, ORANGE);
+          line(g, ix(0), iy(2), ix(0), iy(1.999), GREEN, 2.5, [3, 3]);
+          dot(g, ix(0), iy(2), 9, GREEN);
+          g.restore();
+          label(g, "magnified 750×", IX + IS / 2, IY - 16, 16, "", MUTED, "center");
+          label(g, "x + y = 2", IX + 10, IY + IS - 42, 15, "600", BLUE); label(g, "x + 1.001y = 2.001", IX + 10, IY + IS - 20, 15, "600", ORANGE);
+          label(g, "0.001", ix(0) + 12, iy(1.9995), 15, "600", GREEN);
+          label(g, "residual b − Ax̂ = (0, −0.001)", IX, IY + IS + 34, 18, "600", GREEN);
+          label(g, "error ‖x̂ − x‖ = √2 = 1.41", IX, IY + IS + 64, 18, "600", INK);
+          label(g, "The residual uses A, b and x̂.", IX, IY + IS + 100, 15, "", MUTED); label(g, "The error requires the true solution.", IX, IY + IS + 120, 15, "", MUTED);
+          g.globalAlpha = 1;
+        }
+      }});
+  }
+
+  // ================================================================ 24: using the zeros in a matrix
+  {
+    const NB = n => { const r = Math.floor(n / 3), c = n % 3, out = []; if (r > 0) out.push(n - 3); if (c > 0) out.push(n - 1); if (c < 2) out.push(n + 1); if (r < 2) out.push(n + 3); return out; };
+    const GX = n => 90 + (n % 3) * 110, GY = n => 110 + Math.floor(n / 3) * 110;
+    const cs = 36, MX = 420, MY = 90;
+    function gridGraph(g, hi) {
+      for (let n = 0; n < 9; n++) NB(n).forEach(m => { if (m > n) line(g, GX(n), GY(n), GX(m), GY(m), hi && (hi.c === n || hi.c === m) && (hi.c === n ? hi.nb.indexOf(m) >= 0 : hi.nb.indexOf(n) >= 0) ? ORANGE : "#9a9a94", hi && (hi.c === n || hi.c === m) ? 5 : 3); });
+      for (let n = 0; n < 9; n++) {
+        const isC = hi && hi.c === n, isN = hi && hi.nb.indexOf(n) >= 0;
+        dot(g, GX(n), GY(n), 26, isC ? ORANGE_L : isN ? BLUE_L : "#fff", isC ? ORANGE : isN ? BLUE : INK, isC || isN ? 4 : 2);
+        label(g, String(n), GX(n), GY(n) + 1, 20, "600", INK, "center");
+      }
+    }
+    function gridMatrix(g, hiRow) {
+      for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) {
+        const x = MX + j * cs, y = MY + i * cs, v = i === j ? 4 : NB(i).indexOf(j) >= 0 ? -1 : 0;
+        const on = hiRow === i && v !== 0;
+        rect(g, x, y, cs, cs, on ? (i === j ? ORANGE_L : BLUE_L) : "#fff", "#e0e0dc", 1);
+        if (v !== 0) label(g, num(v), x + cs / 2, y + cs / 2 + 1, 16, "600", on ? INK : "#444", "center");
+      }
+      for (let i = 0; i < 9; i++) { label(g, String(i), MX - 10, MY + i * cs + cs / 2 + 1, 14, "", MUTED, "right"); label(g, String(i), MX + i * cs + cs / 2, MY - 12, 14, "", MUTED, "center"); }
+      if (hiRow !== null && hiRow !== undefined) box(g, MX - 2, MY + hiRow * cs - 2, 9 * cs + 4, cs + 4, ORANGE, 3);
+    }
+    definePart("sparsewhy", {w: 760, h: 520, steps: 2, dur: 1.2,
+      labels: ["A 3 × 3 grid of 9 nodes, and its matrix: 4 on the diagonal, −1 for each edge, and nothing elsewhere. 9 × 9 = 81 cells, 33 nonzeros.",
+               o("Node 4") + ", the centre, has 4 neighbours: its row holds 5 nonzeros and 4 zeros.",
+               o("Node 0") + ", a corner, has 2 neighbours: 3 nonzeros and 6 zeros. On a 100 × 100 grid a row still has at most 5 nonzeros, among 10,000 cells."],
+      draw(g, s, t) {
+        const c = s === 1 ? 4 : s === 2 ? 0 : null;
+        label(g, "the grid graph", 90 - 26, 44, 20, "600"); label(g, "its 9 × 9 matrix", MX, 44, 20, "600");
+        gridGraph(g, c === null ? null : {c: c, nb: NB(c)});
+        gridMatrix(g, c);
+        label(g, "4 on the diagonal, −1 for an edge; zeros blank", MX, MY + 9 * cs + 26, 16, "", MUTED);
+        if (c !== null) label(g, "node " + c + ": " + NB(c).length + " neighbours, " + (NB(c).length + 1) + " nonzeros in row " + c, 64, 420, 20, "600", ORANGE);
+      }});
+
+    // ================================================================ 25: sparse products and sparse solves
+    const ROW4 = [0, -1, 0, -1, 4, -1, 0, -1, 0], V = [2, 1, 3, 2, 1, 4, 0, 3, 1], NZ = [1, 3, 4, 5, 7];
+    const SUM = NZ.reduce((a, j) => a + ROW4[j] * V[j], 0);
+    const SX = 180, SY = 400, SR = 96, LEAF = [0, 1, 2, 3, 4].map(i => [SX + SR * Math.cos(-Math.PI / 2 + i * 2 * Math.PI / 5), SY + SR * Math.sin(-Math.PI / 2 + i * 2 * Math.PI / 5)]);
+    definePart("sparse", {w: 760, h: 560, steps: 4, dur: 2.0,
+      labels: ["Row 4 of the grid matrix and a vector v. <strong>CSR</strong> stores its 5 nonzero values and column indices; row pointers locate the row.",
+               "<code>A @ v</code>, row 4: multiply each stored value by the corresponding entry of v and sum. This uses 5 multiply-adds and skips the zeros. Over all rows: O(nnz + N).",
+               "A star of six nodes: a centre joined to five leaves. Its matrix has 16 nonzeros: 6 on the diagonal, 10 for the five edges.",
+               "<strong>Eliminate the centre first</strong>: every pair of leaves becomes joined, 10 new edges, 20 new nonzeros: <strong>fill-in</strong>. The combined factor pattern has 36 entries, counting the diagonal once.",
+               "<strong>Eliminate the leaves first</strong>: a leaf has one neighbour, so nothing new is joined. The combined factor pattern has 16 entries, with no fill-in."],
+      draw(g, s, t) {
+        // the row and v
+        const cw = 50, ch = 40, x0 = 150, y0 = 50;
+        label(g, "row 4 of A", x0 - 12, y0 + ch / 2 + 1, 17, "", INK, "right"); label(g, "v", x0 - 12, y0 + ch + 10 + ch / 2 + 1, 17, "", INK, "right");
+        const k = s === 1 ? Math.min(5, Math.floor(t / 0.3)) : s > 1 ? 5 : 0;
+        const hot = j => s >= 1 && NZ.indexOf(j) >= 0 && NZ.indexOf(j) < k;
+        grid(g, [ROW4], x0, y0, cw, ch, {font: F(19, "600"), hide: (i, j) => ROW4[j] === 0, fills: (i, j) => ROW4[j] === 0 ? "#fafaf8" : hot(j) ? BLUE_L : "#fff"});
+        grid(g, [V], x0, y0 + ch + 10, cw, ch, {font: F(19, "600"), fills: (i, j) => hot(j) ? ORANGE_L : "#fff"});
+        for (let j = 0; j < 9; j++) label(g, String(j), x0 + j * cw + cw / 2, y0 - 12, 13, "", MUTED, "center");
+        label(g, "CSR, row 4:   values  [−1, −1, 4, −1, −1]     columns  [1, 3, 4, 5, 7]", x0 - 100, y0 + 2 * ch + 44, 18, "600", INK);
+        if (s >= 1) {
+          const terms = NZ.slice(0, k).map(j => "(" + num(ROW4[j]) + ")×" + V[j]);
+          label(g, "(A @ v)[4] = " + terms.join(" + ") + (k >= 5 ? " = " + num(SUM) : ""), x0 - 100, y0 + 2 * ch + 82, 19, "600", s === 1 ? BLUE : INK);
+          if (k >= 5) label(g, "5 multiply-adds using the stored nonzero entries", x0 - 100, y0 + 2 * ch + 114, 16, "", MUTED);
+        }
+        // the star
+        if (s >= 2) {
+          const u = s === 2 ? ease(t / 0.6) : 1;
+          g.globalAlpha = u;
+          const centreGone = s === 3 && t > 0.6, leavesGone = s === 4 ? Math.min(5, Math.floor((t - 0.2) / 0.3)) : 0;
+          const fillEdges = s === 3 ? Math.min(10, Math.floor((t - 0.6) / 0.14)) : 0;
+          let n = 0;
+          for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) { if (n < fillEdges) line(g, LEAF[i][0], LEAF[i][1], LEAF[j][0], LEAF[j][1], ORANGE, 3); n++; }
+          LEAF.forEach(p => line(g, SX, SY, p[0], p[1], centreGone ? "#ddd" : "#9a9a94", 3));
+          dot(g, SX, SY, 24, centreGone ? "#eee" : BLUE_L, centreGone ? "#bbb" : BLUE, 3); label(g, "c", SX, SY + 1, 18, "600", centreGone ? "#bbb" : INK, "center");
+          LEAF.forEach((p, i) => { const gone = i < leavesGone; dot(g, p[0], p[1], 22, gone ? "#eee" : "#fff", gone ? "#bbb" : INK, 2); label(g, String(i + 1), p[0], p[1] + 1, 17, "600", gone ? "#bbb" : INK, "center"); });
+          label(g, "the star", SX - SR - 40, SY - SR - 30, 19, "600");
+          // the pattern
+          const cs = 30, MX2 = 420, MY2 = 300, names = ["c", "1", "2", "3", "4", "5"];
+          for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+            const x = MX2 + j * cs, y = MY2 + i * cs;
+            const orig = i === j || i === 0 || j === 0;
+            let fillIdx = -1;
+            if (i > 0 && j > 0 && i !== j) { const a = Math.min(i, j) - 1, bq = Math.max(i, j) - 1; let m = 0; for (let p = 0; p < 5; p++) for (let q = p + 1; q < 5; q++) { if (p === a && q === bq) fillIdx = m; m++; } }
+            const filled = fillIdx >= 0 && fillIdx < fillEdges;
+            rect(g, x, y, cs, cs, orig ? (i === 0 || j === 0 ? BLUE_L : BLUE_L) : filled ? ORANGE_L : "#fff", "#e0e0dc", 1);
+            if (orig || filled) label(g, orig ? "■" : "■", x + cs / 2, y + cs / 2 + 1, 14, "", orig ? BLUE : ORANGE, "center");
+          }
+          names.forEach((nm, i) => { label(g, nm, MX2 - 8, MY2 + i * cs + cs / 2 + 1, 14, "", MUTED, "right"); label(g, nm, MX2 + i * cs + cs / 2, MY2 - 10, 14, "", MUTED, "center"); });
+          const nnz = 16 + 2 * fillEdges;
+          label(g, "its pattern: " + nnz + " nonzeros", MX2, MY2 - 34, 19, "600", INK);
+          if (s === 3) label(g, (centreGone ? "centre eliminated: " : "eliminating the centre… ") + (fillEdges > 0 ? "+" + fillEdges + " edges, +" + 2 * fillEdges + " nonzeros" : ""), MX2, MY2 + 6 * cs + 26, 16, "600", ORANGE);
+          if (s === 4) label(g, leavesGone + " of 5 leaves eliminated: no fill-in", MX2, MY2 + 6 * cs + 26, 16, "600", GREEN);
+          if (s === 4 && leavesGone >= 5) label(g, "eliminating leaves first avoids fill-in here", MX2, MY2 + 6 * cs + 52, 16, "", MUTED);
+          g.globalAlpha = 1;
+        }
+      }});
+  }
+
+  // ================================================================ the loop
+  // A step's clock is the wall clock since the step began, so that a picture finishes in real time even where
+  // animation frames come rarely (a throttled or embedded pane); a timer draws the frames when they stop coming.
+  let lastTick = 0;
+  function tick() {
+    lastTick = performance.now();
+    const p = currentPart();
+    if (p) {
+      p.t = Math.max(0, (lastTick - p.t0) / 1000);
+      if (p.playing && p.t > p.dur + 0.9) { if (!advance(p)) p.playing = false; }
+      render(p);
+    }
+  }
+  function frame() { tick(); requestAnimationFrame(frame); }
+  Object.values(PARTS).forEach(render);
+  fromHash();
+  const q = new URLSearchParams(location.search);
+  if (q.get("slide")) {
+    go(parseInt(q.get("slide"), 10) - 1, false);
+    const p = currentPart();
+    if (p) { p.step = Math.min(p.steps, parseInt(q.get("step") || "0", 10)); p.t = q.get("t") === null ? 99 : parseFloat(q.get("t")); p.t0 = performance.now() - p.t * 1000; update(p); render(p); }
+  }
+  requestAnimationFrame(frame);
+  setInterval(() => { if (performance.now() - lastTick > 70) tick(); }, 35);
+  document.documentElement.setAttribute("data-ready", "yes");
+})();
+</script>
+</body>
+</html>

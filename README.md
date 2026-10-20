@@ -18,6 +18,9 @@ the datasets from this repository's public site,
   the slides; the address can name a slide (`m10-act-1.html#9`); the button at
   the bottom right stacks all the slides on one page, for reading. Beside each
   page is the same deck as a PDF (`m10-act-1.pdf`), one page for each slide.
+  `m15-essentials.html` (meeting 15, part 1: the must-knows of Unit II) is a
+  review in which every picture is drawn step by step: the space bar, or a
+  click on the picture, runs the next step; it has no PDF.
 - `unit-2/notes/`: the notes of the meetings, one web page for each meeting
   (`meeting-10.html`), with the same page as a PDF beside it. The notes state
   the main points of the meeting first and then walk through its notebooks step
