@@ -52,12 +52,12 @@ the datasets from this repository's public site,
     1,297 movies, computed on the page; one movie under three definitions of
     similar; forty movies in one picture; and the size of the two products of the
     word vectors.
-  - `axes.html` (meeting 14): a line that turns through a cloud of 1,297 movies
+  - `axes.html` (Act 3 of meeting 14, not taught there; moved to meeting 15): a line that turns through a cloud of 1,297 movies
     and finds the direction of greatest spread; the two axes and the ellipse; the
     cloud flattened until the matrix loses rank; the 19 genres by their weights in
     the first two components, with a copied column; and a map of 50 movies.
-  - `correlation-slides.html`, `two-products-slides.html` and `axes-slides.html`
-    (meeting 14): the same three pages as slides for the projector, 1280 by 720
+  - `correlation-slides.html` and `two-products-slides.html` (meeting 14), and
+    `axes-slides.html` (meeting 15): the same three pages as slides for the projector, 1280 by 720
     scaled to the window: one tab a slide, with its controls and readouts in
     larger type beside the picture, followed by a slide with the tab's points.
     The arrow keys turn the slides, F fills the screen, and the address can name
