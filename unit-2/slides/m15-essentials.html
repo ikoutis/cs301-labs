@@ -71,6 +71,7 @@
   .why ul.pts li { margin-bottom: 10px; }
   a { color: #0b57a4; }
   code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: .92em; background: var(--paper); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  .math { white-space: nowrap; overflow-wrap: normal; }
   sup { font-size: .7em; line-height: 0; }
   sub { font-size: .7em; line-height: 0; }
 
@@ -98,7 +99,7 @@
   button[disabled]:hover { border-color: #b8b8b2; }
   button.primary[disabled] { background: #f4efd2; border-color: #e3dcb4; opacity: .7; }
   /* the picture's controls, set off from the points above by a rule */
-  .ctl { margin-top: 12px; padding-top: 10px; border-top: 2px solid #c8c8c2; }
+  .ctl { margin-top: 20px; padding-top: 14px; border-top: 2px solid #c8c8c2; }
   .ctl > .label { margin-top: 0; }
   .readout { background: var(--paper); border-radius: 4px; padding: 10px 14px; margin-top: 4px; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
   .readout p { margin: 0 0 5px; }
@@ -107,6 +108,10 @@
   .readout .sum { font-size: 22px; font-weight: 600; line-height: 1.35; font-variant-numeric: tabular-nums; }
   .readout .sum:empty { display: none; }
   .readout .big { font-size: 34px; font-weight: 600; line-height: 1.15; }
+  /* Keep the longer step captions clear of the footer with the larger divider gap. */
+  #s5 .readout, #s9 .readout, #s12 .readout, #s15 .readout, #s22 .readout { font-size: 20px; padding: 8px 14px; }
+  #s12 .pts code { font-size: .88em; }
+  #s15 table.cost th, #s15 table.cost td { padding-top: 1px; padding-bottom: 1px; }
   .b { color: var(--l1); } .o { color: var(--l2); } .p { color: var(--l3); }
   .small { font-size: 18px; color: var(--muted); font-weight: 400; }
   .side strong { font-weight: 600; }
@@ -143,7 +148,7 @@
     <div class="side">
       <ul class="pts">
         <li><strong>Data</strong>: collect measurements in a table, then select features for X. Each row is a point; each column is a feature.</li>
-        <li><strong>Neurons</strong>: each row of W contains one neuron's weights. W x + b computes their scores for one point.</li>
+        <li><strong>Neurons</strong>: each row of W contains one neuron's weights. <span class='math'>W x + b</span> computes their scores for one point.</li>
         <li>We use matrix products to compare data and compute neuron scores, then examine their cost.</li>
       </ul>
       <div class="ctl" data-for="intro"></div>
@@ -155,7 +160,7 @@
 <section class="slide title card" id="s3" aria-roledescription="slide" hidden>
   <p class="eyebrow">Part 1 of 7 · Meeting 14</p>
   <h1>Data × data</h1>
-  <p class="subtitle">Use X X<sup>T</sup> to compare rows and X<sup>T</sup> X to compare columns.</p>
+  <p class="subtitle">Use <span class='math'>X X<sup>T</sup></span> to compare rows and <span class='math'>X<sup>T</sup> X</span> to compare columns.</p>
   <div class="why">
     <p class="label">Why we do this</p>
     <ul class="pts">
@@ -188,8 +193,8 @@
     <div class="side">
       <ul class="pts tight">
         <li>X: n observations as rows, m features as columns.</li>
-        <li>X X<sup>T</sup> is n × n: entry (i, j) is the dot product of observations i and j.</li>
-        <li>X<sup>T</sup> X is m × m: entry (a, b) is the dot product of features a and b.</li>
+        <li><span class='math'>X X<sup>T</sup></span> is <span class='math'>n × n</span>: entry <span class='math'>(i, j)</span> is the dot product of observations i and j.</li>
+        <li><span class='math'>X<sup>T</sup> X</span> is <span class='math'>m × m</span>: entry <span class='math'>(a, b)</span> is the dot product of features a and b.</li>
         <li>A dot product multiplies corresponding entries and adds the results.</li>
         <li>On the diagonal: an observation, or a feature, with itself.</li>
       </ul>
@@ -207,7 +212,7 @@
       <ul class="pts tight">
         <li>A raw dot product depends on the lengths of the vectors as well as on their directions.</li>
         <li><strong>Cosine similarity</strong>: for nonzero vectors, divide the dot product by the product of their lengths.</li>
-        <li><strong>Correlation</strong>: centre and standardize each feature column; then C = Z<sup>T</sup> Z / n.</li>
+        <li><strong>Correlation</strong>: centre and standardize each feature column; then <span class='math'>C = Z<sup>T</sup> Z / n</span>.</li>
         <li>A missing rating is not a zero-star rating.</li>
       </ul>
       <p class="note">B records whether a rating exists. For C, standard deviations use divisor n and must be nonzero.</p>
@@ -252,9 +257,9 @@
     <div class="pic"><canvas id="c-layer" aria-label="X, three points by two coordinates, at the left; W, four neurons by two weights, below it, each row in its neuron's colour; the rows of W fly up into the columns of W transposed above the score matrix S, three by four. One row of X and one column of W transposed are outlined and give one score; then the bias of that neuron drops into every cell of its column; then one row of S becomes four softmax bars."></canvas></div>
     <div class="side">
       <ul class="pts tight">
-        <li>One point, one neuron: s = w<sup>T</sup>x + b.</li>
-        <li>X: n × m, one point a row. W: K × m, one neuron a row.</li>
-        <li><code>S = X @ W.T + b</code> is n × K: S[i, j] is the score of neuron j for point i.</li>
+        <li>One point, one neuron: <span class='math'>s = w<sup>T</sup>x + b</span>.</li>
+        <li>X: <span class='math'>n × m</span>, one point a row. W: <span class='math'>K × m</span>, one neuron a row.</li>
+        <li><code>S = X @ W.T + b</code> is <span class='math'>n × K</span>: <span class='math'>S[i, j]</span> is the score of neuron j for point i.</li>
         <li>Softmax gives probabilities per row; argmax returns the largest entry's index.</li>
         <li>X and W both have m columns: one weight per input feature.</li>
       </ul>
@@ -300,8 +305,8 @@
     <div class="side">
       <ul class="pts tight">
         <li><code>X[:, j]</code> selects feature j; <code>X[i, :]</code> selects point i.</li>
-        <li><code>X.mean(axis=0)</code>: one mean per feature, shape (3,).</li>
-        <li><code>X.mean(axis=1, keepdims=True)</code>: one mean per point, shape (4, 1).</li>
+        <li><code>X.mean(axis=0)</code>: one mean per feature, shape <span class='math'>(3,)</span>.</li>
+        <li><code>X.mean(axis=1, keepdims=True)</code>: one mean per point, shape <span class='math'>(4, 1)</span>.</li>
         <li><code>(X - X.mean(axis=0)) / X.std(axis=0)</code> standardizes the feature columns.</li>
         <li><code>*</code> multiplies entry by entry; <code>@</code> computes a matrix product.</li>
       </ul>
@@ -330,7 +335,7 @@
     <div class="pic"><canvas id="c-costwhy" aria-label="To one scale: the word matrix U as a tall thin dark rectangle of 50,000 rows and 300 columns; its small product U transposed U as a dot circled in orange; and its large product U U transposed as a blue square that grows past the right edge of the picture."></canvas></div>
     <div class="side">
       <ul class="pts">
-        <li>For 50,000 word vectors, U U<sup>T</sup> has 2.5 billion entries.</li>
+        <li>For 50,000 word vectors, <span class='math'>U U<sup>T</sup></span> has 2.5 billion entries.</li>
         <li>Estimate the work and memory before computing the product.</li>
       </ul>
       <p class="target"><span>Learning target</span>Estimate the arithmetic and the storage from the dimensions.</p>
@@ -348,15 +353,15 @@
       <table class="cost" id="cost-table">
         <thead><tr><th>product</th><th>work</th><th>entries</th></tr></thead>
         <tbody>
-          <tr class="off"><td>X X<sup>T</sup></td><td>O(n²m)</td><td>n²</td></tr>
-          <tr class="off"><td>X<sup>T</sup> X</td><td>O(nm²)</td><td>m²</td></tr>
-          <tr class="off"><td>X W<sup>T</sup></td><td>O(nKm)</td><td>nK</td></tr>
+          <tr class="off"><td><span class='math'>X X<sup>T</sup></span></td><td><span class='math'>O(n²m)</span></td><td>n²</td></tr>
+          <tr class="off"><td><span class='math'>X<sup>T</sup> X</span></td><td><span class='math'>O(nm²)</span></td><td>m²</td></tr>
+          <tr class="off"><td><span class='math'>X W<sup>T</sup></span></td><td><span class='math'>O(nKm)</span></td><td>nK</td></tr>
         </tbody>
       </table>
       <ul class="pts tight">
         <li>A dot product of length m: about 2m arithmetic operations.</li>
         <li>Count the output entries, then the work for each entry.</li>
-        <li>Storage = entries × bytes per entry.</li>
+        <li><span class='math'>Storage = entries × bytes per entry</span>.</li>
         <li>Doubling every dimension: ×8 work, ×4 output storage.</li>
       </ul>
       <div class="ctl" data-for="cost"></div>
@@ -415,7 +420,7 @@
 <section class="slide title card" id="s19" aria-roledescription="slide" hidden>
   <p class="eyebrow">Part 6 of 7 · Meeting 13</p>
   <h1>Linear systems</h1>
-  <p class="subtitle">Express linear relationships between unknown quantities as A p = b.</p>
+  <p class="subtitle">Express linear relationships between unknown quantities as <span class='math'>A p = b</span>.</p>
   <div class="why">
     <p class="label">Why we do this</p>
     <ul class="pts">
@@ -442,15 +447,15 @@
 
 <!-- ================================================================ 21: the model becomes A p = b -->
 <section class="slide" id="s21" data-part="walk" aria-roledescription="slide" hidden>
-  <h2>Writing the random-walk equations as A p = b <span class="part">Linear systems</span></h2>
+  <h2>Writing the random-walk equations as <span class='math'>A p = b</span> <span class="part">Linear systems</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-walk" aria-label="The same path above a two by two system written as cells. Node u, its neighbours and the first row light up together; then node v and the second row; one elimination step rewrites the second row; back substitution writes two thirds and one third on the graph, and the nodes take the colours of their probabilities."></canvas></div>
     <div class="side">
       <ul class="pts tight">
         <li>Each interior probability is the average of its neighbours' probabilities.</li>
-        <li>p<sub>u</sub> = (1 + p<sub>v</sub>) / 2 and p<sub>v</sub> = p<sub>u</sub> / 2: the known ends go to the right-hand side.</li>
+        <li><span class='math'>p<sub>u</sub> = (1 + p<sub>v</sub>) / 2</span> and <span class='math'>p<sub>v</sub> = p<sub>u</sub> / 2</span>: the known ends go to the right-hand side.</li>
         <li>Elimination keeps the solution; back substitution finds the unknowns.</li>
-        <li><code>np.linalg.solve(A, b)</code> gives p<sub>u</sub> = 2/3 and p<sub>v</sub> = 1/3.</li>
+        <li><code>np.linalg.solve(A, b)</code> gives <span class='math'>p<sub>u</sub> = 2/3</span> and <span class='math'>p<sub>v</sub> = 1/3</span>.</li>
       </ul>
       <div class="ctl" data-for="walk"></div>
     </div>
@@ -467,7 +472,7 @@
         <li>A square system of full rank has one solution.</li>
         <li>A rank-deficient square system has no solution or infinitely many.</li>
         <li>A large <strong>condition number</strong>: possible sensitivity to small relative changes.</li>
-        <li>The <strong>residual</strong> r = b − A x̂ measures how closely x̂ satisfies the equations.</li>
+        <li>The <strong>residual</strong> <span class='math'>r = b − A x̂</span> measures how closely x̂ satisfies the equations.</li>
         <li>A small residual can occur even when the solution error is large.</li>
       </ul>
       <div class="ctl" data-for="lines"></div>
@@ -512,7 +517,7 @@
     <div class="side">
       <ul class="pts tight">
         <li>Sparse formats store the nonzero values and their positions.</li>
-        <li>A CSR product <code>A @ v</code>: O(nnz + N) work for N rows.</li>
+        <li>A CSR product <code>A @ v</code>: <span class='math'>O(nnz + N)</span> work for N rows.</li>
         <li>Elimination can create nonzeros: <strong>fill-in</strong>.</li>
         <li>The order of elimination affects the fill-in, the storage and the arithmetic.</li>
         <li>An iterative solver's total cost depends on the cost and number of updates.</li>
@@ -664,6 +669,7 @@
     $("b-" + part.name + "-next").disabled = part.step >= part.steps;
     if (part.step === 0) { liveCache[part.name] = null; $("rl-" + part.name).innerHTML = ""; }
   }
+  function math(html) { return "<span class='math'>" + html + "</span>"; }
   function live(name, html) { if (liveCache[name] !== html) { liveCache[name] = html; $("rl-" + name).innerHTML = html; } }
   function render(part) {
     const g = part.ctx;
@@ -700,9 +706,9 @@
     definePart("intro", {w: 760, h: 560, steps: 4, dur: 1.5,
       labels: ["<strong>Weather observations</strong>: daily high and low temperatures at Newark airport. Each day supplies two measurements.",
                "<strong>A spreadsheet</strong>: one row a day, one column a measurement. A CSV file, read by pandas (meeting 10).",
-               "<strong>A matrix X</strong>: select the high and low temperatures as features. There are n rows for days and m = 2 feature columns; dates are excluded from this predictor.",
+               "<strong>A matrix X</strong>: select the high and low temperatures as features. There are n rows for days and <span class='math'>m = 2</span> feature columns; dates are excluded from this predictor.",
                "<strong>A neuron's score</strong> is a weighted sum plus a bias. The trained weather neurons use standardized high and low temperatures as inputs (meeting 11).",
-               "<strong>W stores the four weight vectors</strong> as rows; b stores their biases. The scores are s = W x + b for one day, or S = X W<sup>T</sup> + b for a batch."],
+               "<strong>W stores the four weight vectors</strong> as rows; b stores their biases. The scores are <span class='math'>s = W x + b</span> for one day, or <span class='math'>S = X W<sup>T</sup> + b</span> for a batch."],
       draw(g, s, t) {
         const u = ease(t / 0.8);
         // ---- data: the world, the spreadsheet, the matrix
@@ -845,9 +851,9 @@
     }
     const terms = (kind, i, j) => kind === "rows" ? B[i].map((v, c) => [v, B[j][c]]) : B.map(r => [r[i], r[j]]);
     definePart("two", {w: 760, h: 560, steps: 2, dur: 3.0,
-      labels: ["B, 4 people × 3 movies, and the places of its two products. Next: B<sup>T</sup> B, then B B<sup>T</sup>, cell by cell.",
-               "<strong>B<sup>T</sup> B</strong>, 3 × 3, movies by movies: cell (A, B) is column A · column B.",
-               "<strong>B B<sup>T</sup></strong>, 4 × 4, people by people: cell (P1, P2) is row P1 · row P2."],
+      labels: ["B, <span class='math'>4 people × 3 movies</span>, and the places of its two products. Next: <span class='math'>B<sup>T</sup> B</span>, then <span class='math'>B B<sup>T</sup></span>, cell by cell.",
+               "<strong><span class='math'>B<sup>T</sup> B</span></strong>, <span class='math'>3 × 3</span>, movies by movies: cell <span class='math'>(A, B)</span> is <span class='math'>column A · column B</span>.",
+               "<strong><span class='math'>B B<sup>T</sup></span></strong>, <span class='math'>4 × 4</span>, people by people: cell <span class='math'>(P1, P2)</span> is <span class='math'>row P1 · row P2</span>."],
       draw(g, s, t) {
         const st = state(s, t);
         labelT(g, "B: 4 people × 3 movies", x0, 40, 21, "600");
@@ -871,8 +877,8 @@
           else { box(g, x0 - 3, y0 + i * ch - 3, 3 * cw + 6, ch + 6, BLUE, 4); box(g, x0 - 3 + (i === j ? 6 : 0), y0 + j * ch - 3 + (i === j ? 6 : 0), 3 * cw + 6 - (i === j ? 12 : 0), ch + 6 - (i === j ? 12 : 0), ORANGE, 4); }
           box(g, P.ox + j * cw + 2, P.oy + i * ch + 2, cw - 4, ch - 4, INK, 4);
           const tm = terms(kind, i, j), nm = P.names;
-          live("two", P.html + " cell (" + nm[i] + ", " + nm[j] + "): " + b(nm[i]) + " · " + o(nm[j]) + " = " +
-            tm.map(([p, q]) => b(p) + "×" + o(q)).join(" + ") + " = <strong>" + P.M[i][j] + "</strong>" +
+          live("two", math(P.html) + " cell " + math("(" + nm[i] + ", " + nm[j] + ")") + ":<br>" + math(b(nm[i]) + " · " + o(nm[j]) + " = " +
+            tm.map(([p, q]) => b(p) + "×" + o(q)).join(" + ") + " = <strong>" + P.M[i][j] + "</strong>") +
             (n !== null ? '<br><span class="small">multiplications so far: ' + (n + 1) * P.len + " of " + P.n * P.n * P.len + "</span>"
                         : '<br><span class="small">' + (kind === "cols" ? "two people rated both A and B" : "P1 and P2 rated one movie in common") + "</span>"));
         }
@@ -944,10 +950,10 @@
     }
     definePart("prep", {w: 760, h: 560, steps: 4, dur: 1.8,
       labels: ["Three vectors from one origin, q and two candidates. By the <strong>dot product</strong> with q: A gives 3, B gives 2.",
-               "<strong>Divide by the lengths.</strong> cos(q, A) = 3 / (1 · 5) = 0.6; cos(q, B) = 2 / (1 · 2) = 1. B now ranks above A.",
+               "<strong>Divide by the lengths.</strong> <span class='math'>cos(q, A) = 3 / (1 · 5) = 0.6</span>; <span class='math'>cos(q, B) = 2 / (1 · 2) = 1</span>. B now ranks above A.",
                "Two feature columns of five observations. <strong>Centre</strong> each column: subtract its mean (3 and 3).",
                "<strong>Standardize</strong>: divide each centred column by its standard deviation (1.41 and 1.41). The columns of Z have mean 0 and standard deviation 1.",
-               "One entry of C = Z<sup>T</sup> Z / n: " + b("column x") + " · " + o("column y") + " over n. Here <strong>r = 0.8</strong>, the average product of the standardized values."],
+               "One entry of <span class='math'>C = Z<sup>T</sup> Z / n</span>: " + b("column x") + " · " + o("column y") + " over n. Here <strong><span class='math'>r = 0.8</span></strong>, the average product of the standardized values."],
       draw(g, s, t) {
         const aA = s < 2 ? 1 : (s === 2 ? 1 - ease(t / 0.45) : 0), aG = s < 2 ? 0 : (s === 2 ? ease((t - 0.3) / 0.45) : 1);
         if (aA > 0) { g.globalAlpha = aA; arrows(g, s, s === 1 ? ease(t / 1.0) : 0); g.globalAlpha = 1; }
@@ -1000,10 +1006,10 @@
     const ex = LS[0].map(Math.exp), se = ex.reduce((a, c) => a + c, 0), P1 = ex.map(v => v / se);
     const cw = 56, ch = 40, xX = 100, yX = 170, xT = 250, yT = 64, xS = 250, yS = 170, xW = 100, yW = 372, yB = yS + 3 * ch + 12;
     definePart("layer", {w: 760, h: 560, steps: 4, dur: 1.8,
-      labels: ["X: three points with two coordinates. W: four neurons, one a row, with two weights each; b: one bias for each neuron. S will hold 3 × 4 scores.",
+      labels: ["X: three points with two coordinates. W: four neurons, one a row, with two weights each; b: one bias for each neuron. S will hold <span class='math'>3 × 4</span> scores.",
                "<strong>Transpose</strong>: each row of W becomes a column of W<sup>T</sup>, so that the columns of W<sup>T</sup> and of S belong to the neurons.",
-               "One score: " + b("row 1 of X") + " · " + o("column 1 of W<sup>T</sup>") + " + b<sub>1</sub> = 2×1 + 1×(−1) + 1 = <strong>2</strong>.",
-               "Add b<sub>1</sub> = 1 to each score in column 1 by <strong>broadcasting</strong>. Each of the 3 × 4 scores uses a dot product and its neuron's bias.",
+               "One score: the dot product of " + b("row 1 of X") + " and " + o("column 1 of W<sup>T</sup>") + ", plus b<sub>1</sub>. Here <span class='math'>2×1 + 1×(−1) + 1 = <strong>2</strong></span>.",
+               "Add <span class='math'>b<sub>1</sub> = 1</span> to each score in column 1 by <strong>broadcasting</strong>. Each of the <span class='math'>3 × 4</span> scores uses a dot product and its neuron's bias.",
                "Apply <strong>softmax</strong> to row 1 of S to get four probabilities that sum to 1. <strong>Argmax</strong> identifies neuron 1 as having the largest score."],
       draw(g, s, t) {
         g.font = FM(21, "600"); g.fillStyle = INK; g.textAlign = "left"; g.fillText("S = X @ W.T + b", xX, 34);
@@ -1038,7 +1044,7 @@
         if (s === 2) {
           box(g, xX - 3, yX - 3, 2 * cw + 6, ch + 6, BLUE, 4); box(g, xT - 3, yT - 3, cw + 6, 2 * ch + 6, ORANGE, 4);
           box(g, xS + 2, yS + 2, cw - 4, ch - 4, INK, 4); box(g, xS + 2, yB + 2, cw - 4, ch - 4, INK, 3);
-          live("layer", b("2") + "×" + o("1") + " + " + b("1") + "×" + o("−1") + " + 1 = <strong>2</strong>");
+          live("layer", math(b("2") + "×" + o("1") + " + " + b("1") + "×" + o("−1") + " + 1 = <strong>2</strong>"));
         }
         if (s === 3) {
           box(g, xS - 3, yS - 3, cw + 6, 3 * ch + 6, INK, 3);
@@ -1046,7 +1052,7 @@
             const u = ease((t - 0.2 * i) / 0.6);
             if (u > 0 && u < 1) { const x = xS + cw / 2, y = lerp(yB + ch / 2, yS + i * ch + ch / 2, u); dot(g, x, y, 16, "#fff", SEASON[0][1], 2); label(g, "+1", x, y + 1, 16, "600", SEASON[0][1], "center"); }
           }
-          live("layer", all ? "12 cells: each a dot product of length 2, plus the bias of its column" : "column 1: 2−1 = <strong>2</strong>, −3+1 = <strong>−2</strong>, 3+1 = <strong>4</strong>");
+          live("layer", all ? "12 cells: each a dot product of length 2, plus the bias of its column" : "column 1: " + math("1+1 = <strong>2</strong>") + ", " + math("−3+1 = <strong>−2</strong>") + ", " + math("3+1 = <strong>4</strong>"));
         }
         if (s === 4) {
           const u = ease(t / 0.9), bx = 556, by = yS + 8;
@@ -1069,8 +1075,8 @@
   const AX = [[1, 2, 3], [4, 6, 5], [7, 5, 3], [4, 7, 1]], CM = [4, 5, 3], RM = [2, 5, 5, 4];
   definePart("axeswhy", {w: 700, h: 520, steps: 2, dur: 1.4,
     labels: ["A table X of 4 points with 3 features. Two reductions are possible, and they answer different questions.",
-             "<strong>Down the columns</strong>, <code>axis=0</code>: one number per feature, shape (3,). Here the mean of each feature: 4, 5, 3.",
-             "<strong>Across the rows</strong>, <code>axis=1</code>: one number per point, shape (4,). Here the mean of each point: 2, 5, 5, 4."],
+             "<strong>Down the columns</strong>, <code>axis=0</code>: one number per feature, shape <span class='math'>(3,)</span>. Here the mean of each feature: 4, 5, 3.",
+             "<strong>Across the rows</strong>, <code>axis=1</code>: one number per point, shape <span class='math'>(4,)</span>. Here the mean of each point: 2, 5, 5, 4."],
     draw(g, s, t) {
       const cw = 90, ch = 60, x0 = 190, y0 = 110;
       label(g, "X: 4 points × 3 features", x0, 46, 21, "600");
@@ -1110,11 +1116,11 @@
     const AD = AX.map(r => r.map((v, j) => v - CM[j]));
     const A2 = [[1, 2], [3, 4]], B2 = [[5, 6], [7, 8]], AB = [[5, 12], [21, 32]], AmB = [[19, 22], [43, 50]];
     definePart("axes", {w: 760, h: 560, steps: 4, dur: 1.8,
-      labels: ["The same X, 4 × 3. Four operations on it, in turn.",
-               "<code>X.mean(axis=0)</code>: the rows collapse into one row of three means, shape (3,).",
+      labels: ["The same X, <span class='math'>4 × 3</span>. Four operations on it, in turn.",
+               "<code>X.mean(axis=0)</code>: the rows collapse into one row of three means, shape <span class='math'>(3,)</span>.",
                "<code>X - X.mean(axis=0)</code>: the three means are subtracted from every row. <strong>Broadcasting</strong> reuses the three means without storing a separate copy for each row.",
-               "<code>X.mean(axis=1, keepdims=True)</code>: one mean per point, kept as a column, shape (4, 1).",
-               "<code>A * B</code> multiplies matching cells: 2 × 6 = 12. <code>A @ B</code> multiplies a row by a column: 1×6 + 2×8 = 22."],
+               "<code>X.mean(axis=1, keepdims=True)</code>: one mean per point, kept as a column, shape <span class='math'>(4, 1)</span>.",
+               "<code>A * B</code> multiplies matching cells: <span class='math'>2 × 6 = 12</span>. <code>A @ B</code> multiplies a row by a column: <span class='math'>1×6 + 2×8 = 22</span>."],
       draw(g, s, t) {
         label(g, "X", x0, y0 - 38, 21, "600");
         ["f1", "f2", "f3"].forEach((f, j) => label(g, f, x0 + j * cw + cw / 2, y0 - 14, 16, "", MUTED, "center"));
@@ -1169,8 +1175,8 @@
     const NW = 50000, ND = 300, side = 450, top = 60, ux = 70, S4 = side / NW, uw = Math.max(4, ND * S4), bigX = 330;
     definePart("costwhy", {w: 760, h: 560, steps: 2, dur: 2.0,
       labels: ["U, the word vectors of meeting 10: 50,000 words × 300 numbers, drawn to scale. Two products with its transpose are possible.",
-               "U<sup>T</sup> U has 90,000 entries: one dot product for each pair of the 300 feature columns.",
-               "U U<sup>T</sup> has <strong>2.5 billion entries</strong>: one dot product per pair of words. Each dot product uses 300 coordinates."],
+               "<span class='math'>U<sup>T</sup> U</span> has 90,000 entries: one dot product for each pair of the 300 feature columns.",
+               "<span class='math'>U U<sup>T</sup></span> has <strong>2.5 billion entries</strong>: one dot product per pair of words. Each dot product uses 300 coordinates."],
       draw(g, s, t) {
         if (s >= 2) {
           const sz = ease(t / 1.6) * side;
@@ -1218,11 +1224,11 @@
       g.globalAlpha = 1;
     }
     definePart("cost", {w: 700, h: 560, steps: 4, dur: 1.6,
-      labels: ["One <strong>dot product</strong> of length m: m multiplications and m − 1 additions, about 2m operations. Every entry of a product is one of these.",
-               "<strong>X X<sup>T</sup></strong>: n × n entries, each a dot product of two rows of length m: about 2n²m operations, O(n²m).",
-               "<strong>X<sup>T</sup> X</strong>: m × m entries, each a dot product of two columns of length n: about 2nm² operations, O(nm²).",
-               "<strong>X W<sup>T</sup></strong>: n × K entries, each a dot product of length m: about 2nKm operations, O(nKm).",
-               "The word vectors, float32, 4 bytes an entry: U U<sup>T</sup> has 50,000² = 2.5 billion entries, <strong>10 GB</strong>; U<sup>T</sup> U has 300² = 90,000 entries, <strong>0.36 MB</strong>. Output storage only."],
+      labels: ["One <strong>dot product</strong> of length m: m multiplications and <span class='math'>m − 1</span> additions, about 2m operations. Every entry of a product is one of these.",
+               "<strong><span class='math'>X X<sup>T</sup></span></strong>: <span class='math'>n × n</span> entries, each a dot product of two rows of length m: about 2n²m operations, <span class='math'>O(n²m)</span>.",
+               "<strong><span class='math'>X<sup>T</sup> X</span></strong>: <span class='math'>m × m</span> entries, each a dot product of two columns of length n: about 2nm² operations, <span class='math'>O(nm²)</span>.",
+               "<strong><span class='math'>X W<sup>T</sup></span></strong>: <span class='math'>n × K</span> entries, each a dot product of length m: about 2nKm operations, <span class='math'>O(nKm)</span>.",
+               "The word vectors, float32, 4 bytes an entry: <span class='math'>U U<sup>T</sup></span> has <span class='math'>50,000² = 2.5 billion</span> entries, <strong>10 GB</strong>; <span class='math'>U<sup>T</sup> U</span> has <span class='math'>300² = 90,000</span> entries, <strong>0.36 MB</strong>. Output storage only."],
       draw(g, s, t) {
         setTable(s);
         const u = ease(t / 0.7);
@@ -1395,8 +1401,8 @@
     }
     definePart("walkwhy", {w: 700, h: 420, steps: 2, dur: 1.6,
       labels: ["A walk on a path of four nodes. From a node, it steps to one of its neighbours, each equally likely, until it reaches red or blue. p: the probability that it reaches <strong>red first</strong>. At red, 1; at blue, 0; at u and v, unknown.",
-               "From u: with probability ½ the first step reaches red, with probability ½ it reaches v. So p<sub>u</sub> = ½ · 1 + ½ · p<sub>v</sub>.",
-               "From v: ½ to u, ½ to blue. So p<sub>v</sub> = ½ · p<sub>u</sub> + ½ · 0. Two equations, two unknowns."],
+               "From u: with probability ½ the first step reaches red, with probability ½ it reaches v. So <span class='math'>p<sub>u</sub> = ½ · 1 + ½ · p<sub>v</sub></span>.",
+               "From v: ½ to u, ½ to blue. So <span class='math'>p<sub>v</sub> = ½ · p<sub>u</sub> + ½ · 0</span>. Two equations, two unknowns."],
       draw(g, s, t) {
         path(g, null, s === 1 ? [1] : s === 2 ? [2] : null);
         ["1", "?", "?", "0"].forEach((v, i) => label(g, v, NX[i], NY + NR + 30, 28, "600", i === 0 ? RED : i === 3 ? BLUE : INK, "center"));
@@ -1416,10 +1422,10 @@
     const cw = 64, ch = 52, xA = 150, yA = 280, xP = 320, xB = 440;
     definePart("walk", {w: 760, h: 560, steps: 4, dur: 1.6,
       labels: ["The two equations of the walk, each node's probability as the average of its neighbours'. Multiply by 2 and move the known ends, 1 and 0, to the right-hand side.",
-               b("Node u") + ": 2p<sub>u</sub> − p<sub>v</sub> = 1. The first row of A holds the coefficients; the first entry of b holds what the red end contributes.",
-               o("Node v") + ": −p<sub>u</sub> + 2p<sub>v</sub> = 0. The second row; the blue end contributes 0.",
-               "<strong>Elimination</strong>: add ½ of row 1 to row 2. This eliminates p<sub>u</sub> from the second equation: 1.5 p<sub>v</sub> = 0.5.",
-               "<strong>Back substitution</strong>: p<sub>v</sub> = 1/3, then p<sub>u</sub> = (1 + 1/3) / 2 = 2/3. <code>np.linalg.solve</code> does the same in compiled code."],
+               b("Node u") + ": <span class='math'>2p<sub>u</sub> − p<sub>v</sub> = 1</span>. The first row of A holds the coefficients; the first entry of b holds what the red end contributes.",
+               o("Node v") + ": <span class='math'>−p<sub>u</sub> + 2p<sub>v</sub> = 0</span>. The second row; the blue end contributes 0.",
+               "<strong>Elimination</strong>: add ½ of row 1 to row 2. This eliminates p<sub>u</sub> from the second equation: <span class='math'>1.5 p<sub>v</sub> = 0.5</span>.",
+               "<strong>Back substitution</strong>: <span class='math'>p<sub>v</sub> = 1/3</span>, then <span class='math'>p<sub>u</sub> = (1 + 1/3) / 2 = 2/3</span>. <code>np.linalg.solve</code> does the same in compiled code."],
       draw(g, s, t) {
         const u = ease(t / 0.7), done4 = s === 4 && t > 0.8;
         g.save(); g.translate(30, -60); path(g, s === 4 ? [1, done4 ? 2 / 3 : null, done4 ? 1 / 3 : null, 0] : null, s === 1 ? [1, 0, 2] : s === 2 ? [2, 1, 3] : null);
@@ -1472,11 +1478,11 @@
     }
     const cross = (a1, b1, c1, a2, b2, c2) => { const d = a1 * b2 - a2 * b1; return Math.abs(d) < 1e-12 ? null : [(c1 * b2 - c2 * b1) / d, (a1 * c2 - a2 * c1) / d]; };
     definePart("lines", {w: 760, h: 560, steps: 4, dur: 2.4,
-      labels: ["Two equations in two unknowns are two lines. Here x + y = 2 and x − y = 0: they cross once, at (1, 1). <strong>One solution</strong>: full rank.",
+      labels: ["Two equations in two unknowns are two lines. Here <span class='math'>x + y = 2</span> and <span class='math'>x − y = 0</span>: they cross once, at <span class='math'>(1, 1)</span>. <strong>One solution</strong>: full rank.",
                "The second line turns until it is the first line again: the second equation is a multiple of the first, rank 1. Every point of the line is a solution: <strong>infinitely many</strong>.",
-               "The same line shifted: x + y = 3 beside x + y = 2. Parallel, no crossing: <strong>no solution</strong>.",
-               "Nearly parallel: x + y = 2 and x + 1.1y = 2.1 cross at (1, 1). Shift the second by 0.1, to 2.2: the crossing slides to (0, 2). This sensitivity to the right-hand side reflects a <strong>large condition number</strong>.",
-               "x + y = 2 and x + 1.001y = 2.001 nearly overlap at this scale. The solution is (1, 1). The candidate x̂ = (0, 2) has residual b − Ax̂ = (0, −0.001), yet its error is √2 = 1.41. The inset magnifies the candidate."],
+               "The same line shifted: <span class='math'>x + y = 3</span> beside <span class='math'>x + y = 2</span>. Parallel, no crossing: <strong>no solution</strong>.",
+               "Nearly parallel: <span class='math'>x + y = 2</span> and <span class='math'>x + 1.1y = 2.1</span> cross at <span class='math'>(1, 1)</span>. Shift the second by 0.1, to 2.2: the crossing slides to <span class='math'>(0, 2)</span>. This sensitivity to the right-hand side reflects a <strong>large condition number</strong>.",
+               "The lines <span class='math'>x + y = 2</span> and <span class='math'>x + 1.001y = 2.001</span> nearly overlap. Solution: <span class='math'>(1, 1)</span>. Candidate <span class='math'>x̂ = (0, 2)</span>: residual <span class='math'>b − Ax̂ = (0, −0.001)</span>, error <span class='math'>√2 = 1.41</span>. The inset magnifies the candidate."],
       draw(g, s, t) {
         rect(g, PX, PY, PS, PS, "#fff", "#c8c8c2", 1);
         for (let v = -1; v <= 3; v++) { line(g, px(v), PY, px(v), PY + PS, "#ececea", 1); line(g, PX, py(v), PX + PS, py(v), "#ececea", 1); }
@@ -1553,9 +1559,9 @@
       if (hiRow !== null && hiRow !== undefined) box(g, MX - 2, MY + hiRow * cs - 2, 9 * cs + 4, cs + 4, ORANGE, 3);
     }
     definePart("sparsewhy", {w: 760, h: 520, steps: 2, dur: 1.2,
-      labels: ["A 3 × 3 grid of 9 nodes, and its matrix: 4 on the diagonal, −1 for each edge, and nothing elsewhere. 9 × 9 = 81 cells, 33 nonzeros.",
+      labels: ["A <span class='math'>3 × 3</span> grid of 9 nodes, and its matrix: 4 on the diagonal, −1 for each edge, and nothing elsewhere. <span class='math'>9 × 9 = 81</span> cells, 33 nonzeros.",
                o("Node 4") + ", the centre, has 4 neighbours: its row holds 5 nonzeros and 4 zeros.",
-               o("Node 0") + ", a corner, has 2 neighbours: 3 nonzeros and 6 zeros. On a 100 × 100 grid a row still has at most 5 nonzeros, among 10,000 cells."],
+               o("Node 0") + ", a corner, has 2 neighbours: 3 nonzeros and 6 zeros. On a <span class='math'>100 × 100</span> grid a row still has at most 5 nonzeros, among 10,000 cells."],
       draw(g, s, t) {
         const c = s === 1 ? 4 : s === 2 ? 0 : null;
         label(g, "the grid graph", 90 - 26, 44, 20, "600"); label(g, "its 9 × 9 matrix", MX, 44, 20, "600");
@@ -1571,7 +1577,7 @@
     const SX = 180, SY = 400, SR = 96, LEAF = [0, 1, 2, 3, 4].map(i => [SX + SR * Math.cos(-Math.PI / 2 + i * 2 * Math.PI / 5), SY + SR * Math.sin(-Math.PI / 2 + i * 2 * Math.PI / 5)]);
     definePart("sparse", {w: 760, h: 560, steps: 4, dur: 2.0,
       labels: ["Row 4 of the grid matrix and a vector v. <strong>CSR</strong> stores its 5 nonzero values and column indices; row pointers locate the row.",
-               "<code>A @ v</code>, row 4: multiply each stored value by the corresponding entry of v and sum. This uses 5 multiply-adds and skips the zeros. Over all rows: O(nnz + N).",
+               "<code>A @ v</code>, row 4: multiply each stored value by the corresponding entry of v and sum. This uses 5 multiply-adds and skips the zeros. Over all rows: <span class='math'>O(nnz + N)</span>.",
                "A star of six nodes: a centre joined to five leaves. Its matrix has 16 nonzeros: 6 on the diagonal, 10 for the five edges.",
                "<strong>Eliminate the centre first</strong>: every pair of leaves becomes joined, 10 new edges, 20 new nonzeros: <strong>fill-in</strong>. The combined factor pattern has 36 entries, counting the diagonal once.",
                "<strong>Eliminate the leaves first</strong>: a leaf has one neighbour, so nothing new is joined. The combined factor pattern has 16 entries, with no fill-in."],
