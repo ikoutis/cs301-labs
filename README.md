@@ -24,6 +24,12 @@ the datasets from this repository's public site,
   (meeting 16: the dimensionality of data, the SVD told from a cloud of
   points) is drawn the same way, with sliders for the flatness of a cloud
   and the direction of a projection, and a cloud in space that turns; no PDF.
+- `unit-2/assignments/`: the notebooks of the Unit II assignments, opened in Colab
+  from here: `vectorization.ipynb` (Homework 1) and the four practice notebooks
+  of Assignment 2, `01-comparing-data`, `02-neurons-and-arrays`,
+  `03-cost-and-hardware` and `04-systems-and-sparsity`, which practise the
+  essentials of meetings 10 to 14 with predictions, checked exercises and
+  explanations.
 - `unit-2/notes/`: the notes of the meetings, one web page for each meeting
   (`meeting-10.html`), with the same page as a PDF beside it. The notes state
   the main points of the meeting first and then walk through its notebooks step
