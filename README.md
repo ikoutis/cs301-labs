@@ -20,9 +20,9 @@ the datasets from this repository's public site,
   page is the same deck as a PDF (`m10-act-1.pdf`), one page for each slide.
   `m15-essentials.html` (meeting 15, part 1: the must-knows of Unit II) is a
   review in which every picture is drawn step by step: the space bar, or a
-  click on the picture, runs the next step; it has no PDF. `m15-svd.html`
-  (meeting 15, part 3: the dimensionality of data, the SVD told from a cloud
-  of points) is drawn the same way, with sliders for the flatness of a cloud
+  click on the picture, runs the next step; it has no PDF. `m16-svd.html`
+  (meeting 16: the dimensionality of data, the SVD told from a cloud of
+  points) is drawn the same way, with sliders for the flatness of a cloud
   and the direction of a projection, and a cloud in space that turns; no PDF.
 - `unit-2/notes/`: the notes of the meetings, one web page for each meeting
   (`meeting-10.html`), with the same page as a PDF beside it. The notes state
