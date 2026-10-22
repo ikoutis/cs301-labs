@@ -29,7 +29,11 @@ the datasets from this repository's public site,
   of Assignment 2, `01-comparing-data`, `02-neurons-and-arrays`,
   `03-cost-and-hardware` and `04-systems-and-sparsity`, which practise the
   essentials of meetings 10 to 14 with predictions, checked exercises and
-  explanations.
+  explanations. The [image-segmentation mini-project](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-2/assignments/image-segmentation.ipynb)
+  builds 4- and 8-neighbor affinity graphs, compares Python and Numba loops,
+  constructs dense and sparse Laplacians, and solves seeded segmentation
+  systems. It includes a Colab seed picker, saved-seed replay, runtime and
+  memory comparisons, reflection prompts, and an optional multiclass extension.
 - `unit-2/notes/`: the notes of the meetings, one web page for each meeting
   (`meeting-10.html`), with the same page as a PDF beside it. The notes state
   the main points of the meeting first and then walk through its notebooks step
