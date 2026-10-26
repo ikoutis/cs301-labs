@@ -5,43 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CS 301 — The dimensionality of data (meeting 16)</title>
 <!--
-  CS 301, Unit II, meeting 16: the singular value decomposition, told from a cloud of points. Built
-  from the instructor's outline of 2026-10-21 in the format of the meeting 15 essentials deck (part 1):
-  1280 x 720 slides that scale to the window, one picture a slide drawn step by step, the points beside it,
-  an opening motivation, and a card introducing each later group. The same keys: the space bar, a click on the picture
-  or "Next step" runs the next step of the picture; "Play all" runs them all; R or "Reset" starts the picture
-  again; the arrow keys turn the slides; F toggles full screen; the address can name a slide
-  (m16-svd.html#4).
-
-  New here: a knob under some pictures (a slider): the flatness of the cloud with two coordinates (slides 3
-  and 7), of the cloud with three (4, 8 and 15), and the direction of a projection (11). A knob's value is
-  shared by the slides that show it. The cloud with three coordinates turns by itself; "Edge-on" and "From
-  above" turn it to the two views that tell the story, and "Turn" sets it turning again.
-
-  The clouds are made up, from fixed random numbers made exactly uncorrelated, so that every number on a
-  slide is computed live from the picture: the covariance, the correlations, the axes (the eigenvectors of
-  the covariance matrix, by Jacobi rotations), the singular values (sigma_k = sqrt(n lambda_k)) and the
-  shares of the variance. The cloud with three coordinates spreads in the plane at right angles to
-  (1, 1, 1.5), with spreads in the ratio sqrt(3c^2 / (c^2 + 2)) : 1 (c = 1.5) along (1, -1, 0) and
-  (1.5, 1.5, -2): that choice makes every pairwise correlation exactly -1/2 when the cloud is flat, so no
-  pair of coordinates gives the sheet away (check-svd-numbers.py beside this file verifies it). The counts
-  on slides 13, 16 and 17 are arithmetic on the stated dimensions.
-
-  Slides: 1 the title; 2 Why we do this (card); 3 two coordinates; 4 three coordinates; 5 The
-  decomposition (card); 6 every matrix is U S V^T; 7 the axes in two coordinates; 8 the axes in three;
-  9 Variance, by direction (card); 10 the total variance; 11 a projection; 12 each axis takes its share;
-  13 any number of coordinates; 14 Applications (card); 15 dropping the thin direction; 16 why it pays;
-  17 LoRA; 18 three facts.
-
-  Checks for headless Chrome: ?slide=N&step=K opens slide N with its picture at step K, finished; &t=0
-  starts the step's animation from its beginning instead; &k=flat3:0.9,angle:35 sets knobs; &view=edge,
-  above or oblique sets the view of the cloud with three coordinates and stops its turning. The script sets
-  data-ready="yes" on the html element when it has run, and window.M15 exposes the live numbers.
-
-  Technical wording references: https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html
-  and https://arxiv.org/abs/2106.09685 (LoRA).
-
-  Hand-written, not built: this file is the source. Self-contained on purpose: no CDN, no fonts, no network.
+  CS 301, Meeting 16: The dimensionality of data. Revised 2026-10-25.
+  Self-contained HTML, 1280 x 720; retains the established lecture deck and engine.
+  Slides 1–3: question, purpose, 2D example. 4–5: array and exact rank-two 3D cloud.
+  6: contrast the 2D correlation clue with all three pairs of the planar 3D cloud.
+  7: points of view bridge. 8–12: SVD statement for centered data, interactive
+  2D/3D interpretations, then exact versus approximate dimension and conditioning.
+  13–19: directional variance, least-variance projection, and a visual
+  recursive construction (the plane round, then a five-dimensional example).
+  20–23: variance accounting and practice. 24–28: applications and closing.
+  The points-of-view bridge uses two orthographic views of the same points.
+  Its face-on axes are the PCA axes, not an arbitrary camera orientation.
+  Distinct eigenvalues determine axis lines; signs are arbitrary. Tied
+  eigenvalues permit rotations within their eigenspace. Edge-on camera
+  directions themselves are not unique: any direction in the plane works.
+  Drag the opening 3D plot to rotate it. Its data are immutable and exactly planar;
+  the displayed table is rounded. Edge-on reveals the plane; From above shows its
+  two-dimensional extent. The later derivation uses the same generating plane
+  with smallest standard deviation 0.24. It starts as a given 3D cloud:
+  compare directional projections, find the least variance, then subtract
+  that component from every point. No noise is added during the lesson.
+  The next slide continues from exactly those projected points, turns the
+  plane face-on, and introduces two in-plane axes before the recursion.
+  Space / click / Next step advances a picture. Arrows change slides. R resets;
+  F toggles full screen. ?slide=N&step=K&view=oblique supports reproducible checks.
+  window.M16 exposes live data and controls (M15 is retained as a compatibility alias).
+  Population covariance uses divisor n throughout. A point x is a column vector
+  in projection formulas; data points are rows of X. Here n >= m in the derivation;
+  the later general slide covers the reduced SVD when n < m.
+  Instructor reference for SVD shapes and reconstruction:
+  https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html
+  Instructor reference for the spectral derivation:
+  https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/resources/lecture-29-singular-value-decomposition/
+  Existing LoRA reference: https://arxiv.org/abs/2106.09685
+  The recursion illustrates the geometry. It is not an implementation prescription
+  to form X^T X for numerical SVD computation.
 -->
 <style>
   :root {
@@ -116,7 +114,7 @@
   .knob .end { font-size: 15px; color: var(--muted); flex: 0 0 auto; }
   .knob input[type=range] { flex: 1 1 auto; min-width: 0; height: 30px; margin: 0; accent-color: #2a78d6; cursor: pointer; }
   .knob .kv { flex: 0 0 auto; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-  .readout { background: var(--paper); border-radius: 4px; padding: 10px 14px; margin-top: 4px; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+  .readout { background: #fff7d6; border-radius: 4px; padding: 10px 14px; margin-top: 4px; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
   .readout p { margin: 0 0 5px; }
   .readout p:last-child { margin-bottom: 0; }
   .readout .label { margin-top: 0; }
@@ -133,6 +131,96 @@
   .nav button:focus-visible { outline: 3px solid #ffd600; }
   .slide h1:focus, .slide h2:focus { outline: none; }
   a:focus-visible, button:focus-visible { outline: 3px solid #0b57a4; outline-offset: 2px; }
+
+  .array-panel { width: 690px; padding: 16px 55px; }
+  .array-caption { font-size: 24px; margin: 8px 0 22px; }
+  .data-array { width: 100%; border-collapse: collapse; font-family: ui-monospace, Consolas, monospace; font-size: 28px; font-variant-numeric: tabular-nums; }
+  .data-array th { color: var(--muted); font-size: 21px; font-weight: 500; }
+  .data-array th, .data-array td { padding: 10px 24px; text-align: right; border-bottom: 1px solid #ddd; }
+  .array-ellipsis { text-align: center; margin: 8px; font-size: 28px; }
+  .question { font-weight: 650; font-size: 27px; line-height: 1.28; }
+  .question-side { padding-top: 42px; font-size: 25px; }
+  .equations { flex: 0 0 755px; padding: 8px 20px 0 0; }
+  .eq-label { font-size: 21px; margin: 22px 0 10px; color: var(--muted); }
+  .formula { font-size: 30px; line-height: 1.35; margin: 12px 0; white-space: nowrap; }
+  .eq-explain { font-size: 21px; margin: 8px 0 20px; line-height: 1.35; }
+  .result { color: #a6002b; font-size: 35px; margin-top: 24px; }
+  .derivation-side { padding: 18px 0 0 18px; border-left: 2px solid #ddd; }
+  .side > p { margin: 0 0 16px; }
+  .side-formula { font-size: 23px; white-space: nowrap; }
+  .derivation .ctl { padding-top: 14px; }
+  .derivation .side > p { margin-bottom: 12px; }
+  .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 8px; }
+  .frac > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 10px 3px; }
+  .frac > span:last-child { padding-top: 3px; }
+  #s19 .side { font-size: 20px; }
+  #s16 .side > p { margin-bottom: 10px; }
+  #s19 .side > p { margin-bottom: 10px; }
+  #c-flat3 { touch-action: none; cursor: grab; }
+  #c-flat3:active { cursor: grabbing; }
+
+  /* Anchor the entire control block above the footer. A hidden stack reserves
+     the longest step description, so the divider and buttons do not jump. */
+  .side.has-controls { align-self: stretch; display: flex; flex-direction: column; min-height: 0; }
+  .side.has-controls > * { flex-shrink: 0; }
+  .side.has-controls > .ctl { margin-top: auto; }
+  .side.has-controls > .target { margin-bottom: 12px; }
+  .ctl .buttons { gap: 6px; }
+  .ctl button { font-size: 18px; padding: 5px 12px; }
+  .readout { font-size: 20px; line-height: 1.25; }
+  .step-text { display: grid; margin-bottom: 5px; }
+  .readout .step-text > p { grid-area: 1 / 1; margin: 0; }
+  .step-size { visibility: hidden; pointer-events: none; user-select: none; }
+  .readout .sum { font-size: 19px; line-height: 1.3; min-height: calc(var(--summary-lines, 0) * 1.3em); }
+  .readout.has-summary .sum:empty { display: block; }
+
+  /* Keep the factorization, dimensions, and operation counts in whole lines. */
+  [data-part="why"] math { font-family: "Cambria Math", "STIX Two Math", math; white-space: nowrap; }
+  .factor-summary { font-size: 20px; line-height: 1.3; }
+  .factor-summary p { margin: 0; }
+  .factor-summary .equation-line { margin: 4px 0 9px; }
+  .factor-summary .factorization { font-size: 29px; }
+  .factor-sizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+  .factor-sizes > div { display: grid; justify-items: center; gap: 3px; }
+  .factor-sizes math { font-size: 21px; }
+  .factor-summary .diagonal-note { font-size: 17px; color: var(--muted); margin-bottom: 10px; }
+  .factor-summary .cost-heading { margin-bottom: 4px; }
+  .cost-table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
+  .cost-table th { font-size: 16px; font-weight: 500; color: var(--muted); text-align: left; padding: 0 12px 3px 0; }
+  .cost-table td { padding: 0 12px 0 0; vertical-align: middle; }
+  .cost-table math { font-size: 24px; }
+  .factor-summary .noise-note { font-size: 19px; line-height: 1.28; }
+  [data-part="why"] .step-equation { display: block; margin: 5px 0; white-space: nowrap; }
+  [data-part="why"] .step-equation math { font-size: 24px; }
+
+  /* Math is an unbroken unit. Longer equations have intentional display rows. */
+  math { font-family: "Cambria Math", "STIX Two Math", math; white-space: nowrap; }
+  .math-line { display: block; margin: 4px 0 5px; white-space: nowrap; }
+  .side .math-line math { font-size: 23px; }
+  .readout .math-line { margin: 5px 0 7px; }
+  .readout .math-line math { font-size: 22px; }
+  .readout { overflow-wrap: normal; }
+  .side > p, .pts li, .step-text > p { text-wrap: pretty; }
+  .side-formula { line-height: 1.35; }
+  .aligned-math { margin: -8px 0 16px; }
+  .aligned-math .math-line { margin: 0; }
+  .aligned-math .math-line + .math-line { margin-left: 60px; }
+  .matrix-examples { margin: 0 0 12px; font-size: 20px; }
+  .matrix-examples p { margin: 0 0 4px; white-space: nowrap; }
+  .lora-sizes { grid-template-columns: repeat(2, 1fr); margin: -4px 0 8px; }
+  #s9 .side > p { margin-bottom: 7px; }
+  #s9 .math-line { margin: 4px 0 6px; }
+  #s19 .side-formula { line-height: 1.5; }
+  #s19 .side > p { margin-bottom: 8px; }
+  #s11 .pts li { margin-bottom: 4px; }
+  #s16 .side > p { margin-bottom: 8px; }
+  #s20 .side, #s21 .side, #s25 .side, #s27 .side { font-size: 20.5px; }
+  #s20 .side > p, #s21 .side > p, #s25 .side > p, #s27 .side > p { margin-bottom: 10px; }
+  #s20 .side .math-line math, #s21 .side .math-line math { font-size: 22px; }
+  #s21 .side .aligned-math math { font-size: 21px; }
+  #s21 .side > p { margin-bottom: 8px; }
+  #s15 .formula { margin: 10px 0 16px; }
+  #s15 .eq-label { margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -141,261 +229,344 @@
 <!-- ================================================================ 1: the title -->
 <section class="slide title" id="s1" aria-roledescription="slide">
   <p class="eyebrow">CS 301 · Unit II · Meeting 16</p>
-  <h1>The dimensionality of data</h1>
-  <p class="subtitle">How many coordinates do we need to represent the data accurately?</p>
+  <h1>How many coordinates does a point need?</h1>
+  <p class="subtitle">The dimensionality of data · PCA and the SVD</p>
 </section>
 
-<!-- ================================================================ 2: Why we do this -->
 <section class="slide title card" id="s2" aria-roledescription="slide" hidden>
   <p class="eyebrow">Meeting 16 · Purpose</p>
   <h1>Why we do this</h1>
   <p class="subtitle">Large datasets can be expensive to store and process. The SVD lets us use fewer coordinates and measure the resulting approximation error.</p>
 </section>
 
-<!-- ================================================================ 3: two coordinates -->
 <section class="slide" id="s3" data-part="flat2" aria-roledescription="slide" hidden>
   <h2>A cloud in two dimensions <span class="part">How flat is a cloud?</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-flat2" aria-label="A cloud of two hundred points in the plane, tilted, whose thickness a slider controls, from round to close to a line. One point is marked with its two coordinates. At the right, the two-by-two correlation matrix of the coordinates, computed live."></canvas></div>
     <div class="side">
       <ul class="pts">
-        <li>Each point has two coordinates, x<sub>1</sub> and x<sub>2</sub>.</li>
+        <li>Two coordinates per point: <math><msub><mi>x</mi><mn>1</mn></msub></math> and <math><msub><mi>x</mi><mn>2</mn></msub></math>.</li>
         <li>Move the slider to make the cloud narrower.</li>
         <li>A narrow cloud has little variation across its long axis.</li>
       </ul>
-      <p class="target"><span>Learning target</span>Recognize when one coordinate can approximate a point in two dimensions.</p>
+      <p class="target">Can one coordinate approximate each point?</p>
       <div class="ctl" data-for="flat2"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 4: three coordinates -->
-<section class="slide" id="s4" data-part="flat3" aria-roledescription="slide" hidden>
-  <h2>A cloud in three dimensions <span class="part">How flat is a cloud?</span></h2>
+<section class="slide" id="s4" aria-roledescription="slide" hidden>
+  <h2>Three columns: how many dimensions?</h2>
   <div class="row">
-    <div class="pic"><canvas id="c-flat3" aria-label="A cloud of two hundred and forty points in space, turning, whose thickness a slider controls, from a ball to a sheet tilted against all three coordinate axes. At the right, its three-by-three covariance matrix and then its correlations, computed live; the view then turns edge-on and the cloud’s thickness becomes visible."></canvas></div>
+    <div class="array-panel">
+      <p class="array-caption">X[:6] &nbsp; · &nbsp; first 6 of 240 rows</p>
+      <table class="data-array" aria-label="First six rows of the three-coordinate dataset">
+        <thead><tr><th scope="col"><math><msub><mi>x</mi><mn>1</mn></msub></math></th><th scope="col"><math><msub><mi>x</mi><mn>2</mn></msub></math></th><th scope="col"><math><msub><mi>x</mi><mn>3</mn></msub></math></th></tr></thead>
+        <tbody id="intro-array"></tbody>
+      </table>
+      <p class="array-ellipsis">⋮ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ⋮ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ⋮</p>
+      <p class="note">Synthetic data, already centered. Display rounded to three decimals.</p>
+    </div>
+    <div class="side question-side">
+      <p>Each row is a point with three coordinates.</p>
+      <p>The array has shape <math><mn>240</mn><mo>×</mo><mn>3</mn></math>.</p>
+      <p class="question">Must we keep three numbers for every point?</p>
+      <p>What would you need to know before answering?</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s5" data-part="flat3" aria-roledescription="slide" hidden>
+  <h2>The same data in three dimensions</h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-flat3" aria-label="The same 240 points shown in a standard three-dimensional coordinate box. Drag to rotate. The initial oblique view hides the exact planar relationship. Next step turns the camera edge-on; later steps identify the normal and view the plane face-on."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Each point has three coordinates. Rotation makes the depth visible.</li>
-        <li>Move the slider to reduce the thickness of the cloud.</li>
-        <li>Near the plane, all three coordinates vary; pairwise correlations are about −0.5.</li>
-      </ul>
-      <p class="note">The plane represents a relationship among all three coordinates.</p>
+      <p>All three coordinates vary.</p>
+      <p class="question">Does the cloud fill a volume?</p>
+      <p>Drag the plot to inspect it from different angles.</p>
+      <p class="note">The camera moves; the data stay fixed.</p>
       <div class="ctl" data-for="flat3"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 5: The decomposition -->
-<section class="slide title card" id="s5" aria-roledescription="slide" hidden>
-  <p class="eyebrow">Part 2 of 4 · Meeting 16</p>
-  <h1>The singular value decomposition</h1>
-  <p class="subtitle"><span class='math'>X = U S V<sup>T</sup></span> expresses the data using perpendicular axes ordered by their variance.</p>
+<section class="slide" id="s6" data-part="correlations" aria-roledescription="slide" hidden>
+  <h2>Does the 2D correlation clue carry over?</h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-correlations" aria-label="A nearly linear tilted 2D cloud has correlation almost one. Next step shows all three coordinate-pair plots of the exact planar 3D cloud; each has correlation minus one half and visible width. The final step shows its correlation matrix and the exact relation x1 plus x2 plus 1.5 times x3 equals zero."></canvas></div>
+    <div class="side">
+      <p>In the tilted 2D example, a narrow cloud comes with correlation close to 1.</p>
+      <p class="question">Must a flat 3D cloud have a pairwise correlation <span class="math">near <math><mo>±</mo><mn>1</mn></math></span>?</p>
+      <p>Compare all three coordinate pairs from the same 240 points.</p>
+      <p class="note">We are checking individual pairs here.</p>
+      <div class="ctl" data-for="correlations"></div>
+    </div>
+  </div>
 </section>
 
-<!-- ================================================================ 6: every matrix is U S V^T -->
-<section class="slide" id="s6" data-part="svd" aria-roledescription="slide" hidden>
-  <h2>Factoring X as <span class='math'>U S V<sup>T</sup></span> <span class="part">The decomposition</span></h2>
+<section class="slide" id="s7" data-part="pov" aria-roledescription="slide" hidden>
+  <h2>PCA: choosing points of view</h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-pov" aria-label="Two views of the same 240 points. Edge-on, the points form a line and the perpendicular purple direction has zero spread. Next step shows the plane face-on. The final step adds its perpendicular blue and orange PCA axes: greatest spread and remaining spread."></canvas></div>
+    <div class="side">
+      <p class="question">Can we find these points of view from the data?</p>
+      <p>A <strong>point of view</strong> is a set of axes.</p>
+      <ul class="pts">
+        <li><strong>PCA</strong> finds perpendicular axes by their spread.</li>
+        <li><strong>SVD</strong> is used to find the PCA axes.</li>
+      </ul>
+      <div class="target">How does the SVD describe these axes?</div>
+      <div class="ctl" data-for="pov"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide title card" id="s8" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 2 of 4 · Meeting 16</p>
+  <h1>Seeing the SVD</h1>
+  <p class="subtitle">The singular values describe the cloud’s spread along its axes.</p>
+</section>
+
+<section class="slide" id="s9" data-part="svd" aria-roledescription="slide" hidden>
+  <h2>The SVD of centered data <span class="part">Seeing the SVD</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-svd" aria-label="A tall rectangle X, n by m; then an equals sign and three rectangles: U, as tall as X; S, a small square with a diagonal; V transposed, a small square. The rows of V transposed are coloured as the axes, the diagonal of S shows the singular values, and one row of U times S is traced back to one row of X."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>X has n points and m coordinates. Each column has mean 0; here <span class='math'>n ≥ m</span>.</li>
-        <li><span class='math'>X = U S V<sup>T</sup></span>: U is <span class='math'>n × m</span>; S and V<sup>T</sup> are <span class='math'>m × m</span>. S is diagonal.</li>
-        <li>The rows of V<sup>T</sup> are unit <strong>axes</strong> v<sub>1</sub>, …, v<sub>m</sub>, at right angles.</li>
-        <li>S: the <strong>singular values</strong> <span class='math'>σ<sub>1</sub> ≥ σ<sub>2</sub> ≥ … ≥ 0</span>. The spread along v<sub>k</sub> is <span class='math'>σ<sub>k</sub> / √n</span>.</li>
-        <li><span class='math'>U S</span> contains the points’ coordinates along these axes.</li>
-        <li>In NumPy: <code class="long">np.linalg.svd(X, full_matrices=False)</code></li>
-      </ul>
+      <p>Subtract the mean of each column:</p><p class="side-formula"><math><mi>X</mi><mo>=</mo><mi>A</mi><mo>−</mo><mi mathvariant="bold">1</mi><msup><mi>μ</mi><mo>⊤</mo></msup></math></p><p class="note"><math><mi>μ</mi></math>: column means; <math><mi mathvariant="bold">1</mi></math>: column of ones.</p><p class="side-formula"><math><mi>X</mi><mo>=</mo><mi>U</mi><mi>S</mi><msup><mi>V</mi><mo>⊤</mo></msup></math></p><ul class="pts tight"><li><math><mi>V</mi></math>: perpendicular unit axes.</li><li><math><mi>S</mi></math>: singular values<span class="math-line"><math><msub><mi>σ</mi><mn>1</mn></msub><mo>≥</mo><mo>⋯</mo><mo>≥</mo><msub><mi>σ</mi><mi>m</mi></msub><mo>≥</mo><mn>0</mn></math></span></li><li><math><mi>U</mi><mi>S</mi><mo>=</mo><mi>X</mi><mi>V</mi></math>: coordinates along those axes.</li><li>Spread along axis <math><mi>k</mi></math>: <math><msub><mi>σ</mi><mi>k</mi></msub><mo>/</mo><msqrt><mrow><mi>n</mi></mrow></msqrt></math></li></ul><p class="note">Here <math><mi>n</mi><mo>≥</mo><mi>m</mi></math>. <math><mi>U</mi></math> has perpendicular unit columns.</p>
       <div class="ctl" data-for="svd"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 7: the axes, two coordinates -->
-<section class="slide" id="s7" data-part="axes2" aria-roledescription="slide" hidden>
-  <h2>The axes in two dimensions <span class="part">The decomposition</span></h2>
+<section class="slide" id="s10" data-part="axes2" aria-roledescription="slide" hidden>
+  <h2>The axes in two dimensions <span class="part">Seeing the SVD</span></h2>
   <div class="row">
-    <div class="pic"><canvas id="c-axes2" aria-label="The same tilted cloud with its two axes drawn through its centre, blue along the spread and orange across it, each to two standard deviations. At the right, the two singular values as bars and their ratio, all live as the knob flattens the cloud."></canvas></div>
+    <div class="pic"><canvas id="c-axes2" aria-label="The same tilted cloud with its two axes drawn through its center, blue along the spread and orange across it, each to two standard deviations. At the right, the two singular values as bars and their ratio, all live as the knob flattens the cloud."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>The SVD of the <span class='math'>200 × 2</span> matrix gives two axes, v<sub>1</sub> and v<sub>2</sub>, at right angles.</li>
-        <li>The standard deviation along axis k is <span class='math'>σ<sub>k</sub> / √n</span>.</li>
-        <li>As the cloud narrows, σ<sub>2</sub> decreases and <span class='math'>σ<sub>1</sub> / σ<sub>2</sub></span> increases.</li>
-        <li>A large ratio means the cloud lies close to a line.</li>
-      </ul>
+      <ul class="pts tight"><li>The SVD of the <math><mn>200</mn><mo>×</mo><mn>2</mn></math> matrix gives two axes, <math><msub><mi>v</mi><mn>1</mn></msub></math> and <math><msub><mi>v</mi><mn>2</mn></msub></math>, at right angles.</li><li>Standard deviation along axis <math><mi>k</mi></math>: <math><msub><mi>σ</mi><mi>k</mi></msub><mo>/</mo><msqrt><mrow><mi>n</mi></mrow></msqrt></math>.</li><li>The <strong>condition number</strong> compares the spreads:<span class="math-line"><math><mi>κ</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><mo>/</mo><msub><mi>σ</mi><mn>2</mn></msub></math></span></li><li>Here <math><msub><mi>σ</mi><mn>1</mn></msub></math> stays fixed. As <math><msub><mi>σ</mi><mn>2</mn></msub></math> decreases, <math><mi>κ</mi></math> grows and the cloud approaches a line.</li></ul>
       <div class="ctl" data-for="axes2"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 8: the axes, three coordinates -->
-<section class="slide" id="s8" data-part="axes3" aria-roledescription="slide" hidden>
-  <h2>The axes in three dimensions <span class="part">The decomposition</span></h2>
+<section class="slide" id="s11" data-part="axes3" aria-roledescription="slide" hidden>
+  <h2>The axes in three dimensions <span class="part">Seeing the SVD</span></h2>
   <div class="row">
-    <div class="pic"><canvas id="c-axes3" aria-label="The turning cloud in space with its three axes through its centre, blue and orange in the sheet and purple across it. At the right, the three singular values as bars and the ratio of the first to the third. The view turns to look from above, along the third axis."></canvas></div>
+    <div class="pic"><canvas id="c-axes3" aria-label="The turning cloud in space with its three axes through its center, blue and orange in the sheet and purple across it. At the right, the three singular values as bars and the ratio of the first to the third. The view turns to look from above, along the third axis."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>The SVD of the <span class='math'>240 × 3</span> matrix gives three axes at right angles.</li>
-        <li><span class='math'>σ<sub>3</sub> / σ<sub>1</sub></span> compares the smallest and largest spreads.</li>
-        <li>Look along v<sub>3</sub> to see the plane; look along v<sub>2</sub> to see its thickness.</li>
-        <li>The SVD axes need not align with the original coordinate axes.</li>
-      </ul>
+      <ul class="pts tight"><li>The SVD of the <math><mn>240</mn><mo>×</mo><mn>3</mn></math> matrix gives three perpendicular axes.</li><li>The <strong>condition number</strong> is largest spread divided by smallest:<span class="math-line"><math><mi>κ</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><mo>/</mo><msub><mi>σ</mi><mn>3</mn></msub></math></span></li><li>View along <math><msub><mi>v</mi><mn>3</mn></msub></math>: plane. View along <math><msub><mi>v</mi><mn>2</mn></msub></math>: thickness.</li><li>As <math><msub><mi>σ</mi><mn>3</mn></msub></math> shrinks, the cloud approaches a plane and <math><mi>κ</mi></math> grows.</li></ul>
       <div class="ctl" data-for="axes3"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 9: Variance, by direction -->
-<section class="slide title card" id="s9" aria-roledescription="slide" hidden>
-  <p class="eyebrow">Part 3 of 4 · Meeting 16</p>
-  <h1>Variance, by direction</h1>
-  <p class="subtitle">Total variance is the sum of the variances along the SVD axes.</p>
-</section>
-
-<!-- ================================================================ 10: the total variance -->
-<section class="slide" id="s10" data-part="total" aria-roledescription="slide" hidden>
-  <h2>The total variance <span class="part">Variance, by direction</span></h2>
+<section class="slide" id="s12" data-part="dimension" aria-roledescription="slide" hidden>
+  <h2>Exact rank and approximate dimension <span class="part">Seeing the SVD</span></h2>
   <div class="row">
-    <div class="pic"><canvas id="c-total" aria-label="The cloud in space with its centre marked; a line from the centre to every point, one of them in orange with its squared length; then the covariance matrix with its diagonal highlighted and summed; then the three singular values, squared and summed."></canvas></div>
+    <div class="pic"><canvas id="c-dimension" aria-label="Illustrative singular-value bars. Values 10, 8, 0 give exact rank 2. Replacing 0 by 0.1 gives rank 3 but a cloud close to a plane. A second example, 10, 0.2, 0.1, is close to a line. The two rank-3 examples both have condition number 100."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Centring puts the mean at 0.</li>
-        <li><span class='math'>‖x<sub>i</sub>‖² = x<sub>i1</sub>² + x<sub>i2</sub>² + x<sub>i3</sub>²</span>: point i's squared distance from the centre.</li>
-        <li><span class='math'><strong>Total variance</strong> = (1/n) Σ ‖x<sub>i</sub>‖²</span>: the average squared distance.</li>
-        <li>It is also the sum of C’s diagonal.</li>
-        <li>From the SVD, total variance is <span class='math'>(σ<sub>1</sub>² + σ<sub>2</sub>² + σ<sub>3</sub>²) / n</span>.</li>
-      </ul>
-      <div class="ctl" data-for="total"></div>
+      <p><strong>Exact dimension:</strong> count the nonzero singular values.</p>
+      <p><strong>Approximate dimension:</strong> keep enough coordinates for the required accuracy.</p>
+      <p class="side-formula"><math><mi>κ</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><mo>/</mo><msub><mi>σ</mi><mi>m</mi></msub></math></p>
+      <p>A large condition number means at least one direction is thin relative to the widest.</p>
+      <p class="note">Compare all the singular values to decide how many coordinates to keep.</p>
+      <div class="ctl" data-for="dimension"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 11: a projection -->
-<section class="slide" id="s11" data-part="proj" aria-roledescription="slide" hidden>
-  <h2>A projection onto a direction <span class="part">Variance, by direction</span></h2>
+<section class="slide title card" id="s13" aria-roledescription="slide" hidden>
+  <p class="eyebrow">Part 3 of 4 · Meeting 16</p>
+  <h1>Finding the points of view</h1>
+  <p class="subtitle">How can we find these axes from the data?</p>
+</section>
+
+<section class="slide" id="s14" data-part="proj" aria-roledescription="slide" hidden>
+  <h2>How much variance is there along a direction?</h2>
   <div class="row">
-    <div class="pic"><canvas id="c-proj" aria-label="The tilted cloud in the plane and a green line through its centre in the direction v, which a slider rotates. One point drops a perpendicular onto the line and its coordinate along v is shown; then every point does, and the projections form a cloud on the line; a bar shows the variance of the projections against its largest and smallest values."></canvas></div>
+    <div class="pic"><canvas id="c-proj" aria-label="The tilted cloud in the plane and a green line through its center in the direction w, which a slider rotates. One point drops a perpendicular onto the line and its coordinate along w is shown; then every point does, and the projections form a cloud on the line; a bar shows the variance of the projections against its largest and smallest values."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>v is a unit direction vector: <span class='math'>v<sub>1</sub>² + v<sub>2</sub>² = 1</span>.</li>
-        <li>The <strong>scalar projection</strong> of x on v: <span class='math'>x · v = x<sub>1</sub>v<sub>1</sub> + x<sub>2</sub>v<sub>2</sub></span>. The projected point: <span class='math'>(x · v) v</span>.</li>
-        <li><span class='math'>X v</span> contains the n scalar projections.</li>
-        <li>The <strong>variance along v</strong>: <span class='math'>‖X v‖² / n</span>.</li>
-        <li>Here, variance is largest along v<sub>1</sub> and smallest along v<sub>2</sub>.</li>
-      </ul>
+      <ul class="pts tight"><li>Choose a unit direction <math><mi>w</mi></math>: <math><mrow><mo>‖</mo><mrow><mi>w</mi></mrow><mo>‖</mo></mrow><mo>=</mo><mn>1</mn></math>.</li><li>A point <math><mi>x</mi></math> has coordinate <math><mi>x</mi><mo>·</mo><mi>w</mi></math> along <math><mi>w</mi></math>.</li><li><math><mi>X</mi><mi>w</mi></math> contains all <math><mi>n</mi></math> coordinates.</li><li><math><mi>X</mi></math> is centered: these coordinates have mean 0.</li><li>Their variance is the average square:<span class="math-line"><math><msup><mrow><mo>‖</mo><mrow><mi>X</mi><mi>w</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup><mo>/</mo><mi>n</mi></math></span></li></ul><p class="note">Rotate <math><mi>w</mi></math> to find the smallest variance.</p>
       <div class="ctl" data-for="proj"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 12: each axis takes its share -->
-<section class="slide" id="s12" data-part="share" aria-roledescription="slide" hidden>
-  <h2>Variance along each axis <span class="part">Variance, by direction</span></h2>
+<section class="slide derivation" id="s15" aria-roledescription="slide" hidden>
+  <h2>Find the direction with the least variance</h2>
+  <div class="row"><div class="equations">
+    <p class="eq-label">For centered data and a unit direction <math><mi>w</mi></math></p>
+    <p class="formula">Variance along <math><mi>w</mi></math> = <math><mfrac><mrow><msup><mrow><mo>‖</mo><mrow><mi>X</mi><mi>w</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup></mrow><mrow><mi>n</mi></mrow></mfrac></math></p>
+    <p class="eq-label">Write the variance using the covariance matrix</p>
+    <p class="formula"><math><mi>C</mi><mo>=</mo><mfrac><mrow><msup><mi>X</mi><mo>⊤</mo></msup><mi>X</mi></mrow><mrow><mi>n</mi></mrow></mfrac></math></p>
+    <p class="formula"><math><mfrac><mrow><msup><mrow><mo>‖</mo><mrow><mi>X</mi><mi>w</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup></mrow><mrow><mi>n</mi></mrow></mfrac><mo>=</mo><msup><mi>w</mi><mo>⊤</mo></msup><mi>C</mi><mi>w</mi></math></p>
+    <p class="eq-label">The first direction we find</p>
+    <p class="formula result">Minimize <math><msup><mi>w</mi><mo>⊤</mo></msup><mi>C</mi><mi>w</mi></math>, &nbsp; <math><mrow><mo>‖</mo><mrow><mi>w</mi></mrow><mo>‖</mo></mrow><mo>=</mo><mn>1</mn></math></p>
+    <p class="eq-explain">Call the minimizing direction <math><msub><mi>v</mi><mi>m</mi></msub></math>.</p>
+  </div><div class="side derivation-side">
+    <p>Small variance means little spread along <math><mi>w</mi></math>.</p>
+    <p>Projection removes the component <math><mo>(</mo><mi>x</mi><mo>·</mo><mi>w</mi><mo>)</mo><mi>w</mi></math> from each point.</p>
+    <p>The average squared movement is exactly the variance along <math><mi>w</mi></math>.</p>
+    <p class="question">Keep the space perpendicular to the direction with least variance.</p>
+    <p class="note">In three dimensions, this means keeping a plane.</p>
+  </div></div>
+</section>
+
+<section class="slide derivation" id="s16" data-part="least" aria-roledescription="slide" hidden>
+  <h2>The least-variance direction in 3D</h2>
+  <div class="row"><div class="pic"><canvas id="c-least" aria-label="A fixed 3D cloud and a trial direction w. Green dots show projections onto w while a slider rotates it. Next, the direction turns to v3, where the projections have the least variance. A blue plane perpendicular to v3 appears. One point's purple component along v3 is marked, then all points lose that component and move onto the plane."></canvas></div>
+  <div class="side">
+    <p>Use the same idea in 3D. Compare the variance along different directions.</p>
+    <p>The least-variance direction is <math><msub><mi>v</mi><mn>3</mn></msub></math>.</p>
+    <p data-reveal="2">Remove each point’s <math><msub><mi>v</mi><mn>3</mn></msub></math> component.</p>
+    <p class="side-formula" data-reveal="2"><math><mover accent="true"><mrow><mi>x</mi></mrow><mo>^</mo></mover><mo>=</mo><mi>x</mi><mo>−</mo><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>3</mn></msub><mo>)</mo><msub><mi>v</mi><mn>3</mn></msub></math></p>
+    <p class="note" data-reveal="2">The remaining points lie in the plane perpendicular to <math><msub><mi>v</mi><mn>3</mn></msub></math>.</p>
+    <div class="ctl" data-for="least"></div>
+  </div></div>
+</section>
+
+<section class="slide derivation" id="s17" data-part="plane" aria-roledescription="slide" hidden>
+  <h2>What remains is a plane</h2>
+  <div class="row"><div class="pic"><canvas id="c-plane" aria-label="The projected points begin in exactly the same plane and view as the previous slide. The camera turns face-on. Two perpendicular unit axes q1 and q2 appear within the plane, followed by one point's coordinates along them. The matrix Y2 stores two coordinates per point, ready for the next PCA step within the plane."></canvas></div>
+  <div class="side">
+    <p>The component along <math><msub><mi>v</mi><mn>3</mn></msub></math> is gone. All points now lie in one plane.</p>
+    <p data-reveal="1">Viewed face-on, this is a 2D dataset.</p>
+    <p data-reveal="2">Two axes at right angles describe positions within the plane.</p>
+    <p class="side-formula" data-reveal="3"><math><msub><mi>Q</mi><mn>2</mn></msub><mo>=</mo><mo>[</mo><msub><mi>q</mi><mn>1</mn></msub><mspace width="0.7em"/><msub><mi>q</mi><mn>2</mn></msub><mo>]</mo></math><br><math><msub><mi>Y</mi><mn>2</mn></msub><mo>=</mo><mi>X</mi><msub><mi>Q</mi><mn>2</mn></msub></math></p>
+    <p class="note" data-reveal="3">Each row of <math><msub><mi>Y</mi><mn>2</mn></msub></math> contains the two coordinates of one point.</p>
+    <div class="ctl" data-for="plane"></div>
+  </div></div>
+</section>
+
+<section class="slide derivation" id="s18" data-part="repeat" aria-roledescription="slide" hidden>
+    <h2>Repeat inside the plane</h2><div class="row"><div class="pic"><canvas id="c-repeat" aria-label="The projected cloud in two plane coordinates q1 and q2. Its least-variance direction a2 is orange, with its coordinates and the corresponding direction v2 in the original space listed at the right. Points project onto the perpendicular blue line, leaving one coordinate; the variances discarded so far are listed. A strip along the bottom shows the recursion: X with three coordinates, then Y2 with two, then Y1 with one."></canvas></div>
+    <div class="side">
+  <p><math><msub><mi>Y</mi><mn>2</mn></msub></math> is now a 2D dataset.</p>
+  <p class="side-formula"><math><msub><mi>C</mi><mn>2</mn></msub><mo>=</mo><msubsup><mi>Y</mi><mn>2</mn><mo>⊤</mo></msubsup><msub><mi>Y</mi><mn>2</mn></msub><mo>/</mo><mi>n</mi></math></p>
+  <p>Find its unit direction <math><msub><mi>a</mi><mn>2</mn></msub></math> of least variance, then keep the perpendicular line.</p>
+  <p class="side-formula"><math><msub><mi>v</mi><mn>2</mn></msub><mo>=</mo><msub><mi>Q</mi><mn>2</mn></msub><msub><mi>a</mi><mn>2</mn></msub></math></p>
+  <p>This expresses the removed direction in the original 3D coordinates.</p>
+  <p class="note">The remaining direction is <math><msub><mi>v</mi><mn>1</mn></msub></math>. This projection discards variation within the original plane.</p><div class="ctl" data-for="repeat"></div></div></div></section>
+
+<section class="slide derivation" id="s19" data-part="recur" aria-roledescription="slide" hidden>
+    <h2>The same construction in m dimensions</h2><div class="row"><div class="pic"><canvas id="c-recur" aria-label="A row of matrices drawn for m equals 5, each one column narrower than the last: Y5 equals X down to Y1. Each round finds the least-variance direction a_d of the current matrix, expresses it in the original coordinates as v_d, saves it as a column of V from the right, and projects onto the perpendicular space. At the end V is full, and bars show the variances along v1 to v5 in decreasing order."></canvas></div>
+    <div class="side">
+      <p><math><msub><mi>Q</mi><mi>d</mi></msub></math> stores the current axes in the original coordinates:<span class="math-line"><math><msub><mi>Y</mi><mi>d</mi></msub><mo>=</mo><mi>X</mi><msub><mi>Q</mi><mi>d</mi></msub></math></span></p><p>Find a unit direction <math><msub><mi>a</mi><mi>d</mi></msub></math> minimizing <math><msup><mrow><mo>‖</mo><mrow><msub><mi>Y</mi><mi>d</mi></msub><mi>a</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup><mo>/</mo><mi>n</mi></math>.</p><p class="side-formula"><math><msub><mi>v</mi><mi>d</mi></msub><mo>=</mo><msub><mi>Q</mi><mi>d</mi></msub><msub><mi>a</mi><mi>d</mi></msub></math></p><p>Choose perpendicular unit columns for <math><mi>B</mi></math>, spanning <math><msubsup><mi>a</mi><mi>d</mi><mo>⊥</mo></msubsup></math>.</p><p class="side-formula"><math><msub><mi>Y</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>Y</mi><mi>d</mi></msub><mi>B</mi></math> &nbsp; <math><msub><mi>Q</mi><mrow><mi>d</mi><mo>−</mo><mn>1</mn></mrow></msub><mo>=</mo><msub><mi>Q</mi><mi>d</mi></msub><mi>B</mi></math></p><p class="note">Start with <math><msub><mi>Q</mi><mi>m</mi></msub><mo>=</mo><mi>I</mi></math>. Stop at <math><mi>d</mi><mo>=</mo><mn>2</mn></math>.<br>The remaining axis is <math><msub><mi>v</mi><mn>1</mn></msub></math>.</p>
+      <div class="ctl" data-for="recur"></div></div></div></section>
+
+<section class="slide" id="s20" data-part="total" aria-roledescription="slide" hidden>
+  <h2>Account for all the variation <span class="part">What the axes preserve</span></h2>
+  <div class="row">
+    <div class="pic"><canvas id="c-total" aria-label="The cloud in space with its center marked; a line from the center to every point, one of them in orange with its squared length; then the covariance matrix with its diagonal highlighted and summed; then the three singular values, squared and summed."></canvas></div>
+    <div class="side">
+      <p>Squared distance from the mean (now 0):<span class="math-line"><math><msup><mrow><mo>‖</mo><mrow><msub><mi>x</mi><mi>i</mi></msub></mrow><mo>‖</mo></mrow><mn>2</mn></msup><mo>=</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mn>1</mn></mrow><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mn>2</mn></mrow><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mn>3</mn></mrow><mn>2</mn></msubsup></math></span></p><p><strong>Total variance</strong>: average squared distance.<span class="math-line"><math><mo>(</mo><mn>1</mn><mo>/</mo><mi>n</mi><mo>)</mo><msubsup><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></msubsup><msup><mrow><mo>‖</mo><mrow><msub><mi>x</mi><mi>i</mi></msub></mrow><mo>‖</mo></mrow><mn>2</mn></msup></math></span></p><p>Sum <math><mi>C</mi></math>’s diagonal, or use the SVD:<span class="math-line"><math><mo>(</mo><msubsup><mi>σ</mi><mn>1</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>2</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>3</mn><mn>2</mn></msubsup><mo>)</mo><mo>/</mo><mi>n</mi></math></span></p>
+      <div class="ctl" data-for="total"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s21" data-part="share" aria-roledescription="slide" hidden>
+  <h2>Variance along each axis <span class="part">What the axes preserve</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-share" aria-label="The cloud in space with its three axes; one point in orange drops a perpendicular onto each axis and its three coordinates along the axes are listed with their squares; then a bar divided in the colours of the axes shows the shares of the total variance, with percentages."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Pythagoras for perpendicular axes:<br> <span class='math'>‖x‖² = (x·v<sub>1</sub>)² + (x·v<sub>2</sub>)² + (x·v<sub>3</sub>)²</span>.</li>
-        <li>Averaged over the points, total variance is <span class='math'>σ<sub>1</sub>²/n + σ<sub>2</sub>²/n + σ<sub>3</sub>²/n</span>.</li>
-        <li>Axis k’s variance is <span class='math'>σ<sub>k</sub>² / n</span>.</li>
-        <li>For a thin cloud, the first two axes account for nearly all the variance.</li>
-      </ul>
+      <p>Pythagoras for perpendicular axes:</p><div class="aligned-math"><span class="math-line"><math><msup><mrow><mo>‖</mo><mrow><mi>x</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup><mo>=</mo><msup><mrow><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>1</mn></msub><mo>)</mo></mrow><mn>2</mn></msup><mo>+</mo><msup><mrow><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>2</mn></msub><mo>)</mo></mrow><mn>2</mn></msup><mo>+</mo><msup><mrow><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>3</mn></msub><mo>)</mo></mrow><mn>2</mn></msup></math></span></div><p>Average over all points for total variance:<span class="math-line"><math><mo>(</mo><msubsup><mi>σ</mi><mn>1</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>2</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>3</mn><mn>2</mn></msubsup><mo>)</mo><mo>/</mo><mi>n</mi></math></span></p><p>Axis <math><mi>k</mi></math>’s variance: <math><msubsup><mi>σ</mi><mi>k</mi><mn>2</mn></msubsup><mo>/</mo><mi>n</mi></math>.</p><p>For a thin cloud, the first two axes account for nearly all the variance.</p>
       <div class="ctl" data-for="share"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 13: any number of coordinates -->
-<section class="slide" id="s13" data-part="general" aria-roledescription="slide" hidden>
-  <h2>Data with many coordinates <span class="part">Variance, by direction</span></h2>
+<section class="slide" id="s22" data-part="general" aria-roledescription="slide" hidden>
+  <h2>Data with many coordinates <span class="part">What the axes preserve</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-general" aria-label="The rectangles X equals U S V transposed again, for a matrix with many columns; below them an example bar chart of variances in decreasing order, with a line after the first few axes."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Example matrices: <span class='math'>50,000 words × 300 features</span>; <span class='math'>610 people × 1,297 movies</span>.</li>
-        <li>The reduced SVD gives <span class='math'>r = min(n, m)</span> perpendicular axes and r singular values.</li>
-        <li>The variances <span class='math'>σ<sub>k</sub>² / n</span> sum to the total variance.</li>
-        <li>If the variances decrease rapidly, a few axes capture most of the variation.</li>
-        <li>These axes are the <strong>principal directions</strong> used in principal component analysis (PCA).</li>
-      </ul>
+      <p class="note">Example matrices:</p><div class="matrix-examples"><p>50,000 words × 300 features</p><p>610 people × 1,297 movies</p></div><ul class="pts tight"><li>The reduced SVD gives <math><mi>r</mi><mo>=</mo><mi mathvariant="normal">min</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>m</mi><mo>)</mo></math> perpendicular axes and <math><mi>r</mi></math> singular values.</li><li>The variances <math><msubsup><mi>σ</mi><mi>k</mi><mn>2</mn></msubsup><mo>/</mo><mi>n</mi></math> sum to the total variance.</li><li>If the variances decrease rapidly, a few axes capture most of the variation.</li><li>Keeping the leading <strong>principal directions</strong> gives a smaller set of coordinates.</li></ul>
       <div class="ctl" data-for="general"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 14: Applications -->
-<section class="slide title card" id="s14" aria-roledescription="slide" hidden>
+<section class="slide derivation" id="s23" aria-roledescription="slide" hidden>
+  <h2>Back to the opening cloud</h2><div class="row"><div class="equations">
+  <p class="eq-label">Every point obeys the same relation</p>
+  <p class="formula"><math><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><mn>1.5</mn><msub><mi>x</mi><mn>3</mn></msub><mo>=</mo><mn>0</mn></math></p>
+  <p class="formula"><math><msub><mi>v</mi><mn>3</mn></msub><mo>=</mo><mfrac><mrow><msup><mrow><mo>(</mo><mn>1</mn><mo>,</mo><mn>1</mn><mo>,</mo><mn>1.5</mn><mo>)</mo></mrow><mo>⊤</mo></msup></mrow><mrow><msqrt><mrow><mn>4.25</mn></mrow></msqrt></mrow></mfrac></math></p>
+  <p class="formula"><math><mi>X</mi><msub><mi>v</mi><mn>3</mn></msub><mo>=</mo><mn>0</mn><mo>⇒</mo><msub><mi>σ</mi><mn>3</mn></msub><mo>=</mo><mn>0</mn></math></p>
+  <p class="eq-label">Two nonzero directions remain</p>
+  <p class="formula"><math><mi>X</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><msub><mi>u</mi><mn>1</mn></msub><msubsup><mi>v</mi><mn>1</mn><mo>⊤</mo></msubsup><mo>+</mo><msub><mi>σ</mi><mn>2</mn></msub><msub><mi>u</mi><mn>2</mn></msub><msubsup><mi>v</mi><mn>2</mn><mo>⊤</mo></msubsup></math></p>
+  <p class="eq-explain">The matrix has rank 2. Two coordinates per point suffice exactly.</p></div><div class="side derivation-side">
+  <p class="question">Work with the numbers</p>
+  <p>A centered dataset has variances <math><mn>9</mn><mo>,</mo><mn>4</mn><mo>,</mo><mn>0.25</mn></math> along its three PCA directions.</p>
+  <p>Which direction is removed first?</p>
+  <p>What is the mean squared error after keeping two coordinates? After keeping one?</p>
+  <p>Write the two-coordinate reconstruction using the PCA directions.</p></div></div>
+  </section>
+
+<section class="slide title card" id="s24" aria-roledescription="slide" hidden>
   <p class="eyebrow">Part 4 of 4 · Meeting 16</p>
   <h1>Applications</h1>
   <p class="subtitle">Approximate the data using the axes with the largest variances.</p>
 </section>
 
-<!-- ================================================================ 15: dropping the thin direction -->
-<section class="slide" id="s15" data-part="drop" aria-roledescription="slide" hidden>
+<section class="slide" id="s25" data-part="drop" aria-roledescription="slide" hidden>
   <h2>Projecting onto two axes <span class="part">Applications</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-drop" aria-label="The sheet in space with its three axes. Every point slides along the thin purple axis onto the plane of the blue and orange axes; the view then turns to look from above, and the result is a flat cloud with two coordinates. At the right, the shares kept and lost."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>The cloud has least variation along v<sub>3</sub>.</li>
-        <li>Each point moves along v<sub>3</sub> to the plane of v<sub>1</sub> and v<sub>2</sub>: <span class='math'>x − (x·v<sub>3</sub>) v<sub>3</sub></span>.</li>
-        <li>The projected points have coordinates <span class='math'>(x·v<sub>1</sub>, x·v<sub>2</sub>)</span>: the first two columns of <span class='math'>U S</span>.</li>
-        <li>We store <span class='math'>n × 2</span> coordinates. The discarded variance is <span class='math'>σ<sub>3</sub>² / n</span>.</li>
-      </ul>
+      <p>Least variation: along <math><msub><mi>v</mi><mn>3</mn></msub></math>.</p><p>Project onto the plane of <math><msub><mi>v</mi><mn>1</mn></msub></math> and <math><msub><mi>v</mi><mn>2</mn></msub></math>:<span class="math-line"><math><mover accent="true"><mrow><mi>x</mi></mrow><mo>^</mo></mover><mo>=</mo><mi>x</mi><mo>−</mo><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>3</mn></msub><mo>)</mo><msub><mi>v</mi><mn>3</mn></msub></math></span></p><p>Keep <math><mi>n</mi><mo>×</mo><mn>2</mn></math> coordinates:<span class="math-line"><math><mo>(</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>1</mn></msub><mo>,</mo><mi>x</mi><mo>·</mo><msub><mi>v</mi><mn>2</mn></msub><mo>)</mo></math></span>The first two columns of <math><mi>U</mi><mi>S</mi></math> store them.</p><p>Discarded variance: <math><msubsup><mi>σ</mi><mn>3</mn><mn>2</mn></msubsup><mo>/</mo><mi>n</mi></math>.</p>
       <div class="ctl" data-for="drop"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 16: why it pays -->
-<section class="slide" id="s16" data-part="why" aria-roledescription="slide" hidden>
+<section class="slide" id="s26" data-part="why" aria-roledescription="slide" hidden>
   <h2>Storage and computation <span class="part">Applications</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-why" aria-label="A tall rectangle X, approximately equal to a thin tall U, a tiny square S and a flat V transposed, with the counts of numbers for fifty thousand words with three hundred numbers each and twenty axes kept; then the cost of a product with X and with the factors; then a bar chart of shares over a noise floor."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Keep k axes: <span class='math'>X ≈ U<sub>k</sub> S<sub>k</sub> V<sub>k</sub><sup>T</sup></span>, with U<sub>k</sub> <span class='math'>n × k</span>, S<sub>k</sub> <span class='math'>k × k</span>, V<sub>k</sub><sup>T</sup> <span class='math'>k × m</span>.</li>
-        <li><strong>Memory</strong>: <span class='math'>n k + k + k m</span> numbers instead of <span class='math'>n m</span>.</li>
-        <li><strong>Computation</strong>: a product <span class='math'>X v</span> costs <span class='math'>n m</span> multiplications; with the factors, <span class='math'>n k + k + k m</span>.</li>
-        <li><strong>Noise</strong>: if the leading axes contain most of the signal, discarding the other axes can reduce noise.</li>
-      </ul>
+      <div class="factor-summary">
+        <p>Keep <math aria-label="k"><mi>k</mi></math> principal axes</p>
+        <div class="equation-line"><math aria-label="X approximately equals U sub k S sub k V sub k transpose" class="factorization"><mi>X</mi><mo>≈</mo><msub><mi>U</mi><mi>k</mi></msub><msub><mi>S</mi><mi>k</mi></msub><msubsup><mi>V</mi><mi>k</mi><mo>⊤</mo></msubsup></math></div>
+        <div class="factor-sizes" aria-label="Factor dimensions"><div><math aria-label="U sub k"><msub><mi>U</mi><mi>k</mi></msub></math><math aria-label="n by k"><mi>n</mi><mo>×</mo><mi>k</mi></math></div><div><math aria-label="S sub k"><msub><mi>S</mi><mi>k</mi></msub></math><math aria-label="k by k"><mi>k</mi><mo>×</mo><mi>k</mi></math></div><div><math aria-label="V sub k transpose"><msubsup><mi>V</mi><mi>k</mi><mo>⊤</mo></msubsup></math><math aria-label="k by m"><mi>k</mi><mo>×</mo><mi>m</mi></math></div></div>
+        <p class="diagonal-note"><math aria-label="S sub k"><msub><mi>S</mi><mi>k</mi></msub></math> is diagonal: store only <math aria-label="k"><mi>k</mi></math> values.</p>
+        <p class="cost-heading">Memory and multiplications for <math aria-label="X v"><mi>X</mi><mi>v</mi></math></p>
+        <table class="cost-table" aria-label="Stored values and multiplication counts">
+          <thead><tr><th scope="col">Full matrix</th><th scope="col">Using the factors</th></tr></thead>
+          <tbody><tr><td><math aria-label="n times m"><mi>n</mi><mi>m</mi></math></td><td><math aria-label="n times k plus k plus k times m"><mi>n</mi><mi>k</mi><mo>+</mo><mi>k</mi><mo>+</mo><mi>k</mi><mi>m</mi></math></td></tr></tbody>
+        </table>
+        <p class="noise-note"><strong>Noise:</strong> If the leading axes contain most of the signal, dropping the other axes can reduce noise.</p>
+      </div>
       <div class="ctl" data-for="why"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 17: LoRA -->
-<section class="slide" id="s17" data-part="lora" aria-roledescription="slide" hidden>
+<section class="slide" id="s27" data-part="lora" aria-roledescription="slide" hidden>
   <h2>LoRA: a low-rank weight update <span class="part">Applications</span></h2>
   <div class="row">
     <div class="pic"><canvas id="c-lora" aria-label="A large square W, a weight matrix of a language model, four thousand and ninety-six on a side; a dashed square of the same size for the change that fine-tuning makes; then the change written as a thin tall B times a flat wide A, eight columns and eight rows, with the counts of numbers."></canvas></div>
     <div class="side">
-      <ul class="pts tight">
-        <li>Example: a <span class='math'>4,096 × 4,096</span> weight matrix W has 16.8 million entries.</li>
-        <li>Fine-tuning for a new task changes W to <span class='math'>W + ΔW</span>.</li>
-        <li><strong>LoRA</strong>, low-rank adaptation (2021): <span class='math'>ΔW = B A</span>, with B <span class='math'>4,096 × 8</span> and A <span class='math'>8 × 4,096</span>. 65,536 numbers, 256 times fewer.</li>
-        <li>Training updates A and B and keeps W fixed. ΔW has rank at most 8.</li>
-      </ul>
+      <p>A <math><mn>4,096</mn><mo>×</mo><mn>4,096</mn></math> weight matrix <math><mi>W</mi></math> has 16.8 million entries.</p><p>Fine-tuning changes <math><mi>W</mi></math> to <math><mi>W</mi><mo>+</mo><mi>Δ</mi><mi>W</mi></math>.</p><p><strong>LoRA</strong> means low-rank adaptation (2021):<span class="math-line"><math><mi>Δ</mi><mi>W</mi><mo>=</mo><mi>B</mi><mi>A</mi></math></span></p><div class="factor-sizes lora-sizes"><div><math><mi>B</mi></math><math><mn>4,096</mn><mo>×</mo><mn>8</mn></math></div><div><math><mi>A</mi></math><math><mn>8</mn><mo>×</mo><mn>4,096</mn></math></div></div><p class="note">65,536 values: 256 times fewer.</p><p>Training updates <math><mi>A</mi></math> and <math><mi>B</mi></math> and keeps <math><mi>W</mi></math> fixed. <math><mi>Δ</mi><mi>W</mi></math> has rank at most 8.</p>
       <div class="ctl" data-for="lora"></div>
     </div>
   </div>
 </section>
 
-<!-- ================================================================ 18: three facts -->
-<section class="slide title card" id="s18" aria-roledescription="slide" hidden>
+<section class="slide title card" id="s28" aria-roledescription="slide" hidden>
   <p class="eyebrow">Meeting 16</p>
   <h1>SVD and approximation</h1>
   <p class="subtitle">The SVD describes variation and helps us choose fewer coordinates.</p>
   <div class="why">
     <p class="label">To remember</p>
     <ol class="pts">
-      <li>For centred data, <span class='math'>X = U S V<sup>T</sup></span> gives perpendicular axes ordered by variance.</li>
-      <li>The variance along axis k is <span class='math'>σ<sub>k</sub>² / n</span>. These contributions sum to the total variance.</li>
+      <li>For centered data, <math><mi>X</mi><mo>=</mo><mi>U</mi><mi>S</mi><msup><mi>V</mi><mo>⊤</mo></msup></math> gives perpendicular axes ordered by variance.</li>
+      <li>The variance along axis <math><mi>k</mi></math> is <math><msubsup><mi>σ</mi><mi>k</mi><mn>2</mn></msubsup><mo>/</mo><mi>n</mi></math>. These contributions sum to the total variance.</li>
       <li>Keeping the leading axes reduces the number of coordinates. The discarded variances sum to the mean squared reconstruction error.</li>
     </ol>
   </div>
 </section>
+
 
 <div class="foot"><span>CS 301 · Meeting 16 · The dimensionality of data · the arrow keys turn the slides, the space bar runs the next step</span><span id="counter" aria-live="polite"></span></div>
 <p id="errors" aria-hidden="true"></p>
@@ -546,7 +717,7 @@
   const corrOf = C => C.map((row, i) => row.map((c, j) => c / Math.sqrt(C[i][i] * C[j][j])));
 
   // ================================================================ the knobs, shared by the slides that show them
-  const KNOB = {flat2: 0.7, flat3: 0.6, angle: 20};
+  const KNOB = {flat2: 0.7, flat3: 0.6, angle: 20, normalAngle: 40};
 
   // ================================================================ the cloud with two coordinates
   const N2 = 200, Z2 = whiten(2, N2, 11), HI2 = 17;
@@ -594,19 +765,35 @@
     return I3;
   }
   // the view: a direction d toward the viewer, from a yaw and a pitch; e1 is screen right, e2 screen up
-  const CAM = {yaw: 0.9, pitch: 0.4, spin: true, from: null, to: null, t0: 0};
+  const CAM = {yaw: 0.9, pitch: 0.4, spin: false, view: "oblique", from: null, to: null, t0: 0};
   const lookAlong = w => ({yaw: Math.atan2(w[1], w[0]), pitch: Math.asin(clamp(w[2], -1, 1))});
   const VIEWS = {above: lookAlong(V3g), edge: lookAlong(V2g), oblique: {yaw: 0.9, pitch: 0.4}};
-  function camTo(name, instant) {
-    const v = VIEWS[name]; let dy = v.yaw - CAM.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-    CAM.spin = false;
-    if (instant) { CAM.yaw = v.yaw; CAM.pitch = v.pitch; CAM.to = null; return; }
-    CAM.from = {yaw: CAM.yaw, pitch: CAM.pitch}; CAM.to = {yaw: CAM.yaw + dy, pitch: v.pitch}; CAM.t0 = performance.now();
+  const PCA_CAMERA_PARTS = new Set(["axes3", "total", "share", "drop"]);
+  function cameraView(name) {
+    const p = currentPart();
+    // The slider can exchange the second and third PCA axes. The opening
+    // cloud and the projection derivation instead use their fixed plane.
+    if (p && PCA_CAMERA_PARTS.has(p.name) && (name === "above" || name === "edge")) {
+      return lookAlong(info3().vecs[name === "above" ? 2 : 1]);
+    }
+    return VIEWS[name];
   }
-  function camSpin() { CAM.spin = true; CAM.from = {yaw: CAM.yaw, pitch: CAM.pitch}; CAM.to = {yaw: CAM.yaw, pitch: 0.4}; CAM.t0 = performance.now(); }
+  const cameraYaw = yaw => CAM.yaw + Math.atan2(Math.sin(yaw - CAM.yaw), Math.cos(yaw - CAM.yaw));
+  function camTo(name, instant) {
+    const v = cameraView(name); if (!v) return;
+    CAM.spin = false; CAM.view = name;
+    if (instant) { CAM.yaw = v.yaw; CAM.pitch = v.pitch; CAM.to = null; return; }
+    CAM.from = {yaw: CAM.yaw, pitch: CAM.pitch}; CAM.to = {yaw: cameraYaw(v.yaw), pitch: v.pitch}; CAM.t0 = performance.now();
+  }
+  function camSpin() { CAM.view = null; CAM.spin = true; CAM.from = {yaw: CAM.yaw, pitch: CAM.pitch}; CAM.to = {yaw: CAM.yaw, pitch: 0.4}; CAM.t0 = performance.now(); }
   let camLast = performance.now();
   function camTick(now) {
     const dt = Math.min(0.1, Math.max(0, (now - camLast) / 1000)); camLast = now;
+    if (CAM.view === "above" || CAM.view === "edge") {
+      const v = cameraView(CAM.view);
+      if (CAM.to) CAM.to = {yaw: cameraYaw(v.yaw), pitch: v.pitch};
+      else { CAM.yaw = v.yaw; CAM.pitch = v.pitch; }
+    }
     if (CAM.to) { const u = ease((now - CAM.t0) / 1000); CAM.yaw = lerp(CAM.from.yaw, CAM.to.yaw, u); CAM.pitch = lerp(CAM.from.pitch, CAM.to.pitch, u); if (u >= 1) CAM.to = null; }
     else if (CAM.spin) CAM.yaw += 0.28 * dt;
   }
@@ -616,7 +803,7 @@
   }
   // the scene: the cloud with three coordinates, drawn far to near, with the coordinate axes and the axes of the cloud
   function scene3(g, o) {
-    const I = info3(), cam = camBasis(), cx = o.cx, cy = o.cy, sc = o.sc;
+    const I = o.info || info3(), cam = camBasis(), cx = o.cx, cy = o.cy, sc = o.sc;
     const pr = q => [cx + sc * dot3(q, cam.e1), cy - sc * dot3(q, cam.e2), dot3(q, cam.d)];
     if (o.dataAxes) [[1, 0, 0], [0, 1, 0], [0, 0, 1]].forEach((e, k) => {
       const a = pr(e.map(v => -v * 2.0)), c = pr(e.map(v => v * 2.0));
@@ -656,7 +843,13 @@
     try { history.replaceState(null, "", location.pathname + location.search + "#" + (k + 1)); } catch (e) { /* a sandboxed document */ }
     document.documentElement.setAttribute("data-slide", String(k + 1));
     if (focus) { const h = slides[k].querySelector("h1, h2"); h.setAttribute("tabindex", "-1"); h.focus({preventScroll: true}); }
-    const p = currentPart(); if (p) { (p.sync || []).forEach(f => f()); render(p); }
+    const p = currentPart(); if (p) {
+      if (["flat3", "axes3", "plane", "total", "share", "drop"].includes(p.name)) {
+        if (!p.visited) { camTo("oblique", true); p.visited = true; }
+        else if (CAM.view) camTo(CAM.view, true);
+      }
+      (p.sync || []).forEach(f => f()); render(p);
+    }
   }
   function fromHash() { const n = parseInt(location.hash.replace("#", ""), 10); go(isNaN(n) ? 0 : n - 1, false); }
   function fullScreen() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }
@@ -673,7 +866,7 @@
                   dur: spec.dur || 1.2, step: 0, t: 0, t0: performance.now(), playing: false, drawn: false, sync: []};
     PARTS[name] = part;
     const ctl = document.querySelector('.ctl[data-for="' + name + '"]');
-    let html = '<p class="label">The picture, step by step</p>';
+    let html = '<p class="label">Controls</p>';
     (spec.knobs || []).forEach(kn => {
       html += '<div class="knob"><label for="k-' + name + '-' + kn.key + '">' + kn.label + '</label>' +
         (kn.ends ? '<span class="end">' + kn.ends[0] + '</span>' : '') +
@@ -686,10 +879,29 @@
       (spec.extra || []).map((x, i) => '<button type="button" id="b-' + name + '-x' + i + '">' + x.label + '</button>').join("") + '</div>' +
       '<div class="readout" aria-live="polite"><p class="label" id="n-' + name + '"></p><p id="r-' + name + '"></p><p class="sum" id="rl-' + name + '"></p></div>';
     ctl.innerHTML = html;
+    ctl.parentElement.classList.add("has-controls");
+    const readout = ctl.querySelector(".readout"), stepText = document.createElement("div");
+    stepText.className = "step-text";
+    const activeText = $("r-" + name);
+    activeText.replaceWith(stepText); stepText.appendChild(activeText);
+    spec.labels.forEach(text => {
+      const reserve = document.createElement("p");
+      reserve.className = "step-size"; reserve.setAttribute("aria-hidden", "true");
+      reserve.innerHTML = text; stepText.appendChild(reserve);
+    });
+    const summaryLines = {flat2: 1, least: 1, axes2: 2, axes3: 2, total: 3, proj: 2, share: 3, drop: 2}[name] || 0;
+    if (summaryLines) {
+      readout.classList.add("has-summary");
+      readout.style.setProperty("--summary-lines", String(summaryLines));
+    }
     (spec.knobs || []).forEach(kn => {
       const inp = $("k-" + name + "-" + kn.key), kv = $("kv-" + name + "-" + kn.key);
       const show = () => { kv.textContent = kn.fmt ? kn.fmt(KNOB[kn.key]) : String(KNOB[kn.key]); };
-      inp.addEventListener("input", () => { KNOB[kn.key] = parseFloat(inp.value); show(); render(part); });
+      inp.addEventListener("input", () => {
+        KNOB[kn.key] = parseFloat(inp.value); show();
+        if (kn.key === "flat3" && (CAM.view === "above" || CAM.view === "edge")) camTo(CAM.view, true);
+        render(part);
+      });
       inp.addEventListener("pointerup", () => inp.blur());
       part.sync.push(() => { inp.value = String(KNOB[kn.key]); show(); });
       show();
@@ -747,9 +959,7 @@
 
   // ================================================================ 3: two coordinates
   definePart("flat2", {w: 760, h: 560, steps: 2, dur: 1.0, knobs: [FLAT2],
-    labels: ["200 points with two coordinates. Move the slider to change the cloud’s thickness.",
-             "Near a line, a point’s position along that line gives a useful one-coordinate approximation.",
-             "The correlation r approaches 1 as this cloud narrows."],
+    labels: ["200 points with two coordinates. Move the slider to change the cloud’s thickness.", "Near a line, a point’s position along that line gives a useful one-coordinate approximation.", "The correlation <math><mi>r</mi></math> approaches 1 as this cloud narrows."],
     draw(g, s, t) {
       const I = info2(), u = ease(t / 0.6);
       axes2d(g); points2(g, I.P);
@@ -777,44 +987,534 @@
     }});
 
   // ================================================================ 4: three coordinates
-  definePart("flat3", {w: 760, h: 560, steps: 3, dur: 1.2, knobs: [FLAT3], extra: VIEW_BUTTONS,
-    onstep(part) { if (part.step === 3) camTo("edge"); else if (part.step === 0) camSpin(); },
-    labels: ["240 points with three coordinates. Move the slider to reduce the cloud’s thickness.",
-             "The <strong>covariance matrix</strong> <span class='math'>C = X<sup>T</sup> X / n</span>, for X centred: the three variances on the diagonal, the covariances off it.",
-             "Near the plane, all three pairwise correlations are about −0.5. None is close to ±1.",
-             "The <strong>edge-on view</strong> shows the thickness. A linear combination of all three coordinates varies very little."],
-    draw(g, s, t) {
-      const u = ease(t / 0.6);
-      const sc = scene3(g, {cx: 270, cy: 290, sc: 70, dataAxes: true}), I = sc.I;
-      label(g, "n = 240 points, m = 3 coordinates", 40, 36, 19, "600");
-      if (s >= 1) {
-        g.globalAlpha = s === 1 ? u : 1;
-        labelT(g, "C = Xᵀ X / n", 552, 88, 18, "600");
-        grid(g, I.C, 552, 108, 66, 42, {font: F(17, "600"), fmt: x => num(x, 2), fills: (i, j) => i === j ? ORANGE_L : "#fff"});
-        label(g, "diagonal: the variances", 552, 250, 15, "", MUTED);
-        g.globalAlpha = 1;
+  function model3(t) {
+    const P = Z3.map(z => [0, 1, 2].map(c => S1g*z[0]*V1g[c] + z[1]*V2g[c] + t*z[2]*V3g[c]));
+    const C = covOf(P), e = eigSym(C);
+    return {P, C, R: corrOf(C), vecs: fixSigns(e.vecs, REF3), lam: e.vals,
+      sig: e.vals.map(l => Math.sqrt(Math.max(0,l)*N3)), t};
+  }
+  const INTRO = model3(0), DERIVE = model3(0.24);
+  $("intro-array").innerHTML = INTRO.P.slice(0,6).map(row => '<tr>' + row.map(x => '<td>' + num(x,3) + '</td>').join('') + '</tr>').join('');
+
+  // Use the same 2D cloud at its narrow end, and the exact 3D opening data.
+  const NARROW2 = Z2.map(z => [z[0]*CT-0.02*z[1]*ST,z[0]*ST+0.02*z[1]*CT]);
+  const NARROW_C = covOf(NARROW2);
+  const NARROW_R = NARROW_C[0][1]/Math.sqrt(NARROW_C[0][0]*NARROW_C[1][1]);
+  function pairPlot(g,P,a,b,x,y,w,h,colour) {
+    const rx=Math.max(...P.map(q=>Math.abs(q[a])))*1.10,ry=Math.max(...P.map(q=>Math.abs(q[b])))*1.10;
+    const px=v=>x+w/2+v*w/(2*rx),py=v=>y+h/2-v*h/(2*ry);
+    line(g,x,py(0),x+w,py(0),FAINT,1.4);line(g,px(0),y,px(0),y+h,FAINT,1.4);
+    for(const tick of [-2,2]) {
+      if(Math.abs(tick)<rx){line(g,px(tick),py(0)-3,px(tick),py(0)+3,FAINT,1);label(g,String(tick),px(tick),py(0)+15,12,'',MUTED,'center');}
+      if(Math.abs(tick)<ry){line(g,px(0)-3,py(tick),px(0)+3,py(tick),FAINT,1);label(g,String(tick),px(0)-7,py(tick),12,'',MUTED,'right');}
+    }
+    P.forEach(q=>dot(g,px(q[a]),py(q[b]),2.2,colour));
+    label(g,'x'+SUBS[a],x+w-2,py(0)-12,17,'600',INK,'right');
+    label(g,'x'+SUBS[b],px(0)+9,y+3,17,'600',INK);
+  }
+  definePart('correlations',{w:760,h:560,steps:2,dur:1.1,
+    labels:["The 2D cloud is almost a line. Does the same pairwise clue identify a plane in 3D?", "Every pair has correlation −0.50. Each pair plot has width, even though all 240 points lie exactly in one plane.", "Looking for correlations near ±1 misses this plane. The exact relationship involves all three coordinates."],
+    draw(g,s,t) {
+      label(g,'2D: near a line',30,32,23,'600',BLUE);
+      pairPlot(g,NARROW2,0,1,35,85,175,170,'rgba(42,120,214,.65)');
+      label(g,'r = '+num(NARROW_R,4),123,285,23,'600',BLUE,'center');
+      line(g,237,65,237,312,FAINT,1);
+      label(g,'3D: the three coordinate pairs',270,32,23,'600');
+      if(s===0){label(g,'Will any pair look like a line?',500,157,23,'600',MUTED,'center');}
+      if(s>=1) {
+        g.globalAlpha=s===1?ease(t/0.65):1;
+        [[0,1],[0,2],[1,2]].forEach(([a,b],i)=>{
+          const x=270+i*161;
+          pairPlot(g,INTRO.P,a,b,x,85,135,170,'rgba(26,26,26,.43)');
+          label(g,'r = '+num(INTRO.R[a][b],2),x+67.5,285,21,'600',ORANGE,'center');
+        });
+        g.globalAlpha=1;
       }
-      if (s >= 2) {
-        g.globalAlpha = s === 2 ? u : 1;
-        label(g, "correlations", 552, 300, 18, "600");
-        grid(g, I.R, 552, 320, 66, 42, {font: F(17, "600"), fmt: x => num(x, 2), fills: (i, j) => i === j ? "#fff" : rgb(ramp(Math.abs(I.R[i][j]) * 0.85))});
-        label(g, "largest |r|: " + num(I.maxr, 2), 552, 462, 17, "600");
-        label(g, "none near 1", 552, 486, 15, "", MUTED);
-        g.globalAlpha = 1;
-        live("flat3", math("r₁₂ = " + num(I.R[0][1], 2)) + " · " + math("r₁₃ = " + num(I.R[0][2], 2)) + " · " + math("r₂₃ = " + num(I.R[1][2], 2)));
+      if(s>=2) {
+        g.globalAlpha=ease(t/0.65);
+        line(g,30,322,730,322,FAINT,1);
+        label(g,'Correlation matrix',35,352,22,'600');
+        grid(g,INTRO.R,35,380,62,40,{font:F(19,'600'),fmt:x=>num(x,2),fills:(i,j)=>i===j?'#fff':ORANGE_L});
+        label(g,'Yet every point satisfies',286,370,23,'600');
+        label(g,'x₁ + x₂ + 1.5x₃ = 0',286,413,29,'600',PURPLE);
+        label(g,'An exact plane: rank(X) = 2',286,461,23,'600');
+        label(g,'No pair is close to perfectly correlated.',286,499,20,'',MUTED);
+        label(g,'The full matrix still contains the joint dependence.',35,539,17,'',MUTED);
+        g.globalAlpha=1;
       }
-      if (s >= 3) label(g, "edge-on: the cloud’s thickness", 40, 540, 19, "600", RED);
-      else viewTip(g, "Turn, Edge-on, From above: the buttons at the right");
-    }});
+    }
+  });
+
+  // Two camera views of the same exact cloud, with no rescaling of its axes.
+  // The screen bases (v1,v3) and (v1,v2) are orthonormal; the first is edge-on.
+  definePart('pov',{w:760,h:560,steps:2,dur:1.1,
+    labels:["The edge-on view exposes a direction with no spread: perpendicular to the plane.", "Face-on, we see the spread within the plane. Which axes best describe it?", "Distinct spreads fix the PCA axes up to reversal. Equal spreads can leave a choice."],
+    draw(g,s,t) {
+      const scores=INTRO.P.map(q=>[dot3(q,V1g),dot3(q,V2g),dot3(q,V3g)]);
+      const extent=Math.max(3,...scores.flatMap(q=>q.slice(0,2).map(Math.abs)));
+      const scale=142/extent,cy=277,left=190,right=570;
+      label(g,'Same cloud · two views',30,35,22,'600');
+      label(g,'EDGE-ON',left,94,18,'600',MUTED,'center');
+      label(g,'FACE-ON',right,94,18,'600',MUTED,'center');
+      line(g,380,119,380,434,FAINT,1);
+      // The normal stays visible in the edge-on view, even though its scores are zero.
+      line(g,left-151,cy,left+151,cy,FAINT,1);
+      arrow(g,left,cy+112,left,cy-112,PURPLE,3);
+      scores.forEach(q=>dot(g,left+scale*q[0],cy-scale*q[2],3.4,'rgba(26,26,26,.48)'));
+      label(g,'No spread',left+13,cy-82,21,'600',PURPLE);
+      label(g,'perpendicular to the plane',left,426,19,'',MUTED,'center');
+      if(s===0) {
+        label(g,'What happens',right,260,23,'600',MUTED,'center');
+        label(g,'within the plane?',right,292,23,'600',MUTED,'center');
+      }
+      if(s>=1) {
+        g.globalAlpha=s===1?ease(t/.65):1;
+        scores.forEach(q=>dot(g,right+scale*q[0],cy-scale*q[1],3.4,'rgba(26,26,26,.48)'));
+        if(s===1)label(g,'Two directions of spread',right,426,19,'',MUTED,'center');
+        g.globalAlpha=1;
+      }
+      if(s>=2) {
+        g.globalAlpha=ease(t/.65);
+        arrow(g,right-151,cy,right+151,cy,BLUE,3);
+        arrow(g,right,cy+112,right,cy-112,ORANGE,3);
+        label(g,'greatest spread',right,426,19,'600',BLUE,'center');
+        label(g,'remaining spread',right,cy-125,19,'600',ORANGE,'center');
+        g.globalAlpha=1;
+      }
+      line(g,30,463,730,463,FAINT,1);
+      label(g,s<2?'Edge-on, the plane appears as a line.':'SVD is used to find the PCA axes.',380,505,23,'600',s<2?INK:RED,'center');
+      label(g,s<2?'The points stay fixed; only the view changes.':'PCA also applies to data with more than three coordinates.',380,539,18,'',MUTED,'center');
+    }
+  });
+
+  const BOXL=[3.2,4.2,2.4];
+  const CORNERS=[];for(const x of [-BOXL[0],BOXL[0]])for(const y of [-BOXL[1],BOXL[1]])for(const z of [-BOXL[2],BOXL[2]])CORNERS.push([x,y,z]);
+  function introView() {
+    const cam=camBasis(),xs=CORNERS.map(q=>dot3(q,cam.e1)),ys=CORNERS.map(q=>dot3(q,cam.e2));
+    const xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+    const sc=Math.min(660/(xmax-xmin),420/(ymax-ymin));
+    const cx=380-sc*(xmin+xmax)/2,cy=275+sc*(ymin+ymax)/2;
+    return {cx,cy,sc,pr:q=>[cx+sc*dot3(q,cam.e1),cy-sc*dot3(q,cam.e2)]};
+  }
+  function coordinateBox(g, pr) {
+    CORNERS.forEach(p=>{for(let a=0;a<3;a++)if(p[a]<0){const q=p.slice();q[a]*=-1;const u=pr(p),v=pr(q);line(g,u[0],u[1],v[0],v[1],"#d0d0cb",1);}});
+    for(const v of [-3,-2,-1,0,1,2,3]) {
+      const a=pr([-BOXL[0],v,-BOXL[2]]),b=pr([BOXL[0],v,-BOXL[2]]);
+      const c=pr([v,-BOXL[1],-BOXL[2]]),d=pr([v,BOXL[1],-BOXL[2]]);
+      line(g,a[0],a[1],b[0],b[1],"#ecece8",1);line(g,c[0],c[1],d[0],d[1],"#ecece8",1);
+    }
+  }
+  definePart("flat3", {w:760,h:560,steps:3,dur:1.3,
+    extra:[{label:"Turn",run:()=>camSpin()},{label:"Edge-on",run:()=>camTo("edge")},
+           {label:"From above",run:()=>camTo("above")},{label:"Oblique",run:()=>camTo("oblique")}],
+    onstep(part) {
+      if(part.step===0) camTo("oblique",true);
+      if(part.step===1) camTo("edge");
+      if(part.step===3) camTo("above");
+    },
+    labels:["240 points. Is the third coordinate necessary? Drag to change the view.", "Seen edge-on, the cloud has zero thickness. It lies in a plane.", "Every point satisfies<span class=\"math-line\"><math><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><mn>1.5</mn><msub><mi>x</mi><mn>3</mn></msub><mo>=</mo><mn>0</mn></math></span>The normal direction has zero variance.", "Seen from above the plane, the cloud has width in two directions. Its rank is 2, even though its edge-on image is a line."],
+    draw(g,s,t) {
+      const view=introView();coordinateBox(g,view.pr);
+      const sc=scene3(g,{...view,dataAxes:true,info:INTRO});
+      label(g,"The 240 rows of X",30,30,22,"600");
+      if(s>=2) {
+        if(s===2){const a=sc.pr(V3g.map(x=>-2*x)),b=sc.pr(V3g.map(x=>2*x));
+          line(g,a[0],a[1],b[0],b[1],PURPLE,3);label(g,"normal",b[0]+10,b[1]-8,18,"600",PURPLE);}
+        label(g,"x₁ + x₂ + 1.5x₃ = 0",30,514,23,"600",PURPLE);
+      }
+      label(g,s===0 ? "Drag to rotate · the coordinates stay fixed" : s===1 ? "Zero thickness in this view" : s===3 ? "Two directions within the plane" : "No variation along the normal",30,544,17,"",MUTED);
+    }
+  });
+  // Pointer movement rotates the camera; a completed drag must not advance a step.
+  {
+    const canvas=$("c-flat3"); let drag=null,suppressClick=false;
+    canvas.addEventListener('pointerdown',e=>{
+      if(e.button!==0) return;
+      CAM.view=null;CAM.spin=false;CAM.to=null;drag={x:e.clientX,y:e.clientY,yaw:CAM.yaw,pitch:CAM.pitch,moved:false};
+      suppressClick=false;canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!drag)return;
+      const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+      if(Math.hypot(dx,dy)>4)drag.moved=true;
+      if(drag.moved){CAM.yaw=drag.yaw-dx*0.008;CAM.pitch=clamp(drag.pitch+dy*0.008,-1.5,1.5);render(PARTS.flat3);}
+    });
+    canvas.addEventListener('pointerup',e=>{if(!drag)return;suppressClick=drag.moved;drag=null;canvas.releasePointerCapture(e.pointerId);});
+    canvas.addEventListener('pointercancel',()=>{drag=null;suppressClick=false;});
+    canvas.addEventListener('click',e=>{if(suppressClick){e.stopImmediatePropagation();suppressClick=false;}},true);
+  }
+
+  // The same centered cloud throughout: find one direction, remove its
+  // component, then describe the remaining points within their plane.
+  const PHI=0.55;
+  const planeBasis=[V1g.map((x,i)=>Math.cos(PHI)*x+Math.sin(PHI)*V2g[i]),
+                    V1g.map((x,i)=>-Math.sin(PHI)*x+Math.cos(PHI)*V2g[i])];
+  const remove3=q=>q.map((x,i)=>x-dot3(q,V3g)*V3g[i]);
+  const PROJECTED3=DERIVE.P.map(remove3);
+  const LEAST_CAMERA=(()=>{
+    const d=unit(V2g.map((x,i)=>.94*x+.34*V3g[i]));
+    const right=neg(V1g),up=cross(d,right),roll=.16;
+    const e1=right.map((x,i)=>Math.cos(roll)*x+Math.sin(roll)*up[i]);
+    const e2=right.map((x,i)=>-Math.sin(roll)*x+Math.cos(roll)*up[i]);
+    return {d,e1,e2};
+  })();
+  const makeView=(basis,cx=380,cy=263,sc=68)=>({
+    ...basis,cx,cy,sc,
+    pr:q=>[cx+sc*dot3(q,basis.e1),cy-sc*dot3(q,basis.e2),dot3(q,basis.d)]
+  });
+  const LEAST_VIEW=makeView(LEAST_CAMERA);
+  const planeBounds=planeBasis.map(v=>{
+    const coordinates=PROJECTED3.map(q=>dot3(q,v));
+    return [Math.min(...coordinates)-.18,Math.max(...coordinates)+.18];
+  });
+  const planePoint=(a,b)=>planeBasis[0].map((x,i)=>a*x+b*planeBasis[1][i]);
+  const planeCorners=[[0,0],[1,0],[1,1],[0,1]].map(([i,j])=>planePoint(planeBounds[0][i],planeBounds[1][j]));
+  function drawKeptPlane(g,view,alpha=1){
+    const corners=planeCorners.map(view.pr);
+    g.save();g.globalAlpha=alpha;
+    g.beginPath();corners.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.closePath();
+    g.fillStyle='rgba(42,120,214,.07)';g.fill();g.strokeStyle='rgba(42,120,214,.35)';g.lineWidth=1.3;g.stroke();
+    g.restore();
+  }
+  function drawCloud(g,P,view,alpha=1){
+    const points=P.map(view.pr).sort((a,b)=>a[2]-b[2]);
+    const near=points[0][2],far=points[points.length-1][2];
+    g.save();g.globalAlpha=alpha;
+    points.forEach(q=>{const depth=(q[2]-near)/(far-near+1e-9);dot(g,q[0],q[1],3+1.2*depth,'rgba(26,26,26,'+(.32+.3*depth)+')');});
+    g.restore();
+  }
+  const EXAMPLE3=DERIVE.P.reduce((best,q,i)=>{
+    const score=(dot3(q,LEAST_CAMERA.e1)-1.6)**2+(dot3(q,V2g)-.4)**2+4*(dot3(q,V3g)-.55)**2;
+    return score<best.score?{i,score}:best;
+  },{i:0,score:Infinity}).i;
+  function leastState(s,t){
+    const angle=s===0?KNOB.normalAngle:s===1?lerp(PARTS.least.seekFrom??40,0,ease(t/1.4)):0;
+    const th=angle*Math.PI/180,w=V3g.map((x,i)=>Math.cos(th)*x+Math.sin(th)*V1g[i]);
+    const components=DERIVE.P.map(q=>w.map(x=>dot3(q,w)*x));
+    const amount=s===3?ease(t/1.6):0;
+    const points=DERIVE.P.map((q,k)=>q.map((x,i)=>x-amount*components[k][i]));
+    const variance=DERIVE.P.reduce((sum,q)=>sum+dot3(q,w)**2,0)/N3;
+    return {angle,w,components,amount,points,variance};
+  }
+  definePart("least",{w:760,h:560,steps:3,dur:2,
+    knobs:[{key:"normalAngle",label:"Direction",min:-90,max:90,step:1,fmt:v=>v+"°"}],
+    onstep(part){
+      if(part.step===0)KNOB.normalAngle=40;
+      if(part.step===1){part.seekFrom=KNOB.normalAngle;KNOB.normalAngle=0;}
+      if(part.step>1)KNOB.normalAngle=0;
+      part.sync.forEach(f=>f());
+    },
+    labels:["Rotate <math><mi>w</mi></math>. The green dots show the points’ projections onto it. Compare their variance, just as in 2D.", "The projections are closest together along <math><msub><mi>v</mi><mn>3</mn></msub></math>. This is the direction with the smallest variance.", "The blue plane is perpendicular to <math><msub><mi>v</mi><mn>3</mn></msub></math>. The purple component tells us how far a point sits from this plane.", "Subtract that component from every point. The points move along <math><msub><mi>v</mi><mn>3</mn></msub></math> onto the plane. Their <math><msub><mi>v</mi><mn>3</mn></msub></math> coordinate is now zero."],
+    draw(g,s,t){
+      const state=leastState(s,t),{angle,w,components,amount,points,variance}=state;
+      const view=LEAST_VIEW,pr=view.pr,origin=pr([0,0,0]);
+      $("k-least-normalAngle").disabled=s>0;
+      $("kv-least-normalAngle").textContent=Math.round(angle)+"°";
+      document.querySelectorAll('#s16 [data-reveal]').forEach(e=>e.style.visibility=s>=Number(e.dataset.reveal)?'visible':'hidden');
+      if(s>=2)drawKeptPlane(g,view,s===2?ease(t/.7):1);
+      if(s<2){
+        [[1,0,0],[0,1,0],[0,0,1]].forEach((axis,i)=>{
+          const a=pr(axis.map(x=>-2*x)),b=pr(axis.map(x=>2*x));
+          line(g,a[0],a[1],b[0],b[1],'#c8c8c2',1.2);
+          label(g,'x'+SUBS[i],b[0]+7,b[1]+3,15,'',MUTED);
+        });
+        DERIVE.P.forEach((q,i)=>{
+          const p=pr(components[i]),a=pr(q);
+          if(i%10===0)line(g,a[0],a[1],p[0],p[1],'rgba(42,138,58,.18)',1);
+        });
+      }
+      if(s===3&&amount<1){
+        DERIVE.P.forEach((q,i)=>{if(i%4)return;const a=pr(q),b=pr(PROJECTED3[i]);
+          g.globalAlpha=1-amount;dot(g,a[0],a[1],2.5,'#fff',PURPLE,1);g.globalAlpha=1;
+          line(g,a[0],a[1],b[0],b[1],'rgba(106,63,181,'+(.5*(1-amount))+')',1.5);
+        });
+      }
+      drawCloud(g,points,view,s===2?.3:1);
+      const col=s===0?GREEN:PURPLE;
+      const extent=Math.max(2.6,...components.map(q=>Math.hypot(...q)))*1.05;
+      const a=pr(w.map(x=>-extent*x)),b=pr(w.map(x=>extent*x));
+      if(s<3||amount<1){
+        g.globalAlpha=s===3?1-amount:1;
+        arrow(g,a[0],a[1],b[0],b[1],col,3,12);
+        halo(g,s===0?'w':s===1&&t<1.4?'w':'v₃',b[0]+10,b[1]-6,22,'600',col);
+        g.globalAlpha=1;
+      }
+      if(s<2){
+        components.forEach(q=>{const p=pr(q);dot(g,p[0],p[1],3,col);});
+        dot(g,origin[0],origin[1],3.5,'#fff',INK,1.2);
+      }
+      if(s===2){
+        const x=DERIVE.P[EXAMPLE3],p=components[EXAMPLE3],r=PROJECTED3[EXAMPLE3];
+        const px=pr(x),pp=pr(p),rr=pr(r);
+        // The two parallel purple arrows are the same component.
+        arrow(g,origin[0],origin[1],pp[0],pp[1],PURPLE,4,9);
+        arrow(g,rr[0],rr[1],px[0],px[1],PURPLE,4,9);
+        g.setLineDash([4,5]);line(g,px[0],px[1],pp[0],pp[1],PURPLE,.9);g.setLineDash([]);
+        line(g,origin[0],origin[1],rr[0],rr[1],BLUE,2);
+        dot(g,px[0],px[1],6,ORANGE,INK,1);dot(g,rr[0],rr[1],6,BLUE,'#fff',1);
+        halo(g,'x',px[0]+12,px[1]-10,23,'600',ORANGE);
+        halo(g,'x̂',rr[0]+12,rr[1]+17,23,'600',BLUE);
+        halo(g,'component along v₃',535,155,18,'600',PURPLE);
+        line(g,531,164,(px[0]+rr[0])/2+7,(px[1]+rr[1])/2,PURPLE,1);
+      }
+      label(g,s===0?'Compare directions in this 3D cloud':s===1?'Find the smallest variance':s===2?'One point: the component we remove':'All points: remove the v₃ component',30,30,22,'600');
+      line(g,30,455,730,455,FAINT,1);
+      if(s<2){
+        label(g,'Variance along '+(s===1&&t>=1.4?'v₃':'w')+': '+num(variance,4),30,492,28,'600',col);
+        label(g,'The cloud stays fixed while the direction changes.',30,533,18,'',MUTED);
+      }else{
+        label(g,'Remove: (x·v₃)v₃',30,492,24,'600',PURPLE);
+        label(g,'Keep: x̂ = x − (x·v₃)v₃',30,533,24,'600',BLUE);
+      }
+      live('least',s<2?'Variance: '+num(variance,4):'Mean squared change: '+num(DERIVE.lam[2],4));
+    }
+  });
+
+  // Rotate the remaining plane into its own 2D coordinate system. The final
+  // view matches the opening view of the following recursive step exactly.
+  function anglesForBasis(basis){
+    const yaw=Math.atan2(basis.d[1],basis.d[0]),pitch=Math.asin(basis.d[2]);
+    const right=[-Math.sin(yaw),Math.cos(yaw),0],up=cross(basis.d,right);
+    return {yaw,pitch,roll:Math.atan2(dot3(basis.e1,up),dot3(basis.e1,right))};
+  }
+  const PLANE_VIEWS={
+    oblique:{...anglesForBasis(LEAST_CAMERA),cx:380,cy:263,sc:68},
+    above:{...anglesForBasis({d:V3g,e1:planeBasis[0],e2:planeBasis[1]}),cx:268,cy:246,sc:50},
+    edge:{...anglesForBasis({d:V2g,e1:neg(V1g),e2:V3g}),cx:380,cy:263,sc:68}
+  };
+  const PLANE_CAM={from:PLANE_VIEWS.oblique,to:PLANE_VIEWS.oblique,t0:0};
+  function planeCamera(now=performance.now()){
+    const u=ease((now-PLANE_CAM.t0)/1400),a=PLANE_CAM.from,b=PLANE_CAM.to,result={};
+    ['yaw','pitch','roll','cx','cy','sc'].forEach(k=>{
+      const delta=k==='yaw'||k==='roll'?Math.atan2(Math.sin(b[k]-a[k]),Math.cos(b[k]-a[k])):b[k]-a[k];
+      result[k]=a[k]+u*delta;
+    });
+    return result;
+  }
+  function planeCamTo(name,instant=false){
+    PLANE_CAM.from=instant?PLANE_VIEWS[name]:planeCamera();PLANE_CAM.to=PLANE_VIEWS[name];
+    PLANE_CAM.t0=instant?0:performance.now();
+  }
+  function planeView(now){
+    const a=planeCamera(now),{yaw,pitch,roll}=a;
+    const d=[Math.cos(pitch)*Math.cos(yaw),Math.cos(pitch)*Math.sin(yaw),Math.sin(pitch)];
+    const right=[-Math.sin(yaw),Math.cos(yaw),0],up=cross(d,right);
+    const e1=right.map((x,i)=>Math.cos(roll)*x+Math.sin(roll)*up[i]);
+    const e2=right.map((x,i)=>-Math.sin(roll)*x+Math.cos(roll)*up[i]);
+    // Keep the rotating surface below the heading and above the caption.
+    let sc=a.sc;
+    planeCorners.forEach(q=>{
+      const x=dot3(q,e1),y=dot3(q,e2);
+      if(x<0)sc=Math.min(sc,(a.cx-30)/-x);else if(x>0)sc=Math.min(sc,(730-a.cx)/x);
+      if(y<0)sc=Math.min(sc,(470-a.cy)/-y);else if(y>0)sc=Math.min(sc,(a.cy-60)/y);
+    });
+    return makeView({d,e1,e2},a.cx,a.cy,sc);
+  }
+  definePart("plane",{w:760,h:560,steps:3,dur:1.8,
+    extra:[{label:"Edge-on",run:()=>planeCamTo("edge")},{label:"From above",run:()=>planeCamTo("above")}],
+    onstep(part,instant){
+      if(part.step===0)planeCamTo("oblique",true);
+      else planeCamTo("above",Boolean(instant));
+    },
+    labels:["These are the points left after removing the <math><msub><mi>v</mi><mn>3</mn></msub></math> component. They all lie in one plane.", "Turn to face the plane. We can now work with these points as a 2D dataset.", "Place two unit axes at right angles in the plane. Call them <math><msub><mi>q</mi><mn>1</mn></msub></math> and <math><msub><mi>q</mi><mn>2</mn></msub></math>.", "Each row of <math><msub><mi>Y</mi><mn>2</mn></msub></math> stores a point’s two coordinates. Next, find the least-variance direction within this plane."],
+    draw(g,s,t){
+      document.querySelectorAll('#s17 [data-reveal]').forEach(e=>e.style.visibility=s>=Number(e.dataset.reveal)?'visible':'hidden');
+      const view=planeView(),pr=view.pr,fade=s===2?ease(t/.7):1;
+      drawKeptPlane(g,view);drawCloud(g,PROJECTED3,view);
+      if(s>=2){
+        g.globalAlpha=fade;
+        const ends=[[-3.8,3.5],[-4.2,3.9]];
+        planeBasis.forEach((axis,i)=>{
+          const a=pr(axis.map(x=>x*ends[i][0])),b=pr(axis.map(x=>x*ends[i][1]));
+          arrow(g,a[0],a[1],b[0],b[1],AX[i],2,9);
+          halo(g,'q'+SUBS[i],b[0]+8,b[1]+(i===0?14:2),19,'600',AX[i]);
+        });
+        // A small square marks the right angle between q1 and q2.
+        const p=[planePoint(.25,0),planePoint(.25,.25),planePoint(0,.25)].map(pr);
+        line(g,p[0][0],p[0][1],p[1][0],p[1][1],MUTED,1.5);line(g,p[1][0],p[1][1],p[2][0],p[2][1],MUTED,1.5);
+        g.globalAlpha=1;
+        label(g,'Two axes in the plane',500,115,21,'600');
+        label(g,'q₁ · q₂ = 0',500,153,22,'600');
+        label(g,'One coordinate along each',500,190,17,'',MUTED);
+      }
+      if(s===3){
+        const q=PROJECTED3[EXAMPLE3],coords=planeBasis.map(v=>dot3(q,v)),p=pr(q);
+        const a=pr(planeBasis[0].map(x=>x*coords[0])),b=pr(planeBasis[1].map(x=>x*coords[1]));
+        g.setLineDash([4,4]);line(g,a[0],a[1],p[0],p[1],BLUE,1.5);line(g,b[0],b[1],p[0],p[1],ORANGE,1.5);g.setLineDash([]);
+        dot(g,p[0],p[1],6,ORANGE,INK,1);halo(g,'x̂',p[0]+10,p[1]-12,22,'600',INK);
+        label(g,'This point',500,255,18,'600');
+        label(g,'q₁ coordinate: '+num(coords[0],2),500,291,20,'600',BLUE);
+        label(g,'q₂ coordinate: '+num(coords[1],2),500,324,20,'600',ORANGE);
+        label(g,'Y₂ = XQ₂',500,395,25,'600');
+        label(g,'240 rows × 2 coordinates',500,430,17,'',MUTED);
+      }
+      label(g,s===0?'The remaining points lie in one plane':s===1?'The same points, viewed face-on':s===2?'Two perpendicular axes within the plane':'Two coordinates for each remaining point',30,30,22,'600');
+      label(g,s<2?'Only the view changes. The points stay fixed.':s===2?'These axes describe the plane. We will now apply PCA inside it.':'Y₂ is the two-dimensional dataset for the next step.',30,535,18,'',MUTED);
+    }
+  });
+
+  // text with a white halo, for labels drawn over points
+  function halo(g,s,x,y,size,weight,colour,align){
+    g.font=F(size,weight);g.textAlign=align||"left";g.lineJoin="round";g.strokeStyle="rgba(255,255,255,.92)";g.lineWidth=5;
+    g.strokeText(s,x,y);g.fillStyle=colour||INK;g.fillText(s,x,y);
+  }
+  // the recursion at a glance: X (n × 3) → Y₂ (n × 2) → Y₁ (n × 1); stage is the problem being solved now
+  function ladder(g,x,y,stage){
+    const H=42,C=13,names=["X","Y₂","Y₁"],dims=["n × 3","n × 2","n × 1"],gone=["project","project"],RC=[PURPLE,ORANGE];
+    label(g,"One coordinate fewer each round",x,y+H/2,15,"600",MUTED);
+    let bx=x+262;
+    for(let i=0;i<3;i++){
+      const w=C*(3-i),cur=i===stage,done=i<stage;
+      rect(g,bx,y,w,H,cur?BLUE_L:done?GREY_L:"#fff",cur?BLUE:done?"#9a9a94":FAINT,cur?2:1.2);
+      for(let c=1;c<3-i;c++)line(g,bx+c*C,y+1,bx+c*C,y+H-1,cur?"rgba(42,120,214,.45)":FAINT,1);
+      label(g,names[i],bx+w/2,y+H+14,15,"600",cur?BLUE:done?MUTED:"#b0b0aa","center");
+      label(g,dims[i],bx+w/2,y+H+31,12,"",cur?BLUE:done?MUTED:"#b0b0aa","center");
+      if(i<2){
+        const on=i<stage,ax=bx+w+9,ax2=bx+w+61,ay=y+H/2;
+        arrow(g,ax,ay,ax2,ay,on?RC[i]:"#c8c8c2",2,9);
+        label(g,gone[i],(ax+ax2)/2,y-11,15,"600",on?RC[i]:"#b0b0aa","center");
+      }
+      bx+=w+70;
+    }
+    if(stage>=2)label(g,"v₁ remains",bx+2,y+H/2,15,"600",BLUE);
+  }
+  definePart("repeat",{w:760,h:560,steps:2,dur:1.3,
+    labels:["These are the same points and axes <math><msub><mi>q</mi><mn>1</mn></msub></math>, <math><msub><mi>q</mi><mn>2</mn></msub></math>. Now find the least-variance direction within this plane.", "The orange direction <math><msub><mi>a</mi><mn>2</mn></msub></math> has the least variance within the plane. In the original 3D coordinates: <math><msub><mi>v</mi><mn>2</mn></msub><mo>=</mo><msub><mi>Q</mi><mn>2</mn></msub><msub><mi>a</mi><mn>2</mn></msub></math>.", "Project onto the blue line: one coordinate per point. This adds 1.0000 to the mean squared error."],
+    draw(g,s,t){
+      const P=DERIVE.P.map(q=>planeBasis.map(v=>dot3(q,v))),a2=[Math.sin(PHI),Math.cos(PHI)],a1=[Math.cos(PHI),-Math.sin(PHI)];
+      const lift=a=>[0,1,2].map(c=>a[0]*planeBasis[0][c]+a[1]*planeBasis[1][c]),v2=lift(a2),v1=lift(a1);
+      const varAlong=a=>P.reduce((z,q)=>z+(q[0]*a[0]+q[1]*a[1])**2,0)/N3,lam2=varAlong(a2),lam1=varAlong(a1),lam3=DERIVE.lam[2];
+      const px=x=>268+50*x,py=y=>246-50*y,u=ease(t/0.9),f=s===2?u:0;
+      line(g,px(-3.8),py(0),px(3.5),py(0),FAINT,1.5);line(g,px(0),py(-4.2),px(0),py(3.9),FAINT,1.5);
+      label(g,"q₁",px(3.5)+6,py(0)+14,17,"",MUTED);label(g,"q₂",px(0)+9,py(3.9)+4,17,"",MUTED);
+      if(s>=1){
+        g.globalAlpha=s===1?u:1;
+        const K=[-3.7,4.5],L=2.3;
+        line(g,px(K[0]*a1[0]),py(K[0]*a1[1]),px(K[1]*a1[0]),py(K[1]*a1[1]),BLUE,3);
+        arrow(g,px(-L*a2[0]),py(-L*a2[1]),px(L*a2[0]),py(L*a2[1]),ORANGE,3,12);
+        g.globalAlpha=1;
+      }
+      P.forEach((q,i)=>{const c=q[0]*a2[0]+q[1]*a2[1],z=q.map((v,j)=>v-f*c*a2[j]);
+        if(s===2&&i%6===0)line(g,px(q[0]),py(q[1]),px(z[0]),py(z[1]),"rgba(235,104,52,.3)",1);
+        dot(g,px(z[0]),py(z[1]),3.5,PT);});
+      if(s>=1){
+        g.globalAlpha=s===1?u:1;
+        const K=[-3.7,4.5],L=2.3;
+        halo(g,"a₂",px(L*a2[0])+9,py(L*a2[1])-6,19,"600",ORANGE);
+        halo(g,"a₁: keep this direction",px(K[1]*a1[0])+2,py(K[1]*a1[1])+20,17,"600",BLUE,"right");
+        g.globalAlpha=1;
+      }
+      label(g,"The smaller problem: Y₂ is n × 2",30,30,22,"600");
+      // the numbers of this round, at the right
+      const RX=500;
+      if(s>=1){
+        g.globalAlpha=s===1?u:1;
+        label(g,"a₂ = ("+num(a2[0],2)+", "+num(a2[1],2)+")",RX,74,19,"600",ORANGE);
+        label(g,"variance along a₂: "+num(lam2,2),RX,100,15,"600",INK);
+        label(g,"the least of any direction in the plane",RX,121,13,"",MUTED);
+        label(g,"v₂ = Q₂a₂",RX,158,18,"600",ORANGE);
+        label(g,"= ("+v2.map(x=>num(x,2)).join(", ")+")",RX,184,17,"600",INK);
+        label(g,"the removed direction, in 3D coordinates",RX,207,13,"",MUTED);
+        g.globalAlpha=1;
+      }
+      if(s>=2){
+        g.globalAlpha=u;
+        label(g,"keep the perpendicular line",RX,250,16,"600",BLUE);
+        label(g,"v₁ = Q₂a₁ = ("+v1.map(x=>num(x,2)).join(", ")+")",RX,275,16,"600",INK);
+        label(g,"variance along it: "+num(lam1,2),RX,298,13,"",MUTED);
+        label(g,"Discarded so far",RX,340,15,"600",MUTED);
+        label(g,"along v₃: "+num(lam3,4),RX,365,16,"600",PURPLE);
+        label(g,"along v₂: "+num(lam2,4),RX,389,16,"600",ORANGE);
+        label(g,"mean squared error "+num(lam3+lam2,4),RX,417,17,"600",INK);
+        g.globalAlpha=1;
+      }
+      ladder(g,30,474,s>=2?2:1);
+    }
+  });
+
+  // ================================================================ the same construction in m dimensions, drawn for m = 5
+  {
+    const M=5,CW=20,BH=166,BY=86,GAP=72,SX=[],SUB=["₀","₁","₂","₃","₄","₅"];
+    {let x=46;for(let d=M;d>=1;d--){SX[d]=x;x+=CW*d+GAP;}}
+    const VX=46,VY=406,VC=24,VH=90,LAM=[1,.62,.38,.2,.08];
+    definePart("recur",{w:760,h:560,steps:4,dur:2.7,
+      labels:["Start with <math><msub><mi>Y</mi><mi>m</mi></msub><mo>=</mo><mi>X</mi></math>: <math><mi>m</mi></math> coordinates per point, and <math><msub><mi>Q</mi><mi>m</mi></msub><mo>=</mo><mi>I</mi></math>. The picture shows <math><mi>m</mi><mo>=</mo><mn>5</mn></math>.", "Find the unit direction <math><msub><mi>a</mi><mn>5</mn></msub></math> of least variance. Save <math><msub><mi>v</mi><mn>5</mn></msub><mo>=</mo><msub><mi>Q</mi><mn>5</mn></msub><msub><mi>a</mi><mn>5</mn></msub></math> in the last column of <math><mi>V</mi></math>.", "Keep the space perpendicular to <math><msub><mi>a</mi><mn>5</mn></msub></math>.<br><math><msub><mi>Y</mi><mn>4</mn></msub><mo>=</mo><msub><mi>Y</mi><mn>5</mn></msub><mi>B</mi></math>: four coordinates per point.<br><math><msub><mi>Q</mi><mn>4</mn></msub><mo>=</mo><msub><mi>Q</mi><mn>5</mn></msub><mi>B</mi></math>: the axes in the original space.", "Save each direction, then project onto its perpendicular space. Repeat for <math><msub><mi>v</mi><mn>4</mn></msub></math>, <math><msub><mi>v</mi><mn>3</mn></msub></math>, and <math><msub><mi>v</mi><mn>2</mn></msub></math>.", "The axes in <math><mi>V</mi></math> run from greatest variance to least. How much variation do fewer coordinates keep?"],
+      draw(g,s,t){
+        const u=ease(t/0.8);
+        // the progress of the round that removes direction d: 0 nothing yet, 1 its direction found, 2 removed
+        const prog=d=>{
+          if(d===M)return s===0?0:s===1?u:s===2?1+u:2;
+          if(s<3)return 0;if(s>=4)return 2;
+          const tau=(t-(M-d-1)*0.8)/0.8;
+          return tau<=0?0:tau>=1?2:tau<0.5?ease(tau/0.5):1+ease((tau-0.5)/0.5);
+        };
+        label(g,"Each round removes the direction of least variance",46,30,22,"600");
+        let cur=M;for(let d=M-1;d>=1;d--)if(prog(d+1)>=2)cur=d;
+        for(let d=M;d>=1;d--){
+          const vis=d===M?1:Math.min(1,Math.max(0,prog(d+1)-1));if(vis<=0)continue;
+          const x=SX[d],w=CW*d,isCur=d===cur;
+          g.globalAlpha=vis;
+          rect(g,x,BY,w,BH,isCur?BLUE_L:GREY_L,isCur?BLUE:"#9a9a94",isCur?2:1.2);
+          for(let c=1;c<d;c++)line(g,x+c*CW,BY+1,x+c*CW,BY+BH-1,isCur?"rgba(42,120,214,.45)":FAINT,1);
+          label(g,d===M?"Y₅ = X":"Y"+SUB[d],x+w/2,BY+BH+22,20,"600",isCur?BLUE:INK,"center");
+          label(g,"n × "+d,x+w/2,BY+BH+46,15,"",MUTED,"center");
+          label(g,d===M?"d = m = 5":"d = "+d,x+w/2,BY-18,15,"",MUTED,"center");
+          g.globalAlpha=1;
+          if(d>=2){
+            const p=prog(d);
+            if(p>0){
+              g.globalAlpha=Math.min(1,p);const gx=x+w+12,gy=BY+12,found=p<2;
+              for(let c=0;c<d;c++)rect(g,gx,gy+c*11,11,11,found?ORANGE_L:PURPLE_L,found?ORANGE:PURPLE,1.2);
+              label(g,"a"+SUB[d],gx+17,gy+5.5*d,16,"600",found?ORANGE:PURPLE);
+              g.globalAlpha=1;
+            }
+            if(p>1){
+              g.globalAlpha=Math.min(1,p-1);const ay=BY+118,ax=x+w+6,ax2=SX[d-1]-6;
+              arrow(g,ax,ay,ax2,ay,INK,2,10);label(g,"B",(ax+ax2)/2,ay-14,15,"600",INK,"center");
+              g.globalAlpha=1;
+            }
+          }
+        }
+        // V, filled from the right as the directions are found
+        label(g,"V, filled from the right",VX,VY-16,15,"600",MUTED);
+        for(let d=1;d<=M;d++){
+          const x=VX+(d-1)*VC,p=d===1?(s>=4?2+u:0):prog(d),found=p<2;
+          rect(g,x,VY,VC,VH,"#fff","#c8c8c2",1);
+          if(p>0){
+            const col=d===1?BLUE:found?ORANGE:PURPLE;
+            g.globalAlpha=Math.min(1,p);
+            rect(g,x,VY,VC,VH,d===1?BLUE_L:found?ORANGE_L:PURPLE_L,col,1.5);
+            label(g,"v"+SUB[d],x+VC/2,VY+VH/2,15,"600",col,"center");
+            g.globalAlpha=1;
+          } else label(g,"v"+SUB[d],x+VC/2,VY+VH/2,15,"600","#c8c8c2","center");
+        }
+        const TX=200;
+        if(s>=1&&s<=2){g.globalAlpha=s===1?u:1;label(g,"v₅ = Q₅a₅ fills the last column",TX,VY+12,15,"600",s===2?PURPLE:ORANGE);g.globalAlpha=1;}
+        if(s===3){label(g,"then v₄, v₃ and v₂, from the right",TX,VY+12,15,"600",PURPLE);}
+        if(s>=4){
+          g.globalAlpha=u;
+          label(g,"found in this order, least variance first",TX,VY+8,13,"",MUTED);
+          label(g,"v₅, v₄, v₃, v₂, v₁",TX,VY+32,18,"600",INK);
+          label(g,"stored as the columns of V",TX,VY+62,13,"",MUTED);
+          label(g,"v₁, v₂, v₃, v₄, v₅",TX,VY+86,18,"600",INK);
+          const bx0=484,bw=34,bg=14,base=VY+VH,hmax=78;
+          label(g,"variance along each",bx0,VY-16,15,"600",MUTED);
+          LAM.forEach((l,k)=>{const x=bx0+k*(bw+bg),h=hmax*l;g.fillStyle=k===0?BLUE:PURPLE;g.fillRect(x,base-h,bw,h);
+            label(g,"v"+SUB[k+1],x+bw/2,base+14,13,"600",k===0?BLUE:PURPLE,"center");});
+          line(g,bx0-4,base,bx0+5*(bw+bg)-bg+4,base,"#c8c8c2",1.5);
+          label(g,"greatest to least variance",bx0,base+40,13,"",MUTED);
+          g.globalAlpha=1;
+        }
+        label(g,"Example: m = 5",46,546,15,"",MUTED);
+      }
+    });
+  }
 
   // ================================================================ 6: every matrix is U S V^T
   {
     const XX = 96, XY = 76, XW = 140, XH = 330, UX = 290, SX = 456, VX = 612, SQ = 140;
-    definePart("svd", {w: 760, h: 560, steps: 3, dur: 1.2,
-      labels: ["X, centred: n points as rows, m coordinates as columns.",
-               "For <span class='math'>n ≥ m</span>, the reduced SVD has U of size <span class='math'>n × m</span> and S, V<sup>T</sup> of size <span class='math'>m × m</span>.",
-               "Rows of <strong>V<sup>T</sup></strong> give the axes. <strong>S</strong> stores the singular values; <span class='math'>σ<sub>k</sub>/√n</span> is the standard deviation along axis k.",
-               "Row i of <strong><span class='math'>U S</span></strong> is <span class='math'>(x<sub>i</sub>·v<sub>1</sub>, …, x<sub>i</sub>·v<sub>m</sub>)</span>. NumPy returns U, the singular values, and V<sup>T</sup>."],
+    definePart("svd", {w:760,h:560,steps:3,dur:1.2,
+      labels:["Center A to obtain X: subtract each column’s mean. The cloud’s mean is now the origin.", "The SVD writes <math><mi>X</mi><mo>=</mo><mi>U</mi><mi>S</mi><msup><mi>V</mi><mo>⊤</mo></msup></math>. Here <math><mi>n</mi><mo>≥</mo><mi>m</mi></math>.<br><math><mi>U</mi></math>: <math><mi>n</mi><mo>×</mo><mi>m</mi></math>; &nbsp;<math><mi>S</mi></math> and <math><msup><mi>V</mi><mo>⊤</mo></msup></math>: <math><mi>m</mi><mo>×</mo><mi>m</mi></math>.", "<math><mi>V</mi></math> gives perpendicular axes. The singular values in <math><mi>S</mi></math> measure spread: <math><msub><mi>σ</mi><mi>k</mi></msub><mo>/</mo><msqrt><mrow><mi>n</mi></mrow></msqrt></math> along axis <math><mi>k</mi></math>.", "<math><mi>U</mi><mi>S</mi><mo>=</mo><mi>X</mi><mi>V</mi></math> contains the same points expressed in these new coordinates."],
       draw(g, s, t) {
         const u = ease(t / 0.7);
         block(g, XX, XY, XW, XH, GREY_L, INK, "X", "n × m");
@@ -850,7 +1550,7 @@
           rect(g, UX, ry, XW, 22, "#fff", ORANGE, 2); label(g, "row i of U", UX + XW / 2, ry + 11, 14, "600", ORANGE, "center");
           label(g, "row i of U S = (xᵢ · v₁, …, xᵢ · vₘ)", 40, XY + XH + 90, 17, "600");
           label(g, "the point in the coordinates of the axes", 40, XY + XH + 114, 15, "", MUTED);
-          g.font = FM(16, "600"); g.fillStyle = INK; g.textAlign = "left"; g.fillText("U, s, Vt = np.linalg.svd(X, full_matrices=False)", 40, 546);
+          g.font = FM(16, "600"); g.fillStyle = INK; g.textAlign = "left"; g.fillText("US = XV: coordinates along the new axes", 40, 546);
           g.globalAlpha = 1;
         } else {
           label(g, "not to scale; shown with n ≥ m", 40, 546, 15, "", MUTED);
@@ -860,9 +1560,7 @@
 
   // ================================================================ 7: the axes, two coordinates
   definePart("axes2", {w: 760, h: 560, steps: 2, dur: 1.0, knobs: [FLAT2],
-    labels: ["The two axes of the cloud, through its centre: v<sub>1</sub> along the spread, v<sub>2</sub> across it. Each is drawn to two standard deviations, <span class='math'>2 σ<sub>k</sub> / √n</span>.",
-             "The bars show the <strong>singular values</strong>. As the cloud narrows, σ<sub>2</sub> decreases and σ<sub>1</sub> stays constant.",
-             "A <strong>ratio <span class='math'>σ<sub>1</sub> / σ<sub>2</sub></span></strong> near 1 means similar spreads. A large ratio means the cloud lies close to a line."],
+    labels: ["The axes pass through the center. Each extends two standard deviations: <math><mn>2</mn><msub><mi>σ</mi><mi>k</mi></msub><mo>/</mo><msqrt><mrow><mi>n</mi></mrow></msqrt></math>.", "The bars show the singular values. As the cloud narrows, <math><msub><mi>σ</mi><mn>2</mn></msub></math> decreases and <math><msub><mi>σ</mi><mn>1</mn></msub></math> stays constant.", "As <math><msub><mi>σ</mi><mn>2</mn></msub></math> shrinks, <math><mi>κ</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><mo>/</mo><msub><mi>σ</mi><mn>2</mn></msub></math> grows. The cloud approaches a line."],
     draw(g, s, t) {
       const I = info2(), u = ease(t / 0.6);
       axes2d(g); points2(g, I.P); axesOf2(g, I);
@@ -878,11 +1576,11 @@
           label(g, "spread " + num(sg / Math.sqrt(N2), 2), bx, by + i * 76 + 58, 14, "", MUTED);
         });
         g.globalAlpha = 1;
-        live("axes2", math("σ₁ = " + num(I.sig[0], 1)) + ", " + math("σ₂ = " + num(I.sig[1], 1)) + " · ratio " + num(I.sig[0] / I.sig[1], 1));
+        live("axes2", math("σ₁ = " + num(I.sig[0], 1)) + ", " + math("σ₂ = " + num(I.sig[1], 1)) + " · κ = " + num(I.sig[0] / I.sig[1], 1));
       }
       if (s >= 2) {
         g.globalAlpha = s === 2 ? u : 1;
-        label(g, "ratio σ₁ / σ₂", 548, 300, 18, "600");
+        label(g, "κ = σ₁ / σ₂", 548, 300, 18, "600");
         label(g, num(I.sig[0] / I.sig[1], 1), 548, 340, 36, "600", RED);
         label(g, I.sig[0] / I.sig[1] >= 4 ? "close to a line" : I.sig[0] / I.sig[1] <= 1.5 ? "similar spreads" : "unequal spreads", 548, 382, 16, "", MUTED);
         g.globalAlpha = 1;
@@ -892,9 +1590,7 @@
   // ================================================================ 8: the axes, three coordinates
   definePart("axes3", {w: 760, h: 560, steps: 2, dur: 1.2, knobs: [FLAT3], extra: VIEW_BUTTONS,
     onstep(part) { if (part.step === 2) camTo("above"); else if (part.step === 0) camSpin(); },
-    labels: ["Three axes through the centre, at right angles: v<sub>1</sub> and v<sub>2</sub> in the sheet, v<sub>3</sub> across it, each drawn to two standard deviations.",
-             "The <strong>singular values</strong> measure spread along the three axes. <span class='math'>σ<sub>1</sub> / σ<sub>3</sub></span> compares the largest and smallest spreads.",
-             "Look along v<sub>3</sub> to see the plane, or along v<sub>2</sub> to see its thickness. The spread along v<sub>3</sub> is <span class='math'>σ<sub>3</sub>/√n</span>."],
+    labels: ["Each PCA axis extends two standard deviations from the center.", "As the smallest spread shrinks, <math><mi>κ</mi><mo>=</mo><msub><mi>σ</mi><mn>1</mn></msub><mo>/</mo><msub><mi>σ</mi><mn>3</mn></msub></math> grows.", "Along <math><msub><mi>v</mi><mn>3</mn></msub></math>: plane face-on. Along <math><msub><mi>v</mi><mn>2</mn></msub></math>: its thickness."],
     draw(g, s, t) {
       const u = ease(t / 0.6);
       const sc = scene3(g, {cx: 270, cy: 290, sc: 70, dataAxes: true, axes: true}), I = sc.I;
@@ -908,21 +1604,50 @@
           label(g, "σ" + SUBS[i] + " = " + num(sg, 1), bx, by + i * 70, 19, "600", AX[i]);
           g.fillStyle = AX[i]; g.fillRect(bx, by + i * 70 + 16, w, 24);
         });
-        label(g, "ratio σ₁ / σ₃", bx, 322, 18, "600");
+        label(g, "κ = σ₁ / σ₃", bx, 322, 18, "600");
         label(g, num(I.sig[0] / I.sig[2], 1), bx, 360, 36, "600", RED);
         g.globalAlpha = 1;
-        live("axes3", math("σ = " + I.sig.map(v => num(v, 1)).join(", ")) + " · " + math("σ₁/σ₃ = " + num(I.sig[0] / I.sig[2], 1)));
+        live("axes3", math("σ = " + I.sig.map(v => num(v, 1)).join(", ")) + " · " + math("κ = " + num(I.sig[0] / I.sig[2], 1)));
       }
-      if (s >= 2) label(g, "from above: looking along v₃", 40, 540, 19, "600", PURPLE);
+      if (s >= 2) label(g, "v₃: direction of least variance", 40, 540, 19, "600", PURPLE);
       else viewTip(g, "Turn, Edge-on, From above: the buttons at the right");
     }});
 
+  definePart('dimension',{w:760,h:560,steps:2,dur:1.1,
+    labels:["<math><msub><mi>σ</mi><mn>3</mn></msub></math> = 0: the data lie exactly in a plane. The rank is 2.", "<math><msub><mi>σ</mi><mn>3</mn></msub></math> is small but nonzero. The rank is now 3, yet the cloud remains close to a plane.", "Both clouds have <math><mi>κ</mi><mo>=</mo><mn>100</mn></math>. All three singular values distinguish a cloud near a plane from one near a line."],
+    draw(g,s,t){
+      const bars=(values,x,title)=>{
+        label(g,title,x,106,23,'600');
+        values.forEach((v,i)=>{
+          const y=151+i*77;
+          label(g,'σ'+SUBS[i]+' = '+(v===0?'0':v<1?num(v,2):num(v,0)),x,y,21,'600',AX[i]);
+          rect(g,x,y+13,278,25,'#fff',FAINT,1);
+          if(v>0){g.fillStyle=AX[i];g.fillRect(x,y+13,278*v/10,25);}
+        });
+      };
+      label(g,'Illustrative singular values',30,35,22,'600');
+      const last=s===0?0:.1;
+      bars([10,8,last],35,s===0?'Exactly in a plane':'Close to a plane');
+      label(g,s===0?'rank 2 · κ = ∞':'rank 3 · κ = 100',35,414,23,'600',PURPLE);
+      line(g,379,75,379,435,FAINT,1);
+      if(s>=2){
+        g.globalAlpha=ease(t/.65);
+        bars([10,.2,.1],420,'Close to a line');
+        label(g,'rank 3 · κ = 100',420,414,23,'600',PURPLE);
+        g.globalAlpha=1;
+      }else{
+        label(g,'How many coordinates',556,236,22,'600',MUTED,'center');
+        label(g,'would we keep?',556,269,22,'600',MUTED,'center');
+      }
+      line(g,30,460,730,460,FAINT,1);
+      label(g,s===0?'Zero spread gives an exact reduction.':s===1?'Small spread gives an approximate reduction.':'Compare all three singular values.',380,505,24,'600',RED,'center');
+      label(g,s===0?'A zero smallest singular value makes κ infinite.':s===1?'How small is small enough depends on the error we allow.':'The condition number compares only the largest and smallest.',380,539,17,'',MUTED,'center');
+    }
+  });
+
   // ================================================================ 10: the total variance
   definePart("total", {w: 760, h: 560, steps: 3, dur: 1.2, extra: VIEW_BUTTONS,
-    labels: ["The cloud and its <strong>centre</strong>, the mean point. X is centred, so the centre is the origin.",
-             "Each point's squared distance from the centre: <span class='math'>‖x<sub>i</sub>‖² = x<sub>i1</sub>² + x<sub>i2</sub>² + x<sub>i3</sub>²</span>. One point is drawn with its distance.",
-             "<strong>Total variance</strong> is the average squared distance from the mean. It equals the sum of the diagonal of C.",
-             "The SVD gives total variance as <span class='math'>(σ<sub>1</sub>² + σ<sub>2</sub>² + σ<sub>3</sub>²) / n</span>."],
+    labels: ["How much variation is there in total? For centered data, measure each point’s distance from the origin.", "The orange point’s squared distance is the sum of its three squared coordinates.", "<strong>Total variance</strong> is the average squared distance from the mean. It equals the sum of the diagonal of C.", "The SVD gives total variance as<span class=\"math-line\"><math><mo>(</mo><msubsup><mi>σ</mi><mn>1</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>2</mn><mn>2</mn></msubsup><mo>+</mo><msubsup><mi>σ</mi><mn>3</mn><mn>2</mn></msubsup><mo>)</mo><mo>/</mo><mi>n</mi></math></span>"],
     draw(g, s, t) {
       const u = ease(t / 0.6);
       const sc = scene3(g, {cx: 270, cy: 290, sc: 70, dataAxes: s === 0, hi: s >= 1 ? HI3 : -1}), I = sc.I;
@@ -939,7 +1664,7 @@
         label(g, "= " + num(n2, 2), 552, 168, 19, "600", ORANGE);
         g.globalAlpha = 1;
       }
-      dot(g, c0[0], c0[1], 7, "#fff", INK, 2.5); label(g, "centre", c0[0] + 12, c0[1] - 14, 15, "600", INK);
+      dot(g, c0[0], c0[1], 7, "#fff", INK, 2.5); label(g, "center", c0[0] + 12, c0[1] - 14, 15, "600", INK);
       if (s >= 2) {
         g.globalAlpha = s === 2 ? u : 1;
         label(g, "average of ‖xᵢ‖²:", 552, 212, 16, "600");
@@ -960,65 +1685,59 @@
     }});
 
   // ================================================================ 11: a projection
-  definePart("proj", {w: 760, h: 560, steps: 3, dur: 1.0, knobs: [{key: "angle", label: "Direction", min: 0, max: 180, step: 1, fmt: v => v + "°"}],
-    labels: ["The unit vector v sets the projection direction. Move the slider to rotate it.",
-             "One point drops a perpendicular onto the line of v. The foot is its <strong>projected point</strong>; its coordinate along v is the dot product <span class='math'>x · v</span>.",
-             "<span class='math'>X v</span> gives one scalar projection per point, forming a one-dimensional dataset.",
-             "The <strong>variance along v</strong>: the average of the squared projections, <span class='math'>‖X v‖² / n</span>. It is largest along v<sub>1</sub> and smallest along v<sub>2</sub>."],
+  definePart("proj", {w: 760, h: 560, steps: 3, dur: 1.0, knobs: [{key: "angle", label: "Direction", min: 0, max: 180, step: 1, fmt: w => w + "°"}],
+    labels: ["The unit vector <math><mi>w</mi></math> sets the projection direction. Move the slider to rotate it.", "Drop a perpendicular from <math><mi>x</mi></math> to the line of <math><mi>w</mi></math>. Its foot is the <strong>projected point</strong>. The coordinate along <math><mi>w</mi></math> is <math><mi>x</mi><mo>·</mo><mi>w</mi></math>.", "<math><mi>X</mi><mi>w</mi></math> gives one scalar projection per point, forming a one-dimensional dataset.", "Average the squared coordinates: <math><msup><mrow><mo>‖</mo><mrow><mi>X</mi><mi>w</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup><mo>/</mo><mi>n</mi></math>. Rotate <math><mi>w</mi></math> to find the smallest value."],
     draw(g, s, t) {
-      const I = info2(), u = ease(t / 0.6), a = KNOB.angle * Math.PI / 180, v = [Math.cos(a), Math.sin(a)];
-      const proj = q => q[0] * v[0] + q[1] * v[1];
+      const I = info2(), u = ease(t / 0.6), a = KNOB.angle * Math.PI / 180, w = [Math.cos(a), Math.sin(a)];
+      const proj = q => q[0] * w[0] + q[1] * w[1];
       axes2d(g); points2(g, I.P, s >= 2 ? 0.45 : 1);
       if (s >= 3) axesOf2(g, I, 0.35);
-      // the line of v
+      // the line of w
       const L = 2.9;
-      line(g, X2(-L * v[0]), Y2(-L * v[1]), X2(L * v[0]), Y2(L * v[1]), GREEN, 3);
-      arrow(g, X2(0), Y2(0), X2(1.0 * v[0]), Y2(1.0 * v[1]), GREEN, 4, 14);
-      label(g, "v = (" + num(v[0], 2) + ", " + num(v[1], 2) + ")", 40, 36, 19, "600", GREEN);
+      line(g, X2(-L * w[0]), Y2(-L * w[1]), X2(L * w[0]), Y2(L * w[1]), GREEN, 3);
+      arrow(g, X2(0), Y2(0), X2(1.0 * w[0]), Y2(1.0 * w[1]), GREEN, 4, 14);
+      label(g, "w = (" + num(w[0], 2) + ", " + num(w[1], 2) + ")", 40, 36, 19, "600", GREEN);
       if (s >= 2) {
         g.globalAlpha = (s === 2 ? u : 1) * 0.5;
-        I.P.forEach(q => { const c = proj(q); line(g, X2(q[0]), Y2(q[1]), X2(c * v[0]), Y2(c * v[1]), ORANGE, 1); });
+        I.P.forEach(q => { const c = proj(q); line(g, X2(q[0]), Y2(q[1]), X2(c * w[0]), Y2(c * w[1]), ORANGE, 1); });
         g.globalAlpha = s === 2 ? u : 1;
-        I.P.forEach(q => { const c = proj(q); dot(g, X2(c * v[0]), Y2(c * v[1]), 3.5, ORANGE); });
-        label(g, "the projections: n numbers X v", 40, 520, 18, "600", ORANGE);
+        I.P.forEach(q => { const c = proj(q); dot(g, X2(c * w[0]), Y2(c * w[1]), 3.5, ORANGE); });
+        label(g, "the projections: n numbers X w", 40, 520, 18, "600", ORANGE);
         g.globalAlpha = 1;
       }
       if (s >= 1) {
         g.globalAlpha = s === 1 ? u : 1;
-        const q = I.P[HI2], c = proj(q), f = [c * v[0], c * v[1]];
+        const q = I.P[HI2], c = proj(q), f = [c * w[0], c * w[1]];
         line(g, X2(q[0]), Y2(q[1]), X2(f[0]), Y2(f[1]), ORANGE, 2.5, [6, 5]);
         dot(g, X2(f[0]), Y2(f[1]), 6, ORANGE, INK, 1.5); dot(g, X2(q[0]), Y2(q[1]), 6.5, ORANGE, INK, 1.5);
         label(g, "x", X2(q[0]) + 10, Y2(q[1]) - 10, 17, "600", ORANGE);
-        label(g, "x · v = " + num(c, 2), 552, 84, 19, "600", ORANGE);
-        label(g, "= " + num(q[0], 2) + " × " + num(v[0], 2) + " + " + num(q[1], 2) + " × " + num(v[1], 2), 552, 112, 14, "", MUTED);
-        label(g, "projected point (x · v) v", 552, 140, 15, "", INK);
+        label(g, "x · w = " + num(c, 2), 552, 84, 19, "600", ORANGE);
+        label(g, "= " + num(q[0], 2) + " × " + num(w[0], 2) + " + " + num(q[1], 2) + " × " + num(w[1], 2), 552, 112, 14, "", MUTED);
+        label(g, "projected point (x · w) w", 552, 140, 15, "", INK);
         g.globalAlpha = 1;
       }
       if (s >= 3) {
         g.globalAlpha = s === 3 ? u : 1;
-        const vv = v[0] * (I.C[0][0] * v[0] + I.C[0][1] * v[1]) + v[1] * (I.C[1][0] * v[0] + I.C[1][1] * v[1]);
-        const bx = 552, by = 230, bw = 180, w = bw * vv / I.lam[0];
-        label(g, "variance along v", bx, 194, 18, "600");
-        rect(g, bx, by, bw, 26, "#fff", "#c8c8c2", 1); g.fillStyle = GREEN; g.fillRect(bx, by, w, 26);
+        const vv = w[0] * (I.C[0][0] * w[0] + I.C[0][1] * w[1]) + w[1] * (I.C[1][0] * w[0] + I.C[1][1] * w[1]);
+        const bx = 552, by = 230, bw = 180, barW = bw * vv / I.lam[0];
+        label(g, "variance along w", bx, 194, 18, "600");
+        rect(g, bx, by, bw, 26, "#fff", "#c8c8c2", 1); g.fillStyle = GREEN; g.fillRect(bx, by, barW, 26);
         label(g, num(vv, 2), bx + bw, by - 14, 17, "600", INK, "right");
         line(g, bx + bw * I.lam[1] / I.lam[0], by - 6, bx + bw * I.lam[1] / I.lam[0], by + 32, ORANGE, 2);
         line(g, bx + bw, by - 6, bx + bw, by + 32, BLUE, 2);
         label(g, "largest, along v₁: " + num(I.lam[0], 2), bx, 290, 15, "600", BLUE);
         label(g, "smallest, along v₂: " + num(I.lam[1], 2), bx, 314, 15, "600", ORANGE);
-        label(g, "‖X v‖² / n", bx, 344, 15, "", MUTED);
+        label(g, "‖X w‖² / n", bx, 344, 15, "", MUTED);
         g.globalAlpha = 1;
-        live("proj", "v at " + KNOB.angle + "° · " + math("variance along v = " + num(vv, 2)) + " · " + math("σ₁²/n = " + num(I.lam[0], 2)) + ", " + math("σ₂²/n = " + num(I.lam[1], 2)));
+        live("proj", "w at " + KNOB.angle + "° · " + math("variance along w = " + num(vv, 2)) + " · " + math("σ₁²/n = " + num(I.lam[0], 2)) + ", " + math("σ₂²/n = " + num(I.lam[1], 2)));
       } else if (s >= 1) {
-        live("proj", math("v = (" + num(v[0], 2) + ", " + num(v[1], 2) + ")") + " · " + math("x · v = " + num(proj(I.P[HI2]), 2)));
+        live("proj", math("w = (" + num(w[0], 2) + ", " + num(w[1], 2) + ")") + " · " + math("x · w = " + num(proj(I.P[HI2]), 2)));
       }
     }});
 
   // ================================================================ 12: each axis takes its share
   definePart("share", {w: 760, h: 560, steps: 3, dur: 1.2, extra: VIEW_BUTTONS,
-    labels: ["The three axes, at right angles to one another.",
-             "One point's coordinates along the axes: <span class='math'>x·v<sub>1</sub></span>, <span class='math'>x·v<sub>2</sub></span>, <span class='math'>x·v<sub>3</sub></span>. <strong>Pythagoras</strong>: their squares add up to ‖x‖², because the axes are at right angles.",
-             "Averaging the squared coordinates gives <span class='math'>σ<sub>1</sub>²/n + σ<sub>2</sub>²/n + σ<sub>3</sub>²/n</span>, the total variance.",
-             "Divide each axis’s variance by the total to get its <strong>percentage</strong>. A thin cloud has a small percentage along v<sub>3</sub>."],
+    labels: ["The three axes, at right angles to one another.", "Project onto each axis. By Pythagoras, the three squared coordinates add up to <math><msup><mrow><mo>‖</mo><mrow><mi>x</mi></mrow><mo>‖</mo></mrow><mn>2</mn></msup></math>.", "Average over the points. The three axis variances sum to total variance.", "Divide each axis’s variance by the total to get its percentage."],
     draw(g, s, t) {
       const u = ease(t / 0.6);
       const sc = scene3(g, {cx: 270, cy: 290, sc: 70, axes: true, hi: s >= 1 ? HI3 : -1}), I = sc.I;
@@ -1057,10 +1776,7 @@
     const kept = SHARES.slice(0, KEEP).reduce((a, c) => a + c, 0) / TOT;
     const XX = 96, XY = 60, XW = 100, XH = 290, UX = 238, SX = 364, VX = 488, SQ = 100;
     definePart("general", {w: 760, h: 560, steps: 3, dur: 1.2,
-      labels: ["X has n rows and m columns. The reduced SVD uses <span class='math'>r = min(n, m)</span>. The diagram is not to scale.",
-               "<span class='math'>X = U S V<sup>T</sup></span> gives r perpendicular axes, with singular values in decreasing order.",
-               "The bars show <strong>variances</strong> <span class='math'>σ<sub>k</sub>² / n</span>. In this example, the first few axes account for most of the total.",
-               "Here, the first " + KEEP + " of " + MM + " axes retain " + pct(kept) + " of the variance. Choose how many to keep based on the accuracy needed."],
+      labels: ["<math><mi>X</mi></math> has <math><mi>n</mi></math> rows and <math><mi>m</mi></math> columns. The reduced SVD uses <math><mi>r</mi><mo>=</mo><mi mathvariant=\"normal\">min</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>m</mi><mo>)</mo></math>. The diagram is not to scale.", "<math><mi>X</mi><mo>=</mo><mi>U</mi><mi>S</mi><msup><mi>V</mi><mo>⊤</mo></msup></math> gives r perpendicular axes, with singular values in decreasing order.", "The bars show <strong>variances</strong> <math><msubsup><mi>σ</mi><mi>k</mi><mn>2</mn></msubsup><mo>/</mo><mi>n</mi></math>. In this example, the first few axes account for most of the total.", "Here, the first " + KEEP + " of " + MM + " axes retain " + pct(kept) + " of the variance. Choose how many to keep based on the accuracy needed."],
       draw(g, s, t) {
         const u = ease(t / 0.7);
         block(g, XX, XY, XW, XH, GREY_L, INK, "X", "n × m");
@@ -1105,10 +1821,7 @@
   // ================================================================ 15: dropping the thin direction
   definePart("drop", {w: 760, h: 560, steps: 3, dur: 1.8, knobs: [FLAT3], extra: VIEW_BUTTONS,
     onstep(part) { if (part.step === 2) camTo("above"); else if (part.step === 0) camSpin(); },
-    labels: ["v<sub>3</sub> is the direction of least variation. The slider controls the cloud’s thickness.",
-             "Every point slides along v<sub>3</sub> onto the plane of v<sub>1</sub> and v<sub>2</sub>: <span class='math'>x − (x·v<sub>3</sub>) v<sub>3</sub></span>. What is lost is its coordinate along v<sub>3</sub>.",
-             "<strong>From above</strong>: a cloud with two coordinates, <span class='math'>(x·v<sub>1</sub>, x·v<sub>2</sub>)</span>. The first two columns of <span class='math'>U S</span>: <span class='math'>n × 2</span> numbers in place of <span class='math'>n × 3</span>.",
-             "The projection keeps variation along v<sub>1</sub> and v<sub>2</sub> and removes variation along v<sub>3</sub>."],
+    labels: ["The slider changes the cloud’s thickness along <math><msub><mi>v</mi><mn>3</mn></msub></math>.", "Move every point onto the plane. Its <math><msub><mi>v</mi><mn>3</mn></msub></math> coordinate becomes zero.", "Keep the first two columns of <math><mi>U</mi><mi>S</mi></math>: <math><mi>n</mi><mo>×</mo><mn>2</mn></math> values.", "Keep variation along <math><msub><mi>v</mi><mn>1</mn></msub></math> and <math><msub><mi>v</mi><mn>2</mn></msub></math>. Remove variation along <math><msub><mi>v</mi><mn>3</mn></msub></math>."],
     draw(g, s, t) {
       const u = s === 1 ? ease(t / 1.4) : s >= 2 ? 1 : 0, v = ease(t / 0.6);
       const sc = scene3(g, {cx: 270, cy: 290, sc: 70, axes: true, flatten: u, axisLen: s >= 2 ? [2.6, 2.6, 0] : undefined}), I = sc.I;
@@ -1140,10 +1853,7 @@
     const full = NN * MD, few = NN * KK + KK + KK * MD;
     const XX = 40, XY = 60, XW = 110, XH = 290, UX = 196, UW = 18, SX = 236, SW = 18, VX = 276, VW = 110, VH = 18;
     definePart("why", {w: 760, h: 560, steps: 3, dur: 1.2,
-      labels: ["<span class='math'>X ≈ U<sub>k</sub> S<sub>k</sub> V<sub>k</sub><sup>T</sup></span>: the first k axes, the first k singular values, the first k columns of U. Here <span class='math'>k = " + KK + "</span> of <span class='math'>m = " + MD + "</span>.",
-               "<strong>Memory</strong>: <span class='math'>n k + k + k m</span> numbers in place of <span class='math'>n m</span>. For " + fmtInt(NN) + " words with " + MD + " numbers each: " + fmtInt(few) + " in place of " + fmtInt(full) + ", " + Math.round(full / few) + " times fewer.",
-               "<strong>Computation</strong>: <span class='math'>X v</span>, one number a word, costs <span class='math'>n m</span> multiplications; with the factors, <span class='math'>V<sub>k</sub><sup>T</sup> v</span>, then S<sub>k</sub>, then U<sub>k</sub>: <span class='math'>n k + k + k m</span>, " + Math.round(full / few) + " times fewer.",
-               "This example assumes equal <strong>noise variance</strong> along every axis. Discarding axes with little signal removes their noise contribution."],
+      labels: ["Keep <math aria-label=\"k equals 20\"><mi>k</mi><mo>=</mo><mn>20</mn></math> of the <math aria-label=\"m equals 300\"><mi>m</mi><mo>=</mo><mn>300</mn></math> axes.<span class=\"step-equation\"><math aria-label=\"X approximately equals U sub k S sub k V sub k transpose\"><mi>X</mi><mo>≈</mo><msub><mi>U</mi><mi>k</mi></msub><msub><mi>S</mi><mi>k</mi></msub><msubsup><mi>V</mi><mi>k</mi><mo>⊤</mo></msubsup></math></span>", "Store 1,006,020 values instead of 15,000,000.<br>About 15 times fewer values.", "Multiply by the factors from right to left:<span class=\"step-equation\"><math aria-label=\"U sub k times S sub k times V sub k transpose times v\"><msub><mi>U</mi><mi>k</mi></msub><mo>(</mo><msub><mi>S</mi><mi>k</mi></msub><mo>(</mo><msubsup><mi>V</mi><mi>k</mi><mo>⊤</mo></msubsup><mi>v</mi><mo>)</mo><mo>)</mo></math></span>About 15 times fewer multiplications.", "This example assumes equal noise variance along every axis. Discarding axes with little signal removes their noise contribution."],
       draw(g, s, t) {
         const u = ease(t / 0.7);
         block(g, XX, XY, XW, XH, GREY_L, INK, "X", fmtInt(NN) + " × " + MD);
@@ -1155,16 +1865,16 @@
         if (s >= 1) {
           g.globalAlpha = s === 1 ? u : 1;
           label(g, "memory", 430, 78, 18, "600", RED);
-          label(g, "n m = " + fmtInt(full), 430, 108, 17, "600");
-          label(g, "n k + k + k m = " + fmtInt(few), 430, 136, 17, "600", BLUE);
+          label(g, "nm = " + fmtInt(full), 430, 108, 17, "600");
+          label(g, "nk + k + km = " + fmtInt(few), 430, 136, 17, "600", BLUE);
           label(g, Math.round(full / few) + " times fewer numbers", 430, 162, 15, "", MUTED);
           g.globalAlpha = 1;
         }
         if (s >= 2) {
           g.globalAlpha = s === 2 ? u : 1;
-          label(g, "computation: X v", 430, 214, 18, "600", RED);
-          label(g, "n m multiplications", 430, 244, 17, "600");
-          label(g, "Uₖ (Sₖ (Vₖᵀ v)): n k + k + k m", 430, 272, 17, "600", BLUE);
+          label(g, "computation: Xv", 430, 214, 18, "600", RED);
+          label(g, "nm multiplications", 430, 244, 17, "600");
+          labelT(g, "Uₖ(Sₖ(Vₖᵀv)): nk + k + km", 430, 272, 17, "600", BLUE);
           label(g, Math.round(full / few) + " times fewer", 430, 298, 15, "", MUTED);
           g.globalAlpha = 1;
         }
@@ -1187,9 +1897,7 @@
   {
     const D = 4096, R = 8, WX = 40, WY = 72, WS = 300, BX = 410, AY = 72;
     definePart("lora", {w: 760, h: 560, steps: 2, dur: 1.2,
-      labels: ["W: one weight matrix of a large language model, <span class='math'>" + fmtInt(D) + " × " + fmtInt(D) + "</span>, " + fmtInt(D * D) + " numbers.",
-               "An unrestricted update ΔW has the same dimensions as W: " + fmtInt(D * D) + " adjustable entries for this matrix.",
-               "<strong>LoRA</strong> writes the change as a product of two thin matrices, <span class='math'>ΔW = B A</span>: " + R + " columns in B, " + R + " rows in A. " + fmtInt(2 * D * R) + " numbers, " + Math.round(D * D / (2 * D * R)) + " times fewer. Training keeps W fixed."],
+      labels: ["<math><mi>W</mi></math>: one weight matrix of a large language model, <math><mn>" + fmtInt(D) + "</mn><mo>×</mo><mn>" + fmtInt(D) + "</mn></math>, " + fmtInt(D * D) + " numbers.", "An unrestricted update <math><mi>Δ</mi><mi>W</mi></math> has the same dimensions as <math><mi>W</mi></math>: " + fmtInt(D * D) + " adjustable entries for this matrix.", "<math><mi>Δ</mi><mi>W</mi><mo>=</mo><mi>B</mi><mi>A</mi></math>: " + R + " columns in <math><mi>B</mi></math>, " + R + " rows in <math><mi>A</mi></math>.<br>" + fmtInt(2 * D * R) + " values, " + Math.round(D * D / (2 * D * R)) + " times fewer. Training keeps <math><mi>W</mi></math> fixed."],
       draw(g, s, t) {
         const u = ease(t / 0.7);
         block(g, WX, WY, WS, WS, GREY_L, INK, "W", fmtInt(D) + " × " + fmtInt(D) + " · " + (D * D / 1e6).toFixed(1) + " million numbers");
@@ -1251,7 +1959,9 @@
   }
   requestAnimationFrame(frame);
   setInterval(() => { if (performance.now() - lastTick > 70) tick(); }, 35);
-  window.M15 = {KNOB, CAM, info2, info3, camTo, VIEWS, eigSym, V: [V1g, V2g, V3g], S: [S1g, S2g], thick3, thick2};
+  window.M16 = {KNOB, CAM, info2, info3, camTo, VIEWS, eigSym, V: [V1g, V2g, V3g], S: [S1g, S2g], thick3, thick2,
+    INTRO, DERIVE, planeBasis, PARTS, go, leastState, PROJECTED3, LEAST_VIEW, planeView, planeCamTo};
+  window.M15 = window.M16; // Retain compatibility with the original numerical checks.
   document.documentElement.setAttribute("data-ready", "yes");
 })();
 </script>
