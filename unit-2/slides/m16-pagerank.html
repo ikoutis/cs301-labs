@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS 301 — PageRank: graphs acting on data (meeting 16)</title>
+<!--
+  Self-contained interactive lecture deck, 1280 x 720, 2026-10-26.
+  Follows the format of m16-svd.html. This HTML file is its own source.
+  All examples are synthetic and computed from EDGES, never pasted scores.
+  Convention throughout: column vectors; G[receiver][sender].
+  G splits a sender's score uniformly among outgoing neighbors, and uses
+  a uniform column for a sender without outgoing edges. Alpha is the
+  probability of following the graph, not the restart probability.
+  Every round reads only the old vector. Matrix and edge-list versions
+  are exposed as M16.matrixStep and M16.messageStep for verification.
+  ?slide=N&step=K&round=R&alpha=0.85 opens reproducible states.
+  Sources are linked in the relevant speaker notes, available with N.
+-->
+<style>
+  :root { --red:#CC0033; --ink:#1A1A1A; --muted:#555; --faint:#DDD; --paper:#F7F7F5; --blue:#2a78d6; --orange:#d85b20; --purple:#6a3fb5; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:#2b2b2b; color:var(--ink); font-family:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .stage { position:absolute; width:1280px; height:720px; transform-origin:0 0; background:#fff; overflow:hidden; }
+  .slide { position:absolute; inset:0; padding:28px 48px 52px; border-top:8px solid var(--red); display:flex; flex-direction:column; font-size:27px; line-height:1.4; }
+  .slide[hidden] { display:none; }
+  h2 { font-size:36px; line-height:1.15; margin:0 0 12px; font-weight:700; flex:0 0 auto; display:flex; justify-content:space-between; align-items:center; gap:18px; }
+  h2 .part { flex:0 0 auto; font-size:16px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--red); }
+  .purpose .eyebrow { font-size:20px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--red); margin:64px 0 0; }
+  .purpose h2 { display:block; font-size:56px; line-height:1.15; margin:36px 0 18px; }
+  .purpose .subtitle { font-size:30px; line-height:1.4; color:var(--muted); max-width:1000px; margin:0 0 30px; }
+  .purpose .purpose-point { font-size:26px; line-height:1.4; max-width:1000px; margin:0 0 22px; }
+  .row { display:flex; gap:26px; flex:1 1 auto; min-height:0; align-items:stretch; }
+  .pic { flex:0 0 720px; }
+  canvas { display:block; width:720px; height:560px; border:1px solid var(--faint); border-radius:3px; background:#fff; cursor:pointer; }
+  .side { flex:1 1 0; min-width:0; display:flex; flex-direction:column; font-size:23px; line-height:1.32; }
+  .copy { flex:0 0 auto; }
+  .copy p { margin:0 0 14px; text-wrap:pretty; }
+  .copy ul { margin:0 0 12px; padding-left:1.1em; }
+  .copy li { margin-bottom:9px; }
+  .copy li::marker { color:var(--red); }
+  .copy strong { font-weight:650; }
+  .note { font-size:18px; color:var(--muted); }
+  .formula { margin:12px 0 16px; white-space:nowrap; }
+  math { font-family:"Cambria Math","STIX Two Math",math; white-space:nowrap; font-size:1.12em; }
+  .formula math { font-size:27px; }
+  .code { font-family:ui-monospace,Consolas,monospace; background:var(--paper); padding:2px 5px; white-space:nowrap; font-size:.88em; }
+  .ctl { margin-top:auto; padding-top:12px; border-top:2px solid #c8c8c2; flex:0 0 auto; }
+  .label { margin:0 0 8px; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+  .knob { display:flex; align-items:center; gap:10px; font-size:19px; margin-bottom:8px; }
+  .knob label { font-weight:600; }
+  .knob input { min-width:0; flex:1; accent-color:var(--blue); cursor:pointer; }
+  .knob output { min-width:42px; text-align:right; font-variant-numeric:tabular-nums; }
+  .buttons { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
+  button { font:inherit; font-size:18px; padding:5px 12px; background:white; border:1px solid #b8b8b2; border-radius:4px; cursor:pointer; font-weight:600; color:var(--ink); }
+  button:hover { border-color:var(--ink); }
+  button.primary { background:#fff0ae; border-color:#d6bd57; }
+  button[disabled] { opacity:.5; cursor:default; }
+  button[aria-pressed="true"] { background:#e8f0fc; border-color:var(--blue); }
+  button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid #0b57a4; outline-offset:2px; }
+  .readout { background:#fff7d6; padding:10px 14px; border-radius:4px; font-size:20px; line-height:1.27; }
+  .readout .label { margin-bottom:6px; }
+  .step-text { display:grid; }
+  .step-text p { grid-area:1/1; margin:0; text-wrap:pretty; }
+  .reserve { visibility:hidden; pointer-events:none; user-select:none; }
+  .foot { position:absolute; left:48px; right:212px; bottom:14px; font-size:15px; color:var(--muted); display:flex; justify-content:space-between; }
+  .nav { position:fixed; right:18px; bottom:14px; display:flex; gap:7px; z-index:5; }
+  .nav button { font-size:16px; padding:6px 10px; }
+  .notes { position:absolute; left:48px; top:90px; right:48px; bottom:65px; z-index:10; background:#fffdf2; padding:32px 40px; border:2px solid #c8b978; box-shadow:0 3px 15px #0003; font-size:24px; line-height:1.5; overflow:auto; }
+  .notes[hidden] { display:none; }
+  .notes h3 { margin-top:0; }
+  .notes button { float:right; }
+  .notes a { color:#0b57a4; }
+  @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto; } }
+</style>
+</head>
+<body>
+<main class="stage" aria-label="PageRank lecture slides"><div id="slides"></div><div class="foot"><span>CS 301 · Meeting 16 · PageRank · Arrows: slides · Space: next step · N: notes</span><span id="counter"></span></div><aside class="notes" hidden aria-label="Speaker notes"></aside></main>
+<nav class="nav" aria-label="Slide navigation"><button id="prev" aria-label="Previous slide">◀</button><button id="next" aria-label="Next slide">▶</button><button id="notes" aria-label="Speaker notes">N</button><button id="full" aria-label="Full screen">⛶</button></nav>
+<script>
+'use strict';
+const mi=x=>`<mi>${x}</mi>`, mn=x=>`<mn>${x}</mn>`, mo=x=>`<mo>${x}</mo>`;
+const sub=(a,b)=>`<msub>${a}${b}</msub>`, sup=(a,b)=>`<msup>${a}${b}</msup>`, row=x=>`<mrow>${x}</mrow>`;
+const frac=(a,b)=>`<mfrac>${a}${b}</mfrac>`, math=x=>`<math>${x}</math>`, eq=x=>`<div class="formula">${math(x)}</div>`;
+const R=mi('r'), G=mi('G'), U=mi('u'), A=mi('α'), ri=i=>sub(R,mi(i)), rt=t=>sup(R,row(mo('(')+(t==='t+1'?mi('t')+mo('+')+mn(1):mi(t))+mo(')')));
+const source1='<a href="https://web.stanford.edu/class/cs315b/assignment3.html">Stanford: the node update and iteration</a>';
+const source2='<a href="https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link_analysis.pagerank_alg.pagerank.html">NetworkX: PageRank</a>';
+const source3='<a href="https://nlp.stanford.edu/IR-book/html/htmledition/pagerank-1.html">Stanford IR book: the random-surfer interpretation</a>';
+const SLIDES=[
+ {id:'opening',title:'PageRank: who gets attention?',part:'The question',kind:'opening',
+  body:'<p>A node is a web page.</p><p>An arrow is a link to another page.</p><p><strong>How could links give us a score for each page?</strong></p>',
+  steps:['Which page would you choose, and why?','C has three incoming links. A and B have one each.','A link from a frequently visited page can bring more visits.'],
+  notes:'Use the arrows as hyperlinks. All graphs here are small invented examples. Ask for an initial ranking before naming the algorithm. PageRank measures attention in a particular model of navigation. It is not a direct measure of accuracy, usefulness, or relevance to a query. '+source3},
+ {id:'purpose',title:'Why we do this',part:'Purpose',kind:'purpose',
+  body:'<p class="subtitle">Many pages can match the same search. PageRank uses their links to help rank them.</p><p class="purpose-point">Who links to a page matters, as well as how many links it receives.</p><p class="purpose-point">One rule at each page lets us compute the scores as <strong>Graph × Data</strong>.</p>',
+  steps:[''],
+  notes:'The practical question is how to order pages when many match a query. PageRank supplies a score from the link structure. Search ranking can combine that score with relevance and other information. A sender’s contribution depends on its own score and the number of pages it links to. The next slides compute these scores with messages, then express the same operations as matrix multiplication. '+source3},
+ {id:'scores',title:'Each node holds a share of attention',part:'One node',kind:'scores',
+  body:'<p>Start with a total score of 1.</p><p>Give each of the four nodes an equal share.</p>'+eq(ri('A')+mo('=')+ri('B')+mo('=')+ri('C')+mo('=')+ri('D')+mo('=')+frac(mn(1),mn(4)))+'<p class="note">A score can represent the fraction of many walkers at that node.</p>',
+  steps:['Each node starts with 0.25.','The scores form a data vector, one entry per node.'],
+  notes:'A useful interpretation is a large population of independent walkers. The scores describe the distribution of the population, rather than the position of a single walker. The calculations update the distribution exactly. No randomness is needed to compute them.'},
+ {id:'send',title:'At A: split my score, then send it',part:'One node',kind:'send',
+  body:'<p>“I have score 0.25.”</p><p>“I have two outgoing links.”</p><p>“I send half to B and half to C.”</p>'+eq(frac(mn('0.25'),mn(2))+mo('=')+mn('0.125')),
+  steps:['A reads its current score and its outgoing links.','A divides 0.25 by its two outgoing links.','B and C each receive a message of 0.125 from A.'],
+  notes:'The divisor belongs to the sender. A distributes its whole current score. It does not keep an extra copy. Each walker at A chooses one of its two links with equal probability. The graph is fixed while the scores change.'},
+ {id:'receive',title:'At C: add the messages that arrive',part:'One node',kind:'receive',
+  body:'<p>“A, B, and D link to me.”</p><p>“I add their messages to get my new score.”</p>'+eq(ri('C')+mo('′')+mo('=')+mn('0.125')+mo('+')+mn('0.25')+mo('+')+mn('0.25'))+'<p><strong>New score at C: 0.625.</strong></p>',
+  steps:['C needs the incoming messages, already divided by each sender.','A sends 0.125. B and D each send 0.25.','C adds the three messages. C does not divide by three.'],
+  notes:'Explain the two local roles separately. A sender divides by its number of outgoing links. A receiver adds what arrives. This is not the average of its incoming neighbors’ scores. The prime marks the next round, not a derivative.'},
+ {id:'round',title:'One round across the whole graph',part:'Message passing',kind:'round',
+  body:'<p>Each node sends from its <strong>old score</strong>.</p><p>Each node collects a <strong>new score</strong>.</p><p>Replace the old scores after all messages arrive.</p><p class="note">Every node follows the same rule.</p>',
+  steps:['The old vector is (0.25, 0.25, 0.25, 0.25).','All five links carry messages from that old vector.','New scores: (0.25, 0.125, 0.625, 0). The total is still 1.'],
+  notes:'This is a synchronous round. Do not overwrite A’s score and then use the changed value to compute B in the same round. A real parallel program needs a mechanism to separate rounds. The animation is a model of the dependencies, not a prescription for one processor per node.'},
+ {id:'repeat',title:'The output becomes the next input',part:'Message passing',kind:'repeat',knobs:['round'],
+  body:'<p>Split, send, add. Then repeat.</p><p>A node’s score now depends on paths through the graph.</p><p class="note">So far, walkers only follow links. D has no incoming links.</p>',
+  steps:['Move the round slider, or step through the first rounds.','After one round, D has no score.','Later rounds keep redistributing the same total score.','In this graph, the scores approach (0.4, 0.2, 0.4, 0).'],
+  notes:'A and C approach the same score even though C has three incoming links and A has only one. The sources of those links matter. This particular graph converges. Link-following alone does not guarantee that behavior for every graph. All displayed values come from the computed iterates.'},
+ {id:'problems',title:'Following links can trap or cycle',part:'Why restart?',kind:'problems',
+  body:'<p><strong>A closed group:</strong> walkers cannot leave by following links.</p><p><strong>A two-node cycle:</strong> unequal scores swap every round.</p><p>We need a way to start elsewhere.</p>',
+  steps:['A closed group has no outgoing route to the rest of the graph.','A score distribution can alternate: (0.8, 0.2), then (0.2, 0.8).','Allow a walker to jump to any node, even without a link.'],
+  notes:'These are separate examples, not claims that every closed group oscillates. The cycle starts with unequal scores so that the failure to converge is visible. A uniform initial vector on that cycle would already be stationary. Positive uniform restart resolves both issues. '+source3},
+ {id:'restart',title:'A small chance of starting elsewhere',part:'PageRank',kind:'restart',
+  body:'<p>At each move:</p><ul><li>Follow a link with probability <strong>0.85</strong>.</li><li>Jump to a uniformly chosen node with probability <strong>0.15</strong>.</li></ul><p>Each node receives '+math(frac(mn('0.15'),mn(4))+mo('=')+mn('0.0375'))+' from restarts.</p>',
+  steps:['α = 0.85 is the probability of following links.','Only 85% of the score follows the graph.','The remaining 15% spreads equally across all four nodes.'],
+  notes:'The value 0.85 is a common choice, not a law. A jump may land on the current node. Scores are probabilities, so following links and restarting divide a total mass of one. The two parts must not be added at full strength. '+source2},
+ {id:'localrule',title:'At C: messages plus a restart share',part:'PageRank',kind:'localrule',
+  body:'<p>C first adds the incoming shares.</p>'+eq(mn('0.125')+mo('+')+mn('0.25')+mo('+')+mn('0.25')+mo('=')+mn('0.625'))+'<p>Then it applies the PageRank rule.</p>'+eq(mn('0.85')+mo('×')+mn('0.625')+mo('+')+mn('0.0375'))+'<p><strong>New score at C: 0.56875.</strong></p>',
+  steps:['The same incoming messages give a link-following score of 0.625.','Scale that total by 0.85, giving 0.53125.','Add 0.0375 from restarts. D receives its restart share too.'],
+  notes:'The displayed numbers use the initial uniform vector. Scaling every message by alpha before sending gives the same result as scaling the receiver’s sum afterward. The full updated vector is (0.25, 0.14375, 0.56875, 0.0375).'},
+ {id:'ranking',title:'Repeated rounds settle into a ranking',part:'PageRank',kind:'ranking',knobs:['alpha','round'],
+  body:'<p>Start at equal scores.</p><p>Repeat until consecutive score vectors change very little.</p><p><strong>PageRank:</strong> the limiting score of each node.</p><p class="note">Change α to compare links with restarts. At α = 0, every score is ¼.</p>',
+  steps:['The sliders control α and the number of completed rounds.','The first round uses one-hop messages.','Later rounds include the effects of longer paths.','With α = 0.85, the ranking is C, A, B, D.'],
+  notes:'With uniform restarts and 0 ≤ alpha < 1, the iteration converges to a unique probability vector. The slider stops at 0.99. Sixty rounds may still show visible changes for some high-alpha examples, so the readout reports change rather than declaring convergence at a fixed round count. “Limiting” does not mean exact finite-step equality.'},
+ {id:'stop',title:'When can we stop?',part:'PageRank',kind:'stop',
+  body:'<p>Add the absolute changes across nodes.</p>'+eq('<mtext>change</mtext>'+mo('=')+sub(mo('∑'),mi('i'))+mo('|')+sub(mi('new'),mi('i'))+mo('−')+sub(mi('old'),mi('i'))+mo('|'))+'<p>Stop below a chosen tolerance.</p><p class="note">Also set a maximum number of rounds. A small change is a stopping rule, not exact equality.</p>',
+  steps:['Compare the entire old and new vectors.','Small changes at every node make a small total change.','At α = 0.85, this example reaches change < 10⁻⁶ in the displayed round.'],
+  notes:'The illustration uses the sum of absolute changes, or L1 difference, and a tolerance of 1e-6. Distinguish tolerance from maximum iterations. In this contraction, a bound on error to the limit follows from the change and alpha, but that proof is outside this lesson. The criterion here is an absolute total tolerance, not NetworkX’s n-times-tol convention.'},
+ {id:'bridge',title:'Message passing is a matrix product',part:'Graph × Data',kind:'bridge',
+  body:'<p>The graph tells us <strong>where to send</strong> each value.</p><p>The score vector tells us <strong>how much to send</strong>.</p><p>Can an array do all the sending and adding?</p>',
+  steps:['We already know the answer for one round.','Store the graph’s sending rules in a matrix.','Graph × Data gives the received scores.'],
+  notes:'Keep the same graph and the same first-round scores visible. The matrix is a second representation of the message-passing calculation, not a new algorithm. For now the product gives the link-following result. Restart is added after it.'},
+ {id:'edges',title:'The graph is data too',part:'Graph × Data',kind:'edges',
+  body:'<p>An edge list stores pairs of node IDs.</p><p>A matrix stores the same links as entries.</p><p><strong>Our convention:</strong><br>column = sender<br>row = receiver</p>'+eq(sub(mi('H'),row(mi('C')+mo(',')+mi('A')))+mo('=')+mn(1)),
+  steps:['The graph has four nodes and five directed edges.','The pair (A, C) means A sends to C.','Put a 1 in row C, column A. Missing links have value 0.'],
+  notes:'H is the unnormalized link matrix. Many graph libraries choose the opposite adjacency convention, so explicitly read this one as receiver-by-sender. With column-vector scores that makes G times r the incoming-message computation. Numeric node IDs are labels, not measured features.'},
+ {id:'columns',title:'Each column describes one sender',part:'Graph × Data',kind:'columns',choices:'sender',
+  body:'<p>Divide each column of H by its number of links.</p><p>Call the result <strong>G</strong>.</p><p>For example, A’s column sends ½ to B and ½ to C.</p><p class="note">Each column sums to 1.</p>',
+  steps:['Select a sender to inspect its column and outgoing links.','Replace each 1 by the fraction of that sender’s score it carries.','A column is one node’s complete sending rule.'],
+  notes:'G is a column-stochastic transition matrix, although students do not need that term. Nonnegative entries in each column sum to one. Each sender distributes its whole score, so the total score stays the same.'},
+ {id:'onerow',title:'One row collects one node’s messages',part:'Graph × Data',kind:'onerow',
+  body:'<p>Row C gives the fractions that arrive from A, B, C, and D.</p><p>Multiply each fraction by that sender’s score.</p><p>Add the products.</p>'+eq(sub(mi('q'),mi('C'))+mo('=')+mn('0.625')),
+  steps:['Read row C: (½, 1, 0, 1).','Multiply by the current scores: (¼, ¼, ¼, ¼).','The row product adds exactly the messages C received earlier.'],
+  notes:'q denotes the result of link-following alone. The zero for sender C is deliberate: C has no self-link. Multiplication by the sender’s score, followed by summation, is the dot product students already know.'},
+ {id:'product',title:'All rows collect at once',part:'Graph × Data',kind:'product',
+  body:eq(mi('q')+mo('=')+G+R)+'<p>One row of G for each receiver.</p><p>One entry of r for each sender.</p><p><strong>Matrix multiplication performs every receiver’s sum.</strong></p>',
+  steps:['G has shape 4 × 4. The score vector has shape 4 × 1.','Each row uses the same old vector r.','The product is (0.25, 0.125, 0.625, 0), just as before.'],
+  notes:'The multiplication is conventional matrix multiplication. It is not entrywise multiplication. Its output has four rows and one column, so the same node order must label both the input and output.'},
+ {id:'fullupdate',title:'The complete PageRank update',part:'Graph × Data',kind:'fullupdate',
+  body:eq(rt('t+1')+mo('=')+A+G+rt('t')+mo('+')+mo('(')+mn(1)+mo('−')+A+mo(')')+U)+'<p><strong>G:</strong> the graph’s sending fractions</p><p><strong>r:</strong> current scores</p><p><strong>u:</strong> equal restart shares, each 1/N</p>',
+  steps:['G r computes the incoming shares.','Multiply by α to keep the link-following part.','Add (1 − α)u. This vector becomes the next input.'],
+  notes:'N is the number of nodes. This lesson uses u_i = 1/N. G records the outgoing splits, with senders in columns and receivers in rows. At convergence the left and right score vectors agree. No eigenvector derivation is needed.'},
+ {id:'code',title:'The same round in code',part:'Graph × Data',kind:'code',
+  body:'<p>The loop follows edges.</p><p>The product follows the same weights stored in G.</p><p>Both read <span class="code">old</span> and create <span class="code">new</span>.</p><p class="note">In NumPy, <span class="code">@</span> is matrix multiplication. <span class="code">*</span> multiplies entries.</p>',
+  steps:['The edge loop divides each sender’s old score and adds it at each receiver.','G already stores those sending fractions.','Both versions produce identical new scores.'],
+  notes:'The code performs one update on our example if out, old, G, and alpha are supplied. out is an adjacency list of receiver indices for each sender. Every node in this example has an outgoing link. G uses the receiver-by-sender convention. The vector shape is (N,) in the NumPy code, which represents the same mathematical column vector.'},
+ {id:'features',title:'Several data columns, one graph',part:'Graph × Data',kind:'features',
+  body:eq(mi('Y')+mo('=')+G+mi('X'))+'<p>Rows of X correspond to nodes.</p><p>Each column carries a different value.</p><p>The same graph sends and adds each column separately.</p><p class="note">PageRank uses one score column, followed by the restart step.</p>',
+  steps:['Here X has two columns of node values.','For C, the same row of G combines both columns.','Graph (N × N) times Data (N × d) gives Data (N × d).'],
+  notes:'This is a general message-passing operation with scalar edge weights. Arbitrary feature columns do not become PageRank merely by multiplying once. They may have different units and need not sum to one. The worked second column here is (1, 2, 3, 4), yielding (3, 0.5, 6.5, 0).'},
+ {id:'editgraph',title:'One extra link changes the ranking',part:'Graph × Data',kind:'editgraph',choices:'edge',
+  body:'<p>Add a link from C to D.</p><p>C now sends half to A and half to D.</p><p>That changes a column of G and the resulting ranking.</p><p class="note">The graph and the scores are both data. The graph also defines how scores move.</p>',
+  steps:['Compare the original graph with one extra edge.','C’s column changes from (1, 0, 0, 0) to (½, 0, 0, ½).','The scores settle to a different ranking: C, then A and D tied, then B. A and D now receive the same thing, half of C.'],
+  notes:'The button recomputes the scores from uniform initialization to a tight numerical tolerance at alpha 0.85. It does not edit a live website or external graph. C has two outgoing links in the modified graph, so both of its weights change. A and D tie exactly: each receives only half of C’s score, plus the same restart share. Graph structure is input data to the algorithm.'},
+ {id:'sparse',title:'Only existing links need messages',part:'Computation',kind:'sparse',
+  body:'<p>Let N be the nodes and E the edges.</p><p>An edge list stores the links in <strong>O(N + E)</strong> space.</p><p>One PageRank round takes <strong>O(N + E)</strong> work.</p><p class="note">A dense N × N matrix would also store the missing links.</p>',
+  steps:['Our graph sends one weighted message along each of its five edges.','Following the edge list takes one multiply-and-add per edge.','Add the restart share in one pass over the N nodes.'],
+  notes:'The bound assumes adjacency lists or a sparse matrix. Each edge contributes one weighted message. Initializing the vector with uniform restart shares takes O(N) work, and following the edges takes O(E). There is no need to materialize a dense matrix of restart links.'},
+ {id:'exercise',title:'Your turn: one update at C',part:'Practice',kind:'exercise',
+  body:'<p>Current scores:</p>'+eq(R+mo('=')+mo('(')+mn('0.4')+mo(',')+mn('0.2')+mo(',')+mn('0.3')+mo(',')+mn('0.1')+mo(')'))+'<p>Use α = 0.85 and uniform restarts.</p><ol><li>What does A send to C?</li><li>What is C’s new score?</li><li>Which matrix entry represents A sending to C?</li></ol>',
+  steps:['Write the three answers before revealing the calculation.','A sends 0.4 ÷ 2 = 0.2 to C. C receives 0.2 + 0.2 + 0.1 = 0.5.','C’s new score is 0.85 × 0.5 + 0.0375 = 0.4625. The entry is G[C, A] = ½.'],
+  notes:'Collect a three-part response. The two common errors are dividing by C’s incoming degree and treating G[A,C] as the A-to-C weight. Students can check that the other updated scores are A: 0.2925, B: 0.2075, D: 0.0375, giving a total of one.'},
+ {id:'closing',title:'PageRank: nodes, messages, and matrices',part:'Essentials',kind:'closing',
+  body:'<p><strong>One node:</strong> split outgoing score, add incoming messages.</p><p><strong>All nodes:</strong> repeat the update with restarts.</p><p><strong>One product:</strong> the graph mixes the node data.</p>'+eq(rt('t+1')+mo('=')+A+G+rt('t')+mo('+')+mo('(')+mn(1)+mo('−')+A+mo(')')+U),
+  steps:['G records who sends to whom, and how much.','r records the current score at each node.','The same local rule appears in every row of the product.'],
+  notes:'The central connection is between a local computation and a global array operation. The graph is data in an edge list or matrix. In the product, that graph data acts on the current node data. Restarts keep score circulating across the graph. References: '+source1+'; '+source2+'; '+source3}
+];
+const NAMES=['A','B','C','D'];
+const EDGES=[[0,1],[0,2],[1,2],[2,0],[3,2]];
+const UNIFORM=[.25,.25,.25,.25];
+function graphMatrix(edges,N=4,fixDangling=true){
+ const out=Array.from({length:N},()=>[]);edges.forEach(([a,b])=>out[a].push(b));
+ return Array.from({length:N},(_,i)=>Array.from({length:N},(_,j)=>out[j].length ? (out[j].includes(i)?1/out[j].length:0) : (fixDangling?1/N:0)));
+}
+function multiply(M,x){return M.map(row=>row.reduce((s,v,j)=>s+v*x[j],0));}
+function matrixStep(old,alpha=.85,edges=EDGES){return multiply(graphMatrix(edges,old.length),old).map(x=>alpha*x+(1-alpha)/old.length);}
+function messageStep(old,alpha=.85,edges=EDGES){
+ const N=old.length,out=Array.from({length:N},()=>[]),next=Array(N).fill(0);
+ edges.forEach(([a,b])=>out[a].push(b));let dangling=0;
+ out.forEach((receivers,j)=>{if(!receivers.length)dangling+=old[j];else receivers.forEach(i=>next[i]+=old[j]/receivers.length);});
+ return next.map(x=>alpha*(x+dangling/N)+(1-alpha)/N);
+}
+function iterate(alpha=.85,rounds=30,edges=EDGES,start=UNIFORM){let r=start.slice();for(let t=0;t<rounds;t++)r=matrixStep(r,alpha,edges);return r;}
+function converge(alpha=.85,edges=EDGES,tol=1e-12){let r=UNIFORM.slice(),change=1,t=0,old=r;while(change>=tol&&t<10000){old=r;r=matrixStep(old,alpha,edges);change=r.reduce((s,v,i)=>s+Math.abs(v-old[i]),0);t++;}return {r,old,change,t};}
+const GM=graphMatrix(EDGES), ADJ=GM.map(row=>row.map(x=>Number(x>0))), INITIAL=UNIFORM.slice();
+const C={ink:'#1A1A1A',muted:'#555',blue:'#2a78d6',orange:'#d85b20',purple:'#6a3fb5',red:'#CC0033',faint:'#ddd',green:'#25764a',light:'#edf3fc'};
+const PALETTE=[C.blue,C.orange,C.purple,C.green];
+const font=(size=22,weight=400)=>`${weight} ${size}px "Segoe UI", Arial, sans-serif`;
+function text(g,str,x,y,size=22,color=C.ink,weight=400,align='left') {g.font=font(size,weight);g.fillStyle=color;g.textAlign=align;g.textBaseline='middle';g.fillText(str,x,y);}
+function line(g,x1,y1,x2,y2,color=C.faint,width=2,dash=[]){g.beginPath();g.strokeStyle=color;g.lineWidth=width;g.setLineDash(dash);g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);}
+function box(g,x,y,w,h,fill='#fff',stroke=null){g.fillStyle=fill;g.fillRect(x,y,w,h);if(stroke){g.strokeStyle=stroke;g.lineWidth=1;g.strokeRect(x,y,w,h);}}
+function dot(g,x,y,r,fill,stroke=null,width=2){g.beginPath();g.arc(x,y,r,0,2*Math.PI);g.fillStyle=fill;g.fill();if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.stroke();}}
+const fmt=(x,d=3)=>Number(x.toFixed(d)).toString();
+function heading(g,s){text(g,s,26,32,23,C.ink,600);}
+function bottom(g,s,s2=''){line(g,26,457,694,457);text(g,s,28,490,23,C.ink,600);if(s2)text(g,s2,28,527,19,C.muted);}
+function graph(g,opt={}){
+ const scale=opt.scale||1,ox=opt.x||0,oy=opt.y||0;
+ const base=opt.pos||[[150,145],[490,145],[330,330],[600,330]];
+ const p=base.map(([x,y])=>[ox+x*scale,oy+y*scale]);const edges=opt.edges||EDGES,r=36*scale;
+ const out=Array(4).fill(0);edges.forEach(([a])=>out[a]++);
+ const highlight=(a,b)=>opt.highlight==='all'||(opt.sender!==undefined&&a===opt.sender)||(opt.receiver!==undefined&&b===opt.receiver);
+ const markers=[];
+ edges.forEach(([a,b],idx)=>{
+  if(a===b)return;
+  const [ax,ay]=p[a],[bx,by]=p[b],dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+  const reciprocal=edges.some(([u,v])=>u===b&&v===a),curve=reciprocal?31*scale:0;
+  const start=[ax+dx/len*r,ay+dy/len*r],end=[bx-dx/len*(r+4),by-dy/len*(r+4)],mid=[(ax+bx)/2+nx*curve,(ay+by)/2+ny*curve];
+  const hi=highlight(a,b),color=hi?(opt.color||C.blue):'#a1a5aa';
+  g.beginPath();g.moveTo(...start);g.quadraticCurveTo(...mid,...end);g.strokeStyle=color;g.lineWidth=hi?3.5:2;g.stroke();
+  const ang=Math.atan2(end[1]-mid[1],end[0]-mid[0]);g.beginPath();g.moveTo(...end);g.lineTo(end[0]-12*scale*Math.cos(ang-.43),end[1]-12*scale*Math.sin(ang-.43));g.lineTo(end[0]-12*scale*Math.cos(ang+.43),end[1]-12*scale*Math.sin(ang+.43));g.closePath();g.fillStyle=color;g.fill();
+  const path=t=>[(1-t)**2*start[0]+2*(1-t)*t*mid[0]+t*t*end[0],(1-t)**2*start[1]+2*(1-t)*t*mid[1]+t*t*end[1]];
+  if(hi&&opt.animate!==undefined){const t=opt.animate,endIn=[bx-dx/len*r*.72,by-dy/len*r*.72];markers.push([(1-t)**2*start[0]+2*(1-t)*t*mid[0]+t*t*endIn[0],(1-t)**2*start[1]+2*(1-t)*t*mid[1]+t*t*endIn[1]]);}
+  if(opt.messages&&hi){const q=path(.5),s=fmt((opt.scores||UNIFORM)[a]/out[a],4);g.font=font(19*scale,600);const tw=g.measureText(s).width;box(g,q[0]-tw/2-5,q[1]-13*scale,tw+10,26*scale,'#fff');text(g,s,q[0],q[1],19*scale,C.blue,600,'center');}
+  if(opt.edgeLabels){const q=path(.5);text(g,out[a]===2?'½':'1',q[0]+nx*Math.max(13,16*scale),q[1]+ny*Math.max(13,16*scale),Math.max(18,20*scale),C.blue,600,'center');}
+ });
+ p.forEach(([x,y],i)=>{const hi=opt.node===i||opt.sender===i||opt.receiver===i;dot(g,x,y,r,hi?'#e8f0fc':'#fff',hi?C.blue:'#646b73',hi?3:2);
+  if(opt.scores){text(g,NAMES[i],x,y-10*scale,22*scale,C.ink,650,'center');text(g,fmt(opt.scores[i],opt.digits||3),x,y+15*scale,18*scale,PALETTE[i],600,'center');}
+  else text(g,NAMES[i],x,y,Math.max(18,26*scale),C.ink,650,'center');
+ });
+ markers.forEach(([x,y])=>dot(g,x,y,6*scale,C.orange,'#fff',2));
+ return p;
+}
+function table(g,old,next,opts={}){
+ const y=opts.y||405,x=opts.x||28,w=opts.w||664,cw=(w-128)/4;
+ text(g,opts.oldLabel||'old',x,y+30,19,C.muted,600);
+ const number=opts.number||((v)=>fmt(v,opts.digits||4));
+ NAMES.forEach((n,j)=>{const cx=x+128+cw*(j+.5);text(g,n,cx,y,20,PALETTE[j],650,'center');text(g,number(old[j]),cx,y+30,opts.size||21,C.ink,400,'center');if(next)text(g,number(next[j]),cx,y+67,opts.size||22,C.blue,650,'center');});
+ if(next){text(g,opts.newLabel||'new',x,y+67,19,C.blue,600);line(g,x,y+47,x+w,y+47);}
+}
+function matrix(g,M,x,y,cw=62,ch=56,opt={}){
+ const rows=M.length,cols=M[0].length;
+ if(opt.top)text(g,opt.top,x+cols*cw/2,y-65,20,C.muted,600,'center');
+ if(opt.labels!==false){NAMES.slice(0,cols).forEach((n,j)=>text(g,n,x+cw*(j+.5),y-23,20,PALETTE[j],600,'center'));NAMES.slice(0,rows).forEach((n,i)=>text(g,n,x-25,y+ch*(i+.5),20,PALETTE[i],600,'center'));}
+ M.forEach((row,i)=>row.forEach((v,j)=>{const hi=opt.col===j||opt.row===i||(opt.cell&&opt.cell[0]===i&&opt.cell[1]===j);box(g,x+j*cw,y+i*ch,cw,ch,hi?'#fff1bb':(v===0?'#fafafa':'#edf3fc'),'#ddd');
+ const val=opt.symbols&&v===.5?'½':opt.symbols&&v===.25?'¼':typeof v==='string'?v:fmt(v,opt.digits||4);text(g,val,x+(j+.5)*cw,y+(i+.5)*ch,opt.size||24,v===0?'#777':C.ink,hi?650:400,'center');}));
+ return {right:x+cols*cw,bottom:y+rows*ch};
+}
+function bars(g,values,x=90,y=145,w=550,h=230){
+ const gap=30,bw=(w-gap*3)/4,max=.65;
+ values.forEach((v,i)=>{const bx=x+i*(bw+gap),bh=h*v/max;box(g,bx,y+h-bh,bw,bh,PALETTE[i]);text(g,fmt(v,4),bx+bw/2,y+h-bh-17,21,C.ink,600,'center');text(g,NAMES[i],bx+bw/2,y+h+26,23,PALETTE[i],600,'center');});line(g,x-10,y+h,x+w+10,y+h,'#999',1);
+}
+function drawProduct(g,step){
+ heading(g,'The same five messages, written as a product');
+ matrix(g,GM,62,160,66,56,{symbols:true,row:step===1?2:undefined,top:'G: senders across columns'});
+ text(g,'×',350,272,36);matrix(g,UNIFORM.map(v=>[v]),387,160,76,56,{labels:false,symbols:true,top:'r'});
+ text(g,'=',497,272,36);matrix(g,(step>=2?multiply(GM,UNIFORM):['?','?','?','?']).map(v=>[v]),548,160,112,56,{labels:false,top:'q'});
+ bottom(g,'(4 × 4) × (4 × 1) = (4 × 1)','Row order throughout: A, B, C, D.');
+}
+function draw(d,state,progress=1){
+ const g=state.g,s=state.step,round=state.round,alpha=state.alpha;
+ g.setTransform(2,0,0,2,0,0);g.clearRect(0,0,720,560);g.setLineDash([]);g.globalAlpha=1;
+ switch(d.kind){
+ case 'opening':
+  heading(g,'Four pages and five links');graph(g,{receiver:s===1?2:undefined,highlight:s===2?'all':undefined});
+  if(s>=1)table(g,[1,1,3,0],null,{y:446,oldLabel:'links in'});else bottom(g,'A → B means “page A links to page B.”');break;
+ case 'scores':
+  heading(g,'One score per node');graph(g,{scores:UNIFORM});if(s) table(g,UNIFORM,null,{y:447,oldLabel:'r'});else bottom(g,'0.25 + 0.25 + 0.25 + 0.25 = 1');break;
+ case 'send':
+  heading(g,s===0?'A reads its current score':'A sends along its two outgoing links');graph(g,{scores:UNIFORM,sender:0,messages:s>=1,animate:s===2?progress:undefined});
+  bottom(g,s===0?'A has 2 outgoing links.':'Each message from A: 0.25 ÷ 2 = 0.125',s===2?'Total sent by A: 0.125 + 0.125 = 0.25':'The number of incoming links does not enter this division.');break;
+ case 'receive':
+  heading(g,'C sees its incoming neighbors');graph(g,{scores:UNIFORM,receiver:2,messages:s>=1,animate:s===1?progress:undefined});
+  bottom(g,s>=2?'New score at C: 0.625':'A, B, and D send to C.',s>=1?'0.125 + 0.25 + 0.25 = 0.625':'Each sender divides before sending.');break;
+ case 'round':
+  heading(g,s>=2?'New scores collected below':'Every sender uses the old vector');graph(g,{scores:UNIFORM,highlight:s>=1?'all':undefined,messages:s>=1,animate:s===1?progress:undefined});
+  table(g,UNIFORM,s>=2?multiply(GM,UNIFORM):null,{y:423});break;
+ case 'repeat':{
+  const r=iterate(1,round),prev=round?iterate(1,round-1):r;heading(g,`Link-following only · round ${round}`);graph(g,{scores:r,highlight:round?'all':undefined});table(g,round?prev:r,round?r:null,{y:423,oldLabel:round?`round ${round-1}`:'start',newLabel:`round ${round}`});break;}
+ case 'problems':{
+  heading(g,'Two ways that links alone can fail');text(g,'A closed group',30,88,22,C.ink,600);
+  const pts=[[75,180],[245,180],[420,180],[595,180]];graph(g,{pos:pts,edges:[[0,1],[1,2],[2,3],[3,2]],receiver:s===0?3:undefined});
+  g.strokeStyle=C.orange;g.lineWidth=2;g.setLineDash([6,5]);g.strokeRect(365,123,285,115);g.setLineDash([]);text(g,'No link leads out of {C, D}',510,265,20,C.orange,600,'center');
+  line(g,26,300,694,300);text(g,'A two-node cycle',30,335,22,C.ink,600);
+  text(g,'A → B → A',90,393,25,C.blue,600);text(g,s>=1?'(0.8, 0.2)  ⇄  (0.2, 0.8)':'Start with (0.8, 0.2)',320,393,24,C.ink,600);
+  bottom(g,s>=2?'A restart gives every node a way to receive score.':'Link-following alone need not settle.',s>=2?'The jump can cross a closed group’s boundary.':'The cycle alternates when its starting scores differ.');break;}
+ case 'restart':
+  heading(g,'A mixture of two kinds of move');graph(g,{scores:UNIFORM,highlight:s>=1?'all':undefined,scale:.8,x:50,y:10});
+  box(g,60,355,510,42,C.blue);box(g,570,355,90,42,C.orange);text(g,'85% follows links',315,376,22,'white',650,'center');
+  text(g,'15%',615,376,20,'white',650,'center');
+  if(s>=2){text(g,'Restart share at each node',40,430,20,C.orange,600);table(g,Array(4).fill(.0375),null,{y:477,oldLabel:'restart'});}else bottom(g,'α = 0.85      1 − α = 0.15','The two parts still add to a total score of 1.');break;
+ case 'localrule':
+  heading(g,'C’s first PageRank update');graph(g,{scores:UNIFORM,receiver:2,messages:true});
+  bottom(g,s===0?'Incoming total: 0.625':s===1?'Link-following part: 0.85 × 0.625 = 0.53125':'New score: 0.53125 + 0.0375 = 0.56875',s>=2?'New score = α × incoming total + (1 − α)/N':'The graph is the same as before.');break;
+ case 'ranking':{
+  const r=iterate(alpha,round),old=round?iterate(alpha,round-1):r,change=r.reduce((acc,x,i)=>acc+Math.abs(x-old[i]),0);
+  heading(g,`α = ${alpha.toFixed(2)} · completed rounds: ${round}`);bars(g,r);bottom(g,`Total score: ${r.reduce((a,b)=>a+b,0).toFixed(6)}`,round?`Change from previous round: ${change.toExponential(2)}`:'Starting distribution: equal shares.');break;}
+ case 'stop':{
+  const result=converge(.85,EDGES,1e-6),t=s===0?1:s===1?10:result.t,old=iterate(.85,t-1),r=iterate(.85,t),delta=r.map((v,i)=>Math.abs(v-old[i]));
+  heading(g,`Consecutive rounds ${t-1} and ${t}`);
+  table(g,old,r,{y:125,oldLabel:'old',newLabel:'new',digits:7,size:19});
+  line(g,28,232,692,232);table(g,delta,null,{y:275,oldLabel:'|change|',size:20,number:v=>v===0?'0':v.toExponential(2)});
+  text(g,`Total change = ${delta.reduce((a,b)=>a+b,0).toExponential(3)}`,40,380,28,C.blue,650);
+  bottom(g,'Stop when total change < 10⁻⁶',s===2?`This example first meets that test at round ${t}.`:'Use full precision to check the stopping condition.');break;}
+ case 'bridge':
+  heading(g,'Sending rules × current scores');graph(g,{scale:.65,x:40,y:15,highlight:s?'all':undefined,edgeLabels:s>=1});
+  text(g,'Graph',185,330,32,C.blue,650,'center');text(g,'×',330,330,38);text(g,'Data',485,330,32,C.purple,650,'center');
+  text(g,'where and what fraction',185,374,19,C.muted,400,'center');text(g,'how much',485,374,19,C.muted,400,'center');
+  bottom(g,s>=2?'Received scores = G r':'Both parts can be stored as arrays.',s>=2?'The restart share comes after this product.':'The graph stays fixed while the node scores change.');break;
+ case 'edges':{
+  heading(g,'An edge list and a link matrix');
+  text(g,'sender   receiver',34,120,19,C.muted,600);
+  EDGES.forEach(([a,b],i)=>{if(s>=1&&i===1)box(g,30,151+i*48,206,42,'#fff1bb');text(g,NAMES[a],80,173+i*48,25,C.ink,500,'center');text(g,'→',135,173+i*48,23,C.muted);text(g,NAMES[b],203,173+i*48,25,C.ink,500,'center');});
+  matrix(g,ADJ,355,155,70,55,{top:'H: columns are senders',cell:s>=1?[2,0]:undefined});
+  bottom(g,s>=2?'H[C, A] = 1 means A → C.':'The node order is A, B, C, D.','Rows receive. Columns send.');break;}
+ case 'columns':{
+  const j=state.sender;heading(g,`${NAMES[j]}’s sending rule`);graph(g,{scale:.46,x:0,y:70,sender:j,edgeLabels:s>=1});
+  matrix(g,s>=1?GM:ADJ,365,152,68,56,{top:s>=1?'G: sending fractions':'H: links',col:j,symbols:true});
+  bottom(g,s>=1?`Column ${NAMES[j]} sums to 1.`:`${NAMES[j]} has ${EDGES.filter(([a])=>a===j).length} outgoing link(s).`,s>=1?'The column specifies where one unit of score goes.':'The next step divides by that number.');break;}
+ case 'onerow':{
+  heading(g,'C receives from A, B, C, and D');const vals=s?['½ × ¼','1 × ¼','0 × ¼','1 × ¼']:['½','1','0','1'];
+  matrix(g,[vals],76,140,142,78,{row:0,labels:false,size:25});NAMES.forEach((n,j)=>text(g,n,147+j*142,110,23,PALETTE[j],600,'center'));
+  text(g,'C',43,179,25,C.purple,650,'center');
+  if(s>=1)text(g,'0.125     +     0.25     +     0     +     0.25',360,290,29,C.ink,600,'center');
+  if(s>=2)text(g,'= 0.625',360,370,39,C.blue,650,'center');
+  bottom(g,'A row product = multiply, then add.','The fractions are graph data. The scores are node data.');break;}
+ case 'product':drawProduct(g,s);break;
+ case 'fullupdate':{
+  heading(g,'One complete round, starting at equal scores');const q=multiply(GM,UNIFORM),scaled=q.map(v=>.85*v),next=matrixStep(UNIFORM);
+  text(g,'G r',43,114,26,C.blue,650);matrix(g,q.map(v=>[v]),50,163,140,52,{labels:false});
+  text(g,'× 0.85',245,114,25,C.blue,650);matrix(g,(s>=1?scaled:['?','?','?','?']).map(v=>[v]),250,163,160,52,{labels:false,digits:5});
+  text(g,'+ 0.0375 each',479,114,25,C.orange,650);matrix(g,(s>=2?next:['?','?','?','?']).map(v=>[v]),480,163,180,52,{labels:false,digits:5});
+  bottom(g,'New scores still sum to 1.','The same rule applies at every node.');break;}
+ case 'code':{
+  heading(g,'One update from the same old scores');
+  const lines=['N = len(old)','new = np.full(N, (1-alpha)/N)','for j in range(N):','    share = old[j] / len(out[j])','    for i in out[j]:','        new[i] += alpha * share'];
+  text(g,'Messages on edges',28,86,21,C.blue,650);lines.forEach((l,i)=>{g.font='21px Consolas, monospace';g.fillStyle=C.ink;g.textAlign='left';g.fillText(l,28,123+i*36);});
+  line(g,28,364,692,364);text(g,'The matrix version',28,394,21,C.blue,650);
+  g.font='23px Consolas, monospace';g.fillStyle=C.ink;g.fillText('new = alpha * (G @ old) + (1-alpha)/N',28,435);
+  text(g,s>=2?'Both outputs: (0.25, 0.14375, 0.56875, 0.0375)':'G already stores each sender’s outgoing fractions.',28,510,20,s>=2?C.blue:C.muted,500);break;}
+ case 'features':{
+  heading(g,'Two columns, the same sending rules');const X=UNIFORM.map((v,i)=>[v,i+1]),Y=GM.map(row=>[row.reduce((sum,v,j)=>sum+v*X[j][0],0),row.reduce((sum,v,j)=>sum+v*X[j][1],0)]);
+  matrix(g,GM,48,160,55,53,{symbols:true,row:s>=1?2:undefined,top:'Graph'});text(g,'×',282,265,31);
+  matrix(g,X,325,160,66,53,{labels:false,top:'Data'});text(g,'=',478,265,31);
+  matrix(g,s>=2?Y:Y.map(row=>row.map(()=>'?')),525,160,76,53,{labels:false,top:'New data',row:s>=1?2:undefined});
+  bottom(g,'(4 × 4) × (4 × 2) = (4 × 2)',s>=2?'C receives 0.625 in column 1 and 6.5 in column 2.':'Each column goes through the graph independently.');break;}
+ case 'editgraph':{
+  const edges=state.extraEdge?[...EDGES,[2,3]]:EDGES,r=converge(.85,edges).r;
+  heading(g,state.extraEdge?'Graph with the extra link C → D':'Original graph');graph(g,{edges,scores:r,digits:4,sender:s>=1?2:undefined,edgeLabels:s>=1});
+  bottom(g,state.extraEdge?'C now divides its score between A and D.':'C sends all of its outgoing score to A.',state.extraEdge?`A and D tie: each receives half of C. Total: ${r.reduce((a,b)=>a+b,0).toFixed(6)}`:`Converged scores at α = 0.85. Total: ${r.reduce((a,b)=>a+b,0).toFixed(6)}`);break;}
+ case 'sparse':
+  heading(g,'Five edges are five useful multiply-and-adds');
+  matrix(g,GM,90,130,72,61,{symbols:true,top:'G'});
+  text(g,'5 nonzero entries',448,178,23,C.blue,650);text(g,'11 zero entries',448,221,23,C.muted);
+  text(g,'store: (receiver, sender, weight)',35,415,22,C.ink,500);
+  bottom(g,s>=1?'One weighted message per edge.':'Sparse storage follows the actual links.',s>=2?'Edges plus restarts: O(N + E) work per round.':'No need to create an N × N array for a large graph.');break;
+ case 'exercise':{
+  const old=[.4,.2,.3,.1];heading(g,'Same graph, different current scores');graph(g,{scores:old,receiver:s?2:undefined,messages:s>=1});
+  bottom(g,s===0?'What is C’s next PageRank score?':s===1?'C receives 0.2 + 0.2 + 0.1 = 0.5.':'New score at C: 0.4625',s>=2?'A → C is entry G[C, A] = ½.':'Use the sender’s outgoing degree.');break;}
+ case 'closing':
+  heading(g,'A local rule, repeated across the graph');graph(g,{scores:converge(.85).r,digits:4,highlight:s>=1?'all':undefined,edgeLabels:s>=1});
+  bottom(g,s>=2?'Graph × Data adds the weighted messages.':'Split. Send. Add. Restart. Repeat.','The graph is an input dataset and an operation on node data.');break;
+ }
+}
+
+const stage=document.querySelector('.stage'),host=document.querySelector('#slides'),states={};let current=0,playTimer=null,animation=null;
+function knobHTML(key,id){const alpha=key==='alpha';return `<div class="knob"><label for="${id}-${key}">${alpha?'Follow links α':'Round'}</label><input id="${id}-${key}" data-knob="${key}" type="range" min="0" max="${alpha?'.99':'60'}" step="${alpha?'.01':'1'}" value="${alpha?'.85':'0'}"><output for="${id}-${key}">${alpha?'.85':'0'}</output></div>`;}
+SLIDES.forEach((d,i)=>{
+ const section=document.createElement('section');section.className='slide';section.id='s'+(i+1);section.dataset.part=d.id;section.setAttribute('aria-roledescription','slide');section.setAttribute('aria-label',`${i+1}. ${d.title}`);section.hidden=i!==0;
+ if(d.kind==='purpose'){
+  section.classList.add('purpose');section.innerHTML=`<p class="eyebrow">Meeting 16 · Purpose</p><h2>${d.title}</h2>${d.body}`;
+  host.appendChild(section);states[d.id]={step:0,round:0,alpha:.85,sender:0,extraEdge:false,g:null,section};return;
+ }
+ section.innerHTML=`<h2>${d.title}<span class="part">${d.part}</span></h2><div class="row"><div class="pic"><canvas width="1440" height="1120" role="img" aria-label="${d.title}: interactive worked example"></canvas></div><div class="side"><div class="copy">${d.body}</div><div class="ctl"><p class="label">Controls</p>${(d.knobs||[]).map(k=>knobHTML(k,d.id)).join('')}${d.choices==='sender'?'<div class="buttons choices">'+NAMES.map((n,j)=>`<button data-sender="${j}" aria-pressed="${j===0}">${n}</button>`).join('')+'</div>':''}${d.choices==='edge'?'<div class="buttons choices"><button data-edge="0" aria-pressed="true">Original</button><button data-edge="1" aria-pressed="false">Add C → D</button></div>':''}<div class="buttons"><button class="primary advance">Next step</button><button class="play">Play all</button><button class="reset">Reset</button></div><div class="readout" aria-live="polite"><p class="label step-count"></p><div class="step-text"><p class="active-text"></p>${d.steps.map(t=>`<p class="reserve" aria-hidden="true">${t}</p>`).join('')}</div></div></div></div></div>`;
+ host.appendChild(section);const state={step:0,round:0,alpha:.85,sender:0,extraEdge:false,g:section.querySelector('canvas').getContext('2d'),section};states[d.id]=state;
+ section.querySelector('.advance').onclick=()=>advance();section.querySelector('canvas').onclick=()=>advance();section.querySelector('.reset').onclick=()=>reset();section.querySelector('.play').onclick=()=>play();
+ section.querySelectorAll('[data-knob]').forEach(el=>el.addEventListener('input',()=>{stopPlay();state[el.dataset.knob]=+el.value;update();}));
+ section.querySelectorAll('[data-sender]').forEach(el=>el.onclick=()=>{state.sender=+el.dataset.sender;update();});section.querySelectorAll('[data-edge]').forEach(el=>el.onclick=()=>{state.extraEdge=el.dataset.edge==='1';update();});
+});
+const currentState=()=>states[SLIDES[current].id];
+function stopPlay(){if(playTimer)clearTimeout(playTimer);playTimer=null;SLIDES.forEach(d=>{const button=states[d.id].section.querySelector('.play');if(button)button.textContent='Play all';});}
+function update(animate=false){
+ const d=SLIDES[current],st=currentState(),el=st.section;
+ if(d.kind==='purpose'){if(animation)cancelAnimationFrame(animation);animation=null;return;}
+ el.querySelector('.step-count').textContent=st.step?`Step ${st.step} of ${d.steps.length-1}`:`Start · ${d.steps.length-1} steps`;
+ el.querySelector('.active-text').innerHTML=d.steps[st.step];el.querySelector('.advance').disabled=st.step===d.steps.length-1;
+ el.querySelectorAll('[data-knob]').forEach(inp=>{inp.value=st[inp.dataset.knob];inp.nextElementSibling.textContent=inp.dataset.knob==='alpha'?st.alpha.toFixed(2):st.round;});
+ el.querySelectorAll('[data-sender]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.sender===st.sender)));el.querySelectorAll('[data-edge]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.edge==='1')===st.extraEdge)));
+ if(animation)cancelAnimationFrame(animation);animation=null;
+ if(animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const start=performance.now();const frame=now=>{const p=Math.min(1,(now-start)/850);draw(d,st,p);if(p<1)animation=requestAnimationFrame(frame);};animation=requestAnimationFrame(frame);}else draw(d,st,1);
+}
+function advance(auto=false){const d=SLIDES[current],st=currentState();if(!auto)stopPlay();if(st.step>=d.steps.length-1)return false;st.step++;
+ if(d.id==='repeat')st.round=[0,1,3,40][st.step];if(d.id==='ranking'){st.round=[0,1,8,40][st.step];if(st.step===3)st.alpha=.85;}
+ if(d.id==='editgraph'&&st.step>=1)st.extraEdge=true;update(true);return true;}
+function reset(){stopPlay();const st=currentState();Object.assign(st,{step:0,round:0,alpha:.85,sender:0,extraEdge:false});update();}
+function play(){if(playTimer){stopPlay();return;}if(currentState().step===SLIDES[current].steps.length-1)reset();const tick=()=>{if(advance(true)){currentState().section.querySelector('.play').textContent='Pause';playTimer=setTimeout(tick,1700);}else stopPlay();};tick();}
+function fit(){const z=Math.min(innerWidth/1280,innerHeight/720);stage.style.transform=`scale(${z})`;stage.style.left=Math.max(0,(innerWidth-1280*z)/2)+'px';stage.style.top=Math.max(0,(innerHeight-720*z)/2)+'px';}
+function go(n,focus=false){stopPlay();current=Math.max(0,Math.min(SLIDES.length-1,n));SLIDES.forEach((d,i)=>states[d.id].section.hidden=i!==current);document.querySelector('#counter').textContent=`${current+1} / ${SLIDES.length}`;document.documentElement.dataset.slide=String(current+1);document.querySelector('.notes').hidden=true;
+ history.replaceState(null,'',location.pathname+location.search+'#'+(current+1));if(focus){const h=currentState().section.querySelector('h2');h.tabIndex=-1;h.focus({preventScroll:true});}update();}
+function notes(){const el=document.querySelector('.notes');if(!el.hidden){el.hidden=true;return;}el.innerHTML=`<button aria-label="Close speaker notes">Close</button><h3>${SLIDES[current].title}</h3><p>${SLIDES[current].notes}</p>`;el.hidden=false;el.querySelector('button').onclick=()=>el.hidden=true;}
+function full(){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});}
+document.querySelector('#prev').onclick=()=>go(current-1,true);document.querySelector('#next').onclick=()=>go(current+1,true);document.querySelector('#notes').onclick=notes;document.querySelector('#full').onclick=full;
+document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+ if(e.key==='Escape'){document.querySelector('.notes').hidden=true;stopPlay();return;}if(e.key.toLowerCase()==='n'){notes();return;}if(!document.querySelector('.notes').hidden)return;
+ if(['ArrowRight','ArrowDown','PageDown'].includes(e.key)){e.preventDefault();go(current+1,true);}else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();go(current-1,true);}else if(e.key===' '){e.preventDefault();if(!advance())go(current+1,true);}else if(e.key==='Enter'&&e.target.tagName!=='BUTTON'){e.preventDefault();if(!advance())go(current+1,true);}else if(e.key.toLowerCase()==='r')reset();else if(e.key.toLowerCase()==='f')full();else if(e.key==='Home')go(0,true);else if(e.key==='End')go(SLIDES.length-1,true);
+});
+window.addEventListener('resize',fit);window.addEventListener('hashchange',()=>go((parseInt(location.hash.slice(1))||1)-1));
+const params=new URLSearchParams(location.search);fit();go((+(params.get('slide')||location.hash.slice(1))||1)-1);
+const st=currentState();st.step=Math.min(SLIDES[current].steps.length-1,Math.max(0,+(params.get('step')||0)));if(params.has('round'))st.round=Math.max(0,Math.min(60,+params.get('round')));else if(SLIDES[current].id==='repeat')st.round=[0,1,3,40][st.step];else if(SLIDES[current].id==='ranking')st.round=[0,1,8,40][st.step];
+if(params.has('alpha'))st.alpha=Math.max(0,Math.min(.99,+params.get('alpha')));if(params.has('sender'))st.sender=Math.max(0,Math.min(3,+params.get('sender')));if(params.has('edge'))st.extraEdge=params.get('edge')==='1';else if(SLIDES[current].id==='editgraph')st.extraEdge=st.step>=1;
+update();
+window.M16={SLIDES,EDGES,GM,ADJ,states,go,advance,reset,iterate,converge,matrixStep,messageStep,graphMatrix,multiply,update,get current(){return current;}};
+document.documentElement.dataset.ready='yes';
+
+</script>
+</body>
+</html>
