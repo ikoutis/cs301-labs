@@ -38,7 +38,10 @@ the datasets from this repository's public site,
   builds 4- and 8-neighbor affinity graphs, compares Python and Numba loops,
   constructs dense and sparse Laplacians, and solves seeded segmentation
   systems. It includes a Colab seed picker, saved-seed replay, runtime and
-  memory comparisons, reflection prompts, and an optional multiclass extension.
+  memory comparisons, and a required meeting 17 exercise that computes spectral
+  coordinates for a cycle and a graph with dense regions, compares them with random
+  drawings, and checks edge energy. Reflection prompts connect these representations;
+  the multiclass extension remains optional.
 - `unit-2/notes/`: the notes of the meetings, one web page for each meeting
   (`meeting-10.html`), with the same page as a PDF beside it. The notes state
   the main points of the meeting first and then walk through its notebooks step
