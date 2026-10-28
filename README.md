@@ -25,7 +25,10 @@ the datasets from this repository's public site,
   points) is drawn the same way, with sliders for the flatness of a cloud
   and the direction of a projection, and a cloud in space that turns; no PDF. `m16-pagerank.html` (meeting 16, companion: PageRank, from one node's rule
   to Graph × Data) runs the same way, with sliders for the rounds and the
-  restart share, and speaker notes under N; no PDF.
+  restart share, and speaker notes under N; no PDF. `m17-representations.html`
+  (meeting 17: representations, from pixels to points, graphs, first-arrival
+  probabilities and spectral coordinates) runs the same way, with a live
+  segmentation to click on and speaker notes under N; no PDF.
 - `unit-2/assignments/`: the notebooks of the Unit II assignments, opened in Colab
   from here: `vectorization.ipynb` (Homework 1) and the four practice notebooks
   of Assignment 2, `01-comparing-data`, `02-neurons-and-arrays`,
