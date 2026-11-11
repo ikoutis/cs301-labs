@@ -9,8 +9,9 @@
 
 Download the lecture to use it offline. The notebook contains its data and runs in Python with NumPy, pandas, matplotlib, and scikit-learn. The notebook is an optional resource for exploring the examples further. The closing classroom activity is a paper review supplied by the instructor.
 
-## Meeting 22 · Neural machines
+## Meeting 2 (course meeting 22) · Neural machines
 
+- [Accessible course notes · November 16, 2026](notes/meeting-22.html) · [PDF](notes/meeting-22.pdf)
 - [Open the companion notebook in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/notebooks/meeting-22-neural-machines.ipynb)
 - [Notebook source and saved outputs](notebooks/meeting-22-neural-machines.ipynb)
 
