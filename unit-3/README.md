@@ -1,9 +1,9 @@
 # Unit III · Learning algorithms
 
-## Meeting 21 · The main notions of Learning Algorithms
+## Meeting 1 (course meeting 21) · Models, data, and validation
 
 - [Interactive lecture](slides/m21-data-validation.html)
-- [Course reading](notes/meeting-21.html) · [PDF](notes/meeting-21.pdf)
+- [Accessible course notes · November 4, 2026](notes/meeting-21.html) · [PDF](notes/meeting-21.pdf)
 - [Optional notebook](notebooks/meeting-21-data-validation.ipynb)
 - [Data and attribution](data/SOURCES.md)
 
