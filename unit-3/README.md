@@ -16,3 +16,16 @@ Download the lecture to use it offline. The notebook contains its data and runs 
 - [Notebook source and saved outputs](notebooks/meeting-22-neural-machines.ipynb)
 
 The notebook follows the lecture: fit/predict, a tiny forward/backward/update example, downhill search and local minima, batches, sigmoid/ReLU comparisons, random-label memorization, noisy regression and validation checkpoints, and a short PyTorch training/inference loop. All datasets are generated in the notebook. The measured scikit-learn experiments use seed 22; the notebook runs on CPU without external data downloads. The moons test set remains reserved.
+
+## Meeting 3 (course meeting 23) · Memory, similarity, and search
+
+- [Interactive lecture](slides/m23-memory-and-retrieval.html)
+- [Open the companion notebook in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/notebooks/meeting-23-memory-and-retrieval.ipynb)
+- [Notebook source and saved outputs](notebooks/meeting-23-memory-and-retrieval.ipynb)
+
+Explore retrieval through audio fingerprints and word embeddings, then use
+k-nearest neighbors for classification and regression. Build a kd-tree one
+partition at a time, step through exact search and pruning, and compare the
+cost of search across dimensions. The notebook includes synthetic audio,
+executed experiments, exercises, and an embedded word-vector subset; its main
+route runs on CPU without external data downloads.
