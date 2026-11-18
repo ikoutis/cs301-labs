@@ -29,3 +29,9 @@ partition at a time, step through exact search and pruning, and compare the
 cost of search across dimensions. The notebook includes synthetic audio,
 executed experiments, exercises, and an embedded word-vector subset; its main
 route runs on CPU without external data downloads.
+
+The lecture also lets you compare construction costs, count search work, explore
+when an index repays its build cost, inspect projected word neighbors, and move
+a distant neighbor to see how its prediction weight changes.
+[Original November 16 lecture](slides/m23-memory-and-retrieval-2026-11-16.html)
+remains available for annotations saved on that version.
