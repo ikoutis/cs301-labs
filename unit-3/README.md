@@ -42,7 +42,7 @@ remains available for annotations saved on that version.
 - [Interactive lecture](slides/m24-learning-to-use-memory.html)
 - [One-parameter PyTorch demo (download)](slides/meeting-24-pytorch.zip)
 
-The 39-slide, 80-minute lecture develops attention from queries, keys, and
+The 38-slide, 80-minute lecture develops attention from queries, keys, and
 values, learns a positive temperature by minimizing prediction error, and
 combines stored examples with learned feature relevance. Three PyTorch slides
 show the scalar parameter, forward calculation, and automatic differentiation.
