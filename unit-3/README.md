@@ -20,6 +20,7 @@ The notebook follows the lecture: fit/predict, a tiny forward/backward/update ex
 ## Meeting 3 (course meeting 23) · Memory, similarity, and search
 
 - [Interactive lecture](slides/m23-memory-and-retrieval.html)
+- [Accessible course notes](notes/meeting-23.html) · [PDF](notes/meeting-23.pdf)
 - [Open the companion notebook in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/notebooks/meeting-23-memory-and-retrieval.ipynb)
 - [Notebook source and saved outputs](notebooks/meeting-23-memory-and-retrieval.ipynb)
 
