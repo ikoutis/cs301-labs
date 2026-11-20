@@ -40,6 +40,7 @@ remains available for annotations saved on that version.
 ## Meeting 4 (course meeting 24) · Learning how to use memory
 
 - [Interactive lecture](slides/m24-learning-to-use-memory.html)
+- [Accessible course notes](notes/meeting-24.html) · [PDF](notes/meeting-24.pdf)
 - [One-parameter PyTorch demo (download)](slides/meeting-24-pytorch.zip)
 
 The 30-slide, 80-minute lecture develops attention from queries, keys, and
