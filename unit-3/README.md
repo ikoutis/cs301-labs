@@ -3,7 +3,7 @@
 ## Meeting 1 (course meeting 21) · Models, data, and validation
 
 - [Interactive lecture](slides/m21-data-validation.html)
-- [Accessible course notes · November 4, 2026](notes/meeting-21.html) · [PDF](notes/meeting-21.pdf)
+- [Course notes · November 4, 2026](notes/meeting-21.html) · [PDF](notes/meeting-21.pdf)
 - [Optional notebook](notebooks/meeting-21-data-validation.ipynb)
 - [Data and attribution](data/SOURCES.md)
 
@@ -11,7 +11,7 @@ Download the lecture to use it offline. The notebook contains its data and runs 
 
 ## Meeting 2 (course meeting 22) · Neural machines
 
-- [Accessible course notes](notes/meeting-22.html) · [PDF](notes/meeting-22.pdf)
+- [Course notes](notes/meeting-22.html) · [PDF](notes/meeting-22.pdf)
 - [Open the companion notebook in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/notebooks/meeting-22-neural-machines.ipynb)
 - [Notebook source and saved outputs](notebooks/meeting-22-neural-machines.ipynb)
 
@@ -20,7 +20,7 @@ The notebook follows the lecture: fit/predict, a tiny forward/backward/update ex
 ## Meeting 3 (course meeting 23) · Memory, similarity, and search
 
 - [Interactive lecture](slides/m23-memory-and-retrieval.html)
-- [Accessible course notes](notes/meeting-23.html) · [PDF](notes/meeting-23.pdf)
+- [Course notes](notes/meeting-23.html) · [PDF](notes/meeting-23.pdf)
 - [Open the companion notebook in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/notebooks/meeting-23-memory-and-retrieval.ipynb)
 - [Notebook source and saved outputs](notebooks/meeting-23-memory-and-retrieval.ipynb)
 
@@ -40,7 +40,7 @@ remains available for annotations saved on that version.
 ## Meeting 4 (course meeting 24) · Learning how to use memory
 
 - [Interactive lecture](slides/m24-learning-to-use-memory.html)
-- [Accessible course notes](notes/meeting-24.html) · [PDF](notes/meeting-24.pdf)
+- [Course notes](notes/meeting-24.html) · [PDF](notes/meeting-24.pdf)
 - [One-parameter PyTorch demo (download)](slides/meeting-24-pytorch.zip)
 
 The 30-slide, 80-minute lecture develops attention from queries, keys, and
