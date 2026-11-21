@@ -47,3 +47,14 @@ The 30-slide, 80-minute lecture develops attention from queries, keys, and
 values, learns a positive temperature by minimizing prediction error, and
 combines stored examples with learned feature relevance. Three PyTorch slides
 show the scalar parameter, forward calculation, and automatic differentiation.
+
+## Assignment 1 · Train, validate, test
+
+- [Open the assignment in Colab](https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/assignments/train-validate-test.ipynb)
+- [Read the assignment](assignments/train-validate-test.html)
+- [Download the notebook](assignments/train-validate-test.ipynb)
+
+Choose digits, wine, or breast cancer data; train scikit-learn MLP classifiers;
+compare hyperparameters on validation data; repeat the strongest candidates
+across initialization seeds; then freeze a choice and evaluate the test set.
+See Canvas for the submission deadline and grading instructions.

@@ -1,0 +1,367 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Train, validate, test — assignment preview</title><style>
+:root{color-scheme:light}*{box-sizing:border-box}body{font:18px/1.55 'Segoe UI',sans-serif;color:#172439;background:#f5f7fa;margin:0}main{max-width:1080px;margin:32px auto;background:white;padding:40px 54px}h1,h2,h3{line-height:1.2;color:#087f6d}h1{font-size:36px}h2{font-size:27px;margin-top:38px}a{color:#17659f}table{border-collapse:collapse;width:100%;font-size:16px;margin:20px 0}td,th{text-align:left;border-bottom:1px solid #d7dfe8;padding:10px;vertical-align:top}th{background:#f2f5fa}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5fa;padding:20px;font:14px/1.5 Consolas,monospace;border-left:3px solid #087f6d}code{font-family:Consolas,monospace;background:#f2f5fa}li{margin-bottom:8px}.cell{margin:0 0 22px}.response{border-left:3px solid #986000;padding-left:18px}.cell-label{font:13px 'Segoe UI',sans-serif;color:#526078;margin:18px 0 5px}.banner{background:#e7f2ed;padding:15px 20px}.cell-code summary{cursor:pointer;color:#17659f;font-size:15px}.cell-code pre{margin-top:8px}.guide-table td:first-child{width:30%}@media(max-width:700px){main{margin:0;padding:24px 18px}body{font-size:16px}h1{font-size:29px}table{font-size:14px}pre{font-size:12px;padding:12px}}@media print{body{background:white}main{margin:0;max-width:none;padding:0}details{display:block}pre{font-size:10px}.banner{display:none}}
+@media(max-width:700px){.cell table{display:block;overflow-x:auto;max-width:100%}code{overflow-wrap:anywhere}}</style></head><body><main><p><strong><a href="https://colab.research.google.com/github/ikoutis/cs301-labs/blob/main/unit-3/assignments/train-validate-test.ipynb" target="_blank" rel="noopener">Open the assignment in Google Colab</a></strong></p><div class="banner"><strong>Assignment review preview</strong> · <a href="train-validate-test.ipynb" download>Download the Colab notebook</a>. Code cells are expandable; students complete the notebook.</div><section id="opening" class="cell "><h1>Unit III assignment: Train, validate, test</h1>
+<p><strong>CS 301 · Learning algorithms</strong></p>
+<p>Build a small neural-network classifier with scikit-learn. Your main job is to repeat a disciplined learning loop: <strong>fit on training data → compare on validation data → freeze your choices → evaluate on test data</strong>.</p>
+<p>You will choose <strong>one</strong> dataset, compare <strong>4–6</strong> model configurations, and repeat the two strongest candidates with <strong>five initializations each</strong>. Aim for the best validation performance you can justify within that budget. A larger model or a lucky run need not be better.</p>
+<h2>How to work</h2>
+<ul>
+<li>In Colab, choose <strong>File → Save a copy in Drive</strong>. A CPU runtime is sufficient.</li>
+<li>Run the cells in order. <strong>Your turn</strong> marks short code edits and written responses; replace each <code>...</code> before continuing.</li>
+<li>Write a prediction before an experiment, then explain the actual result. Improvement is not required: an unsuccessful experiment can be informative.</li>
+<li>Keep the dataset and split fixed. Leave the test set alone until the final evaluation.</li>
+<li>Submit your completed <code>.ipynb</code> with outputs and explanations, using the assignment instructions and deadline on Canvas. A high accuracy by itself is not the goal; the procedure and your interpretation matter.</li>
+</ul>
+<p><strong>Name:</strong> <em>Your name here.</em></p></section><details id="setup" class="cell cell-code"><summary>Supplied code</summary><pre><code>import copy
+import warnings
+import platform
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import sklearn
+from IPython.display import display
+from sklearn.datasets import load_digits, load_wine, load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.dummy import DummyClassifier
+from sklearn.metrics import accuracy_score, log_loss, ConfusionMatrixDisplay
+from sklearn.exceptions import ConvergenceWarning
+from threadpoolctl import threadpool_limits
+
+SPLIT_SEED = 301          # Which observations go into each set.
+TRIAL_SEED = 0           # Same initialization seed for the first comparison.
+INITIALIZATION_SEEDS = [0, 1, 2, 3, 4]
+FINAL_SEED = 0           # Fixed now; do not search for a lucky final seed.
+MAX_EPOCHS = 300
+TEST_OPENED = False
+print(&#x27;Python:&#x27;, platform.python_version(), &#x27;| scikit-learn:&#x27;, sklearn.__version__)
+</code></pre></details><section id="dataset-choice" class="cell "><h2>1. Choose one prediction task</h2>
+<p>All three datasets are included with scikit-learn. They have numeric inputs and class labels, so the rest of the notebook is the same for each choice.</p>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>One observation</th>
+<th>Predict</th>
+<th>Rows / features / classes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>digits</code> (default)</td>
+<td>An 8 × 8 image represented by 64 pixel values</td>
+<td>Which digit, 0–9</td>
+<td>1,797 / 64 / 10</td>
+</tr>
+<tr>
+<td><code>wine</code></td>
+<td>13 chemical measurements of a wine sample</td>
+<td>Which of three cultivars it belongs to, <strong>not its quality</strong></td>
+<td>178 / 13 / 3</td>
+</tr>
+<tr>
+<td><code>breast_cancer</code></td>
+<td>30 measurements derived from a cell-nuclei image</td>
+<td>The recorded benign/malignant label</td>
+<td>569 / 30 / 2</td>
+</tr>
+</tbody>
+</table>
+<p>Choose for your interest in the task. Scores across these datasets are not directly comparable. These small historical datasets let us practice the learning procedure; their results do not establish performance on a new population.</p>
+<p><strong>Your turn:</strong> choose one dataset below and keep it for the entire assignment.</p></section><details id="choose-dataset" class="cell cell-code"><summary>Your turn: code</summary><pre><code>DATASET = &#x27;digits&#x27;  # Choose &#x27;digits&#x27;, &#x27;wine&#x27;, or &#x27;breast_cancer&#x27;.
+loaders = {&#x27;digits&#x27;: load_digits, &#x27;wine&#x27;: load_wine, &#x27;breast_cancer&#x27;: load_breast_cancer}
+assert DATASET in loaders, &#x27;Choose one of the three listed dataset names.&#x27;
+data = loaders[DATASET]()
+X, y = data.data, data.target
+class_names = np.asarray(data.target_names).astype(str)
+print(DATASET, &#x27;| rows:&#x27;, len(y), &#x27;| features:&#x27;, X.shape[1], &#x27;| classes:&#x27;, len(class_names))
+</code></pre></details><section id="split-explanation" class="cell "><h2>2. Split before fitting anything</h2>
+<table>
+<thead>
+<tr>
+<th>Set</th>
+<th style="text-align: right;">Approximate share</th>
+<th>Its job</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Training</td>
+<td style="text-align: right;">60%</td>
+<td>Fit the scaler and the network's weights and biases.</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td style="text-align: right;">20%</td>
+<td>Compare configurations and examine initialization effects.</td>
+</tr>
+<tr>
+<td>Test</td>
+<td style="text-align: right;">20%</td>
+<td>Evaluate the chosen procedure once, after choices are fixed.</td>
+</tr>
+</tbody>
+</table>
+<p>The supplied code first reserves 20% for testing, then takes 25% of the remaining 80% for validation: <strong>0.25 × 0.80 = 0.20</strong>. Stratification keeps class proportions approximately similar. Exact sizes depend on rounding.</p>
+<p>The split seed controls the data partition. A model seed controls the network's random initialization. Changing one is a different experiment from changing the other.</p></section><details id="split-data" class="cell cell-code"><summary>Supplied code</summary><pre><code>row_ids = np.arange(len(y))
+development_ids, test_ids = train_test_split(
+    row_ids, test_size=0.20, stratify=y, random_state=SPLIT_SEED)
+train_ids, valid_ids = train_test_split(
+    development_ids, test_size=0.25, stratify=y[development_ids], random_state=SPLIT_SEED)
+
+X_train, y_train = X[train_ids], y[train_ids]
+X_valid, y_valid = X[valid_ids], y[valid_ids]
+X_test, y_test = X[test_ids], y[test_ids]  # Reserved until Section 7.
+
+assert set(train_ids).isdisjoint(valid_ids)
+assert set(train_ids).isdisjoint(test_ids)
+assert set(valid_ids).isdisjoint(test_ids)
+assert len(train_ids) + len(valid_ids) + len(test_ids) == len(y)
+display(pd.DataFrame({&#x27;set&#x27;: [&#x27;training&#x27;, &#x27;validation&#x27;, &#x27;test&#x27;],
+                      &#x27;rows&#x27;: [len(train_ids), len(valid_ids), len(test_ids)]}))
+print(&#x27;Checks passed: every row belongs to exactly one set.&#x27;)
+</code></pre></details><details id="inspect-training" class="cell cell-code"><summary>Supplied code</summary><pre><code># Inspect training observations, not test outcomes.
+display(pd.DataFrame(X_train[:5], columns=data.feature_names))
+display(pd.DataFrame({&#x27;class&#x27;: class_names,
+                      &#x27;training_count&#x27;: np.bincount(y_train, minlength=len(class_names))}))
+if DATASET == &#x27;digits&#x27;:
+    fig, axes = plt.subplots(1, 8, figsize=(10, 2))
+    for ax, image, label in zip(axes, X_train[:8], y_train[:8]):
+        ax.imshow(image.reshape(8, 8), cmap=&#x27;gray_r&#x27;)
+        ax.set_title(str(label)); ax.axis(&#x27;off&#x27;)
+    plt.show()
+</code></pre></details><section id="data-response" class="cell response"><p><strong>Your turn — describe and explain.</strong>
+1. In your own words, what is one row, what are its inputs, and what does its target mean?
+2. Record your three split sizes. What is the role of each set?
+3. Why must we split before learning the mean and scale of each feature?</p>
+<p><em>Write your response here.</em></p></section><section id="baseline-intro" class="cell response"><h2>3. Establish a baseline, then fit the first MLP</h2>
+<p>A majority-class classifier always predicts the most common <strong>training</strong> label. It gives us a reference that requires no neural network. Predict its validation accuracy approximately from the training class counts before running the next cell.</p>
+<p><strong>Your prediction:</strong> <em>Write it here.</em></p></section><details id="baseline" class="cell cell-code"><summary>Supplied code</summary><pre><code>baseline = DummyClassifier(strategy=&#x27;most_frequent&#x27;).fit(X_train, y_train)
+baseline_valid_accuracy = accuracy_score(y_valid, baseline.predict(X_valid))
+print(f&#x27;Majority-class validation accuracy: {baseline_valid_accuracy:.3f}&#x27;)
+</code></pre></details><section id="model-explanation" class="cell "><p>An MLP is a network with one or more hidden layers. We use <code>StandardScaler</code> followed by <code>MLPClassifier</code> in a <strong>pipeline</strong>. Calling <code>fit</code> learns the feature scaling and the network from the same training rows; <code>predict</code> applies that learned scaling to new rows.</p>
+<table>
+<thead>
+<tr>
+<th>Setting you choose</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hidden_layer_sizes=(16,)</code></td>
+<td>One hidden layer with 16 neurons. <code>(32, 16)</code> means two hidden layers.</td>
+</tr>
+<tr>
+<td><code>alpha=0.0001</code></td>
+<td>Strength of the penalty on large weights. Larger values increase this regularization.</td>
+</tr>
+<tr>
+<td><code>learning_rate_init=0.001</code></td>
+<td>Initial learning rate used by Adam.</td>
+</tr>
+</tbody>
+</table>
+<p>The network's weights and biases are <strong>learned parameters</strong>. The settings above are <strong>hyperparameters</strong> that you compare using validation. ReLU and Adam remain fixed in this assignment.</p>
+<p><code>max_iter=300</code> is a maximum of 300 <strong>epochs</strong>, not 300 individual gradient updates. A run can stop earlier when training loss stops improving. We record the actual epoch count. A <code>budget_warning=True</code> entry means the run reached the cap before its stopping criterion was met; it is a usable finite-budget result, not evidence of convergence. Keep these runs in your table.</p>
+<p><strong>Your turn:</strong> complete the three <code>...</code> expressions in <code>run_trial</code>. Fit on training inputs and targets; predict the validation inputs. The function will repeat that procedure for every trial. It never uses the test set.</p></section><details id="model-and-trial" class="cell cell-code"><summary>Your turn: code</summary><pre><code>def make_model(config, seed):
+    return Pipeline([
+        (&#x27;scale&#x27;, StandardScaler()),
+        (&#x27;mlp&#x27;, MLPClassifier(
+            hidden_layer_sizes=config[&#x27;hidden_layer_sizes&#x27;],
+            alpha=config[&#x27;alpha&#x27;], learning_rate_init=config[&#x27;learning_rate_init&#x27;],
+            activation=&#x27;relu&#x27;, solver=&#x27;adam&#x27;, max_iter=MAX_EPOCHS,
+            early_stopping=False, shuffle=False, random_state=seed))
+    ])
+
+def run_trial(config, seed):
+    assert not TEST_OPENED, &#x27;Model selection is finished once the test set is opened.&#x27;
+    model = make_model(config, seed)
+    fit_inputs = ...   # TODO: inputs used to learn scaling and network parameters.
+    fit_targets = ...  # TODO: corresponding targets.
+    validation_inputs = ...  # TODO: inputs used to compare model choices.
+    assert all(v is not Ellipsis for v in [fit_inputs, fit_targets, validation_inputs]), &#x27;Complete the three expressions first.&#x27;
+    with threadpool_limits(limits=1), warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(&#x27;always&#x27;, ConvergenceWarning)
+        model.fit(fit_inputs, fit_targets)
+    assert np.allclose(model.named_steps[&#x27;scale&#x27;].mean_, X_train.mean(axis=0)), &#x27;The scaler must be fitted on training rows only.&#x27;
+    valid_prediction = model.predict(validation_inputs)
+    mlp = model.named_steps[&#x27;mlp&#x27;]
+    row = dict(name=config[&#x27;name&#x27;], seed=seed,
+               train_accuracy=accuracy_score(y_train, model.predict(X_train)),
+               valid_accuracy=accuracy_score(y_valid, valid_prediction),
+               valid_log_loss=log_loss(y_valid, model.predict_proba(validation_inputs)),
+               epochs=mlp.n_iter_,
+               budget_warning=any(issubclass(w.category, ConvergenceWarning) for w in caught))
+    return model, row
+</code></pre></details><details id="first-model" class="cell cell-code"><summary>Supplied code</summary><pre><code>STARTER = dict(name=&#x27;small&#x27;, hidden_layer_sizes=(16,), alpha=0.0001, learning_rate_init=0.001)
+first_model, first_result = run_trial(STARTER, TRIAL_SEED)
+display(pd.DataFrame([first_result]).round(4))
+plt.plot(first_model.named_steps[&#x27;mlp&#x27;].loss_curve_)
+plt.xlabel(&#x27;Epoch&#x27;); plt.ylabel(&#x27;Training objective&#x27;); plt.title(&#x27;First MLP: progress during fitting&#x27;)
+plt.grid(alpha=0.25); plt.show()
+</code></pre></details><section id="first-explanation" class="cell response"><p><strong>Your turn — read the result.</strong> Compare training accuracy, validation accuracy, and the majority-class baseline. What does the loss curve tell you about training? Why does a falling training objective alone not establish good predictions on new observations?</p>
+<p>The plotted training objective includes the classification loss and the weight penalty. Accuracy is the fraction of correct labels (<strong>higher is better</strong>). Validation log loss evaluates the predicted probabilities (<strong>lower is better</strong>). Two models can have the same accuracy but different log loss.</p>
+<p><em>Write your response using your numbers.</em></p></section><section id="experiment-plan" class="cell response"><h2>4. Repeat the loop: change, fit, validate, record</h2>
+<p>Create <strong>four distinct configurations in total</strong>, including the starter. Two are supplied; add two of your own. You may add at most two further trials if you have a specific question, for a total of <strong>4–6</strong>.</p>
+<ul>
+<li>Vary at least <strong>two kinds</strong> of hyperparameter across the table.</li>
+<li>Change one setting at a time when making a comparison you want to explain.</li>
+<li>Suggested choices: hidden layers <code>(16,)</code>, <code>(32,)</code>, <code>(64,)</code>, or <code>(32, 16)</code>; <code>alpha</code> in <code>0.0001, 0.01, 0.1</code>; learning rate in <code>0.001, 0.003, 0.01</code>.</li>
+<li>Keep all trials, including unsuccessful ones. Keep the split, initial seed, and maximum epoch budget fixed.</li>
+<li>Aim for the highest <strong>validation accuracy</strong>. Use lower validation log loss to break an accuracy tie. Do not choose a winner using training accuracy or test results.</li>
+</ul>
+<p>Repeated validation comparisons can themselves favor chance successes. Our small trial budget and the later initialization check help make the evidence easier to interpret; the untouched test set still has a separate role.</p>
+<p><strong>Predict before running:</strong> name the changes you will try and why each might help or hurt. A reasoned prediction can be wrong.</p>
+<table>
+<thead>
+<tr>
+<th>Trial name</th>
+<th>Change from which earlier trial?</th>
+<th>Prediction and reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wider</td>
+<td>small: 16 → 32 hidden neurons</td>
+<td><em>Your prediction</em></td>
+</tr>
+<tr>
+<td><em>your trial</em></td>
+<td><em>Your change</em></td>
+<td><em>Your prediction</em></td>
+</tr>
+<tr>
+<td><em>your trial</em></td>
+<td><em>Your change</em></td>
+<td><em>Your prediction</em></td>
+</tr>
+</tbody>
+</table></section><details id="trial-configurations" class="cell cell-code"><summary>Your turn: code</summary><pre><code>TRIALS = [
+    STARTER,
+    dict(name=&#x27;wider&#x27;, hidden_layer_sizes=(32,), alpha=0.0001, learning_rate_init=0.001),
+    ...,  # TODO: a dictionary with a unique name and the same four keys.
+    ...,  # TODO: a second configuration of your own.
+]
+assert 4 &lt;= len(TRIALS) &lt;= 6
+assert all(isinstance(c, dict) for c in TRIALS), &#x27;Replace each ... with a configuration dictionary.&#x27;
+assert len({c[&#x27;name&#x27;] for c in TRIALS}) == len(TRIALS), &#x27;Use a distinct name for each trial.&#x27;
+keys = (&#x27;hidden_layer_sizes&#x27;, &#x27;alpha&#x27;, &#x27;learning_rate_init&#x27;)
+signatures = [tuple(c[k] for k in keys) for c in TRIALS]
+assert len(set(signatures)) == len(TRIALS), &#x27;Use distinct configurations.&#x27;
+assert sum(len({c[k] for c in TRIALS}) &gt; 1 for k in keys) &gt;= 2, &#x27;Vary at least two kinds of hyperparameter.&#x27;
+</code></pre></details><details id="run-comparison" class="cell cell-code"><summary>Supplied code</summary><pre><code>models, rows = {}, []
+for config in TRIALS:
+    model, row = run_trial(config, TRIAL_SEED)
+    models[config[&#x27;name&#x27;]] = model
+    rows.append({**row, **{k: config[k] for k in keys}})
+results = pd.DataFrame(rows)
+display(results.round(4))
+print(&#x27;The test set has not been scored.&#x27;)
+</code></pre></details><section id="comparison-response" class="cell response"><p><strong>Your turn — explain two comparisons.</strong>
+1. Which single-setting change helped validation performance most, or hurt it least? Cite both trial names and numbers.
+2. Discuss a change that did not help as you expected. If all changes behaved as predicted, discuss the least useful change or a remaining uncertainty. Use the training/validation gap and any budget warning as evidence.
+3. Which two configurations currently look strongest under our accuracy-then-log-loss rule?</p>
+<p><em>Write your response here. If several trials tie, say so and use their log losses.</em></p></section><section id="initialization-intro" class="cell response"><h2>5. Was the result dependent on initialization?</h2>
+<p>The next experiment repeats the two strongest configurations using seeds <strong>0, 1, 2, 3, 4</strong>. Keep the data partition, scaling procedure, architecture, learning rate, regularization, and training budget fixed within each configuration.</p>
+<p><code>shuffle=False</code> fixes the order of training batches. <code>early_stopping=False</code> avoids an additional random internal validation split. Thus changing the model seed changes initialization in this controlled experiment. With the usual shuffled training, a seed can also change the batch order.</p>
+<p>We compare <strong>mean validation accuracy across the same five seeds</strong>, then mean validation log loss for a tie. Do not choose the single luckiest seed. This is five separately fitted models, not an ensemble.</p>
+<p><strong>Predict before running:</strong> will the two candidates retain their ordering? Must every seed produce a different accuracy?</p>
+<p><em>Write your prediction here.</em></p></section><details id="initialization-comparison" class="cell cell-code"><summary>Supplied code</summary><pre><code>ranked = results.sort_values([&#x27;valid_accuracy&#x27;, &#x27;valid_log_loss&#x27;, &#x27;name&#x27;], ascending=[False, True, True])
+candidate_names = ranked.head(2)[&#x27;name&#x27;].tolist()
+config_by_name = {c[&#x27;name&#x27;]: c for c in TRIALS}
+seed_rows = []
+for name in candidate_names:
+    for seed in INITIALIZATION_SEEDS:
+        _, row = run_trial(config_by_name[name], seed)
+        seed_rows.append(row)
+seed_results = pd.DataFrame(seed_rows)
+summary = seed_results.groupby(&#x27;name&#x27;, sort=False).agg(
+    mean_valid_accuracy=(&#x27;valid_accuracy&#x27;, &#x27;mean&#x27;),
+    sd_valid_accuracy=(&#x27;valid_accuracy&#x27;, &#x27;std&#x27;),
+    min_valid_accuracy=(&#x27;valid_accuracy&#x27;, &#x27;min&#x27;),
+    max_valid_accuracy=(&#x27;valid_accuracy&#x27;, &#x27;max&#x27;),
+    mean_valid_log_loss=(&#x27;valid_log_loss&#x27;, &#x27;mean&#x27;),
+    budget_warnings=(&#x27;budget_warning&#x27;, &#x27;sum&#x27;)).reset_index()
+summary = summary.sort_values([&#x27;mean_valid_accuracy&#x27;, &#x27;mean_valid_log_loss&#x27;, &#x27;name&#x27;], ascending=[False, True, True])
+display(seed_results.round(4))
+display(summary.round(4))
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.5))
+for name in candidate_names:
+    r = seed_results[seed_results[&#x27;name&#x27;] == name]
+    axes[0].plot(r[&#x27;seed&#x27;], r[&#x27;valid_accuracy&#x27;], &#x27;o-&#x27;, label=name)
+    axes[1].plot(r[&#x27;seed&#x27;], r[&#x27;valid_log_loss&#x27;], &#x27;o-&#x27;, label=name)
+for ax, label in zip(axes, [&#x27;Validation accuracy (higher is better)&#x27;, &#x27;Validation log loss (lower is better)&#x27;]):
+    ax.set_xlabel(&#x27;Initialization seed&#x27;); ax.set_ylabel(label)
+    ax.set_xticks(INITIALIZATION_SEEDS); ax.grid(alpha=0.25); ax.legend()
+plt.tight_layout(); plt.show()
+</code></pre></details><section id="initialization-response" class="cell response"><p><strong>Your turn — explain the variation.</strong> Report each candidate's mean and range of validation accuracy. Did the original winner remain the winner? What would be misleading about reporting only the best seed?</p>
+<p>If accuracies tie, inspect log loss: identical numbers of correct labels do not imply identical probabilities or learned weights. Do not change the split or keep trying seeds to manufacture a larger difference. The standard deviation describes these five initializations on this split; it is not a confidence interval over new populations.</p>
+<p><em>Write your response using the tables and plots.</em></p></section><section id="freeze-intro" class="cell "><h2>6. Freeze the choice before testing</h2>
+<p>Choose the configuration with the highest mean validation accuracy in the five-seed comparison. Break a tie using lower mean validation log loss. If both tie, either is acceptable with an explanation.</p>
+<p>The final initialization seed was fixed at <strong>0</strong> in the setup. We select a configuration, not a seed. The final model will be fitted on the <strong>training rows only</strong>, using a new pipeline with that same predeclared seed. The validation and test rows remain outside fitting throughout this assignment.</p>
+<p><strong>Your turn:</strong> enter the chosen trial name below. Then explain your selection before running Section 7.</p></section><details id="freeze-choice" class="cell cell-code"><summary>Your turn: code</summary><pre><code>FINAL_NAME = ...  # TODO: a name from the five-seed summary, as a string.
+assert FINAL_NAME in candidate_names, &#x27;Enter one of the two candidate names.&#x27;
+chosen_row = summary.set_index(&#x27;name&#x27;).loc[FINAL_NAME]
+best = summary.iloc[0]
+assert np.isclose(chosen_row[&#x27;mean_valid_accuracy&#x27;], best[&#x27;mean_valid_accuracy&#x27;]), &#x27;Use the highest mean validation accuracy.&#x27;
+assert np.isclose(chosen_row[&#x27;mean_valid_log_loss&#x27;], best[&#x27;mean_valid_log_loss&#x27;]), &#x27;For an accuracy tie, use lower mean validation log loss.&#x27;
+FINAL_CONFIG = copy.deepcopy(config_by_name[FINAL_NAME])
+print(&#x27;Frozen configuration:&#x27;, FINAL_CONFIG)
+print(&#x27;Final seed:&#x27;, FINAL_SEED, &#x27;| Test set still unopened:&#x27;, not TEST_OPENED)
+</code></pre></details><section id="selection-response" class="cell response"><p><strong>Before opening the test set:</strong> record your final configuration, its mean validation accuracy, accuracy range, and mean log loss. Explain why the evidence supports this choice. Why would choosing a new configuration after looking at test accuracy change the role of the test set?</p>
+<p><em>Write your response here before continuing.</em></p></section><section id="test-intro" class="cell "><h2>7. Evaluate once on the reserved test set</h2>
+<p>The next cell fits the frozen model on training data and reports its test performance alongside the predeclared majority baseline. The confusion matrix below uses the same final predictions; it is a description of errors, not another model-selection round.</p>
+<p>After opening the test set, stop tuning. If the score disappoints, report and explain it. A best validation result does not guarantee a best test result. You may later restart and rerun the <strong>same completed notebook</strong> to reproduce it for submission, keeping all choices unchanged.</p></section><details id="final-test" class="cell cell-code"><summary>Supplied code</summary><pre><code>assert not TEST_OPENED, &#x27;This test evaluation has already been run in this session.&#x27;
+final_model = make_model(FINAL_CONFIG, FINAL_SEED)
+with threadpool_limits(limits=1), warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter(&#x27;always&#x27;, ConvergenceWarning)
+    final_model.fit(X_train, y_train)
+test_prediction = final_model.predict(X_test)
+test_probability = final_model.predict_proba(X_test)
+TEST_OPENED = True
+test_accuracy = accuracy_score(y_test, test_prediction)
+test_log_loss = log_loss(y_test, test_probability)
+baseline_test_accuracy = accuracy_score(y_test, baseline.predict(X_test))
+display(pd.DataFrame([
+    {&#x27;model&#x27;: &#x27;Majority baseline&#x27;, &#x27;test_accuracy&#x27;: baseline_test_accuracy, &#x27;test_log_loss&#x27;: np.nan},
+    {&#x27;model&#x27;: FINAL_NAME, &#x27;test_accuracy&#x27;: test_accuracy, &#x27;test_log_loss&#x27;: test_log_loss}
+]).round(4))
+print(&#x27;Final fit epochs:&#x27;, final_model.named_steps[&#x27;mlp&#x27;].n_iter_)
+print(&#x27;Final fit budget warning:&#x27;, any(issubclass(w.category, ConvergenceWarning) for w in caught))
+print(&#x27;Model selection is finished. Describe these results without further tuning.&#x27;)
+</code></pre></details><details id="test-confusion" class="cell cell-code"><summary>Supplied code</summary><pre><code>fig, ax = plt.subplots(figsize=(7, 6))
+ConfusionMatrixDisplay.from_predictions(
+    y_test, test_prediction, labels=np.arange(len(class_names)), display_labels=class_names,
+    colorbar=False, cmap=&#x27;Blues&#x27;, ax=ax)
+ax.set_title(&#x27;Frozen model: test errors&#x27;)
+plt.tight_layout(); plt.show()
+</code></pre></details><section id="final-reflection" class="cell response"><h2>8. Explain what you learned</h2>
+<p>Write a short conclusion (about 150–200 words) using your actual results:
+- State the task, final configuration, validation evidence, and final test accuracy.
+- Describe one useful hyperparameter experiment and one result that surprised you.
+- Explain what the initialization experiment changed in your interpretation of a single run.
+- Identify one error pattern in the confusion matrix. Small class counts limit what you can conclude.
+- Explain why your test score is an evaluation of the frozen procedure, and name one limitation of this experiment.</p>
+<p><strong>Your conclusion:</strong> <em>Write here.</em></p></section><section id="submission" class="cell "><h2>Final check and submission</h2>
+<p>Your notebook should contain:
+1. One dataset choice, its description, and the three disjoint split sizes.
+2. The completed fit/predict code and training-only preprocessing.
+3. Predictions and results for 4–6 distinct configurations, varying at least two hyperparameters.
+4. Five initializations of each of two candidates, with the table, summary, and explanation.
+5. A validation-based selection recorded before the final test evaluation.
+6. Final test results, a confusion matrix, and your conclusion.
+7. Credits and any required AI disclosure/appendix below.</p>
+<p>Restart the runtime and run your <strong>completed, unchanged choices</strong> from top to bottom. Check that the figures and tables appear and your responses are filled in. Save with outputs, then <strong>File → Download → Download .ipynb</strong> and submit as instructed on Canvas. Do not submit only screenshots or a link that requires permission to view.</p></section><section id="credits" class="cell response"><h2>Credits and AI disclosure</h2>
+<p>Follow the course syllabus: submitted work must reflect your own understanding, and external sources and collaborators must be credited. If you used an AI tool, explicitly disclose that use and include the <strong>full interaction transcript as an appendix</strong> in the submitted work. Verify any code you use.</p>
+<p><strong>Sources or collaborators:</strong> <em>List them here, or write “none.”</em></p>
+<p><strong>AI use:</strong> <em>Describe it here, or write “none.” If used, add the full transcript below as an appendix.</em></p></section><section id="references" class="cell "><h2>Reference links</h2>
+<ul>
+<li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html">MLPClassifier: parameters and stopping behavior</a></li>
+<li><a href="https://scikit-learn.org/stable/modules/neural_networks_supervised.html">Neural networks: scaling, hyperparameters, and initialization</a></li>
+<li><a href="https://scikit-learn.org/stable/common_pitfalls.html">Avoiding data leakage with preprocessing and pipelines</a></li>
+<li>Dataset descriptions and provenance: <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html">digits</a>, <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_wine.html">wine</a>, <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html">breast cancer</a>.</li>
+</ul></section></main></body></html>
